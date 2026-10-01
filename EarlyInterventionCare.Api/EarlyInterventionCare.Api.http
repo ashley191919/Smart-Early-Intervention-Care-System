@@ -1,0 +1,6 @@
+@EarlyInterventionCare.Api_HostAddress = http://localhost:5177
+
+GET {{EarlyInterventionCare.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
