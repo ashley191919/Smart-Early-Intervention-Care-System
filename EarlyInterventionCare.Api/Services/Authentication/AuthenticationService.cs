@@ -8,10 +8,12 @@ namespace EarlyInterventionCare.Api.Services.Authentication;
 public class AuthenticationService
 {
     private readonly ApplicationDbContext _db;
+    private readonly JwtTokenService _tokens;
 
-    public AuthenticationService(ApplicationDbContext db)
+    public AuthenticationService(ApplicationDbContext db, JwtTokenService tokens)
     {
         _db = db;
+        _tokens = tokens;
     }
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -62,13 +64,42 @@ public class AuthenticationService
             .OrderBy(name => name)
             .ToArrayAsync(cancellationToken);
 
+        var token = _tokens.CreateToken(user.Id, user.Username, role.Name);
         return new LoginResponse
         {
             UserId = user.Id,
             Username = user.Username,
             Role = role.Name,
             Permissions = permissions,
-            Message = "帳密驗證成功"
+            Message = "登入成功",
+            AccessToken = token.AccessToken,
+            ExpiresAt = token.ExpiresAt
+        };
+    }
+
+    public async Task<CurrentUserResponse?> GetCurrentUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.Id, u.Username, u.Status, u.RoleId })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (user is null || !string.Equals(user.Status, "ACTIVE", StringComparison.Ordinal))
+            return null;
+
+        var role = await _db.Roles.AsNoTracking()
+            .SingleOrDefaultAsync(r => r.Id == user.RoleId, cancellationToken);
+        if (role is null)
+            return null;
+
+        var permissions = await _db.RolePermissions.AsNoTracking()
+            .Where(rp => rp.RoleId == role.Id).Select(rp => rp.Permission.Name)
+            .Distinct().OrderBy(name => name).ToArrayAsync(cancellationToken);
+        return new CurrentUserResponse
+        {
+            UserId = user.Id,
+            Username = user.Username,
+            Role = role.Name,
+            Permissions = permissions
         };
     }
 }
