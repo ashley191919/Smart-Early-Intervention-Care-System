@@ -1,4 +1,6 @@
-.vs/ 
-**/bin/ 
-**/obj/ 
-*.csproj.user 
+.vs/
+**/bin/
+**/obj/
+*.csproj.user
+*.suo
+*.user
