@@ -27,6 +27,7 @@ static async Task<WebApplication> Start(string environment)
     if (environment == "Development")
     {
         builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+        builder.Services.AddSingleton<IAuditLogService, InMemoryAuditLogService>();
         builder.Services.AddSingleton<ITeacherGrantService, InMemoryTeacherGrantService>();
     }
     var app = builder.Build();
@@ -128,7 +129,7 @@ try
     await Task.Delay(1200);
     await Invalid(client, quick.TeacherFormUrl, "expired grant rejected");
     var clock = new TestClock();
-    var service = new InMemoryTeacherGrantService(clock);
+    var service = new InMemoryTeacherGrantService(clock, new InMemoryAuditLogService(TimeProvider.System));
     var equality = service.Create(1);
     clock.Now = equality.ExpiresAtUtc;
     Check(service.Submit(equality.TeacherFormUrl.Split("token=")[1], "yes", "no") == SubmissionResult.InvalidGrant && service.Validate(equality.TeacherFormUrl.Split("token=")[1]) is null,
@@ -192,6 +193,60 @@ try
                 && submitTask.Result.StatusCode == HttpStatusCode.OK && count == 1),
             "concurrent revoke/submit has one valid terminal outcome");
     }
+    var audit = dev.Services.GetRequiredService<IAuditLogService>();
+    var grantEvents = audit.Query("TeacherGrant", grant.GrantId.ToString(), 200);
+    Check(grantEvents.Count(e => e.Action == "TeacherGrant.Create" && e.Result == "Success") == 1
+        && grantEvents.Count(e => e.Action == "TeacherResponse.Submit" && e.Result == "Success") == 1
+        && grantEvents.Any(e => e.Result == "Rejected:USED"), "create, submit success and USED rejection events");
+    Check(audit.Query("TeacherGrant", concurrent.GrantId.ToString(), 200)
+        .Count(e => e.Action == "TeacherResponse.Submit" && e.Result == "Success") == 1,
+        "20 parallel submissions emit exactly one success event");
+    var revokeEvents = audit.Query("TeacherGrant", revocable.GrantId.ToString(), 200);
+    Check(revokeEvents.Count(e => e.Action == "TeacherGrant.Revoke") == 1
+        && revokeEvents.Any(e => e.Result == "Rejected:REVOKED")
+        && audit.Query("TeacherGrant", opened.GrantId.ToString()).Any(e => e.Result == "Rejected:EXPIRED"),
+        "first revoke only and revoked/expired rejection events");
+    Check(grantEvents.All(e => e.EventId != Guid.Empty && e.OccurredAtUtc.Offset == TimeSpan.Zero
+        && !string.IsNullOrWhiteSpace(e.RequestCorrelationId) && e.ResourceId == grant.GrantId.ToString())
+        && grantEvents.Where(e => e.Action == "TeacherGrant.Create").All(e => e.ActorType == "DevelopmentTestOperator")
+        && grantEvents.Where(e => e.Action == "TeacherResponse.Submit").All(e => e.ActorType == "TeacherGrantBearer" && e.ActorId == grant.GrantId.ToString()),
+        "event identity, UTC, correlation and honest actor labels");
+    var queryHttp = await client.GetAsync($"/api/dev/audit-logs?grantId={grant.GrantId}&limit=2");
+    var queryJson = System.Text.Json.JsonDocument.Parse(await queryHttp.Content.ReadAsStringAsync());
+    Check(queryHttp.IsSuccessStatusCode && queryHttp.Headers.CacheControl?.NoStore == true
+        && queryJson.RootElement.GetProperty("events").GetArrayLength() == 2
+        && queryJson.RootElement.GetProperty("notice").GetString()!.Contains("尚非正式持久化稽核"), "Development query filter/limit/no-store and memory notice");
+    foreach (var badQuery in new[] { "limit=0", "limit=201", "grantId=bad" })
+        Check((await client.GetAsync("/api/dev/audit-logs?" + badQuery)).StatusCode == HttpStatusCode.BadRequest,
+            "audit query validates bounds and grant ID");
+    var isolatedAudit = new InMemoryAuditLogService(TimeProvider.System);
+    var isolated = new InMemoryTeacherGrantService(TimeProvider.System, isolatedAudit);
+    var secretGrant = isolated.Create(300, "safe-correlation");
+    var secretToken = secretGrant.TeacherFormUrl.Split("token=")[1];
+    isolated.Submit(secretToken, "yes", "sometimes", "safe-correlation");
+    var beforeUnknown = isolatedAudit.Query().Count;
+    isolated.Submit(new string('A', 43), "password-OTP-sensitive-answer", "no");
+    var json = System.Text.Json.JsonSerializer.Serialize(isolatedAudit.Query());
+    var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.ASCII.GetBytes(secretToken)));
+    Check(isolatedAudit.Query().Count == beforeUnknown && !json.Contains(secretToken) && !json.Contains(hash)
+        && !json.Contains(secretGrant.TeacherFormUrl) && !json.Contains("dev-case-001")
+        && !json.Contains("sometimes") && !json.Contains("password-OTP-sensitive-answer"), "audit excludes unknown token, hash, URL, answers and case content");
+    var failureStore = new InMemoryTeacherGrantService(TimeProvider.System, new ThrowingAudit());
+    var failureGrant = failureStore.Create(300);
+    var failureToken = failureGrant.TeacherFormUrl.Split("token=")[1];
+    Check(failureStore.Submit(failureToken, "yes", "no") == SubmissionResult.Success
+        && failureStore.Validate(failureToken) == null && failureStore.Responses.Length == 1,
+        "throwing audit cannot fail saved submission or restore USED grant");
+    var failureRevoke = failureStore.Create(300);
+    Check(failureStore.Revoke(failureRevoke.GrantId)?.Status == "REVOKED"
+        && failureStore.Validate(failureRevoke.TeacherFormUrl.Split("token=")[1]) == null,
+        "throwing audit cannot restore revoked grant");
+    var sharedAudit = new InMemoryAuditLogService(TimeProvider.System);
+    await Task.WhenAll(Enumerable.Range(0, 100).Select(i => Task.Run(() => {
+        sharedAudit.TryWrite(new("DevelopmentTestOperator", "test", "Test.Action", "TestResource", i.ToString(), "Success", "test-request"));
+        sharedAudit.Query(limit: 200);
+    })));
+    Check(sharedAudit.Query(limit: 200).Count == 100, "shared audit concurrent writes and reads are safe");
 }
 finally { await dev.StopAsync(); await dev.DisposeAsync(); }
 
@@ -199,6 +254,7 @@ var restarted = await Start("Development");
 try
 {
     using var client = Client(restarted);
+    Check(restarted.Services.GetRequiredService<IAuditLogService>().Query().Count == 0, "restart clears audit records");
     await Invalid(client, oldUrl, "fresh host/store rejects previous grant");
 }
 finally { await restarted.StopAsync(); await restarted.DisposeAsync(); }
@@ -207,6 +263,12 @@ var production = await Start("Production");
 try
 {
     using var client = Client(production);
+    foreach (var query in new[] { "", "?grantId=bad&limit=invalid" })
+    {
+        var disabledAudit = await client.GetAsync("/api/dev/audit-logs" + query);
+        Check(disabledAudit.StatusCode == HttpStatusCode.NotFound && disabledAudit.Headers.CacheControl?.NoStore == true,
+            "Production audit query including malformed query is uncached 404");
+    }
     foreach (var id in new[] { Guid.NewGuid().ToString(), "not-a-guid" })
     {
         var disabled = await client.PostAsync($"/api/dev/teacher-grants/{id}/revoke",
@@ -233,4 +295,10 @@ sealed class TestClock : TimeProvider
             throw new InvalidOperationException("Simulated preparation failure");
         return Now;
     }
+}
+
+sealed class ThrowingAudit : IAuditLogService
+{
+    public bool TryWrite(AuditLogRequest request) => throw new InvalidOperationException("Audit unavailable");
+    public IReadOnlyList<AuditLogEvent> Query(string? resourceType = null, string? resourceId = null, int limit = 50) => Array.Empty<AuditLogEvent>();
 }

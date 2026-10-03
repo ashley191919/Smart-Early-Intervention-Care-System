@@ -8,6 +8,7 @@ public static class TeacherAccessMiddleware
         app.Use(async (context, next) =>
         {
             var protectedPath = context.Request.Path.StartsWithSegments("/api/dev/teacher-grants")
+                || context.Request.Path.StartsWithSegments("/api/dev/audit-logs")
                 || context.Request.Path.StartsWithSegments("/teacher/test-form");
             if (protectedPath)
             {

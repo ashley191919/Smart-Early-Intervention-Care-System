@@ -31,10 +31,13 @@ global using Microsoft.Extensions.Logging;
 $taskSources = @(
     "$taskRoot/EarlyInterventionCare.Api/Contracts/TeacherGrantContracts.cs",
     "$taskRoot/EarlyInterventionCare.Api/Services/ITeacherGrantService.cs",
+    "$taskRoot/EarlyInterventionCare.Api/Services/IAuditLogService.cs",
+    "$taskRoot/EarlyInterventionCare.Api/Services/InMemoryAuditLogService.cs",
     "$taskRoot/EarlyInterventionCare.Api/Development/TestTeacherGrant.cs",
     "$taskRoot/EarlyInterventionCare.Api/Development/InMemoryTeacherGrantService.cs",
     "$taskRoot/EarlyInterventionCare.Api/Development/TeacherAccessMiddleware.cs",
     "$taskRoot/EarlyInterventionCare.Api/Controllers/DevelopmentTeacherGrantsController.cs",
+    "$taskRoot/EarlyInterventionCare.Api/Controllers/DevelopmentAuditLogsController.cs",
     "$taskRoot/EarlyInterventionCare.Api/Controllers/TeacherTestFormController.cs",
     "$PSScriptRoot/TeacherAccessHarness.cs", $taskGlobals
 ) | ForEach-Object { '"' + $_ + '"' }

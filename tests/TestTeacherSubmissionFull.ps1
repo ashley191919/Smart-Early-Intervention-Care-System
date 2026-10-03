@@ -17,6 +17,11 @@ function Submit($url, $body) {
 function Revoke($id) {
     return $client.PostAsync("$DevelopmentUrl/api/dev/teacher-grants/$id/revoke", $null).GetAwaiter().GetResult()
 }
+function Audit($id, $limit = 200) {
+    $r = $client.GetAsync("$DevelopmentUrl/api/dev/audit-logs?grantId=$id&limit=$limit").GetAwaiter().GetResult()
+    Check ($r.IsSuccessStatusCode -and $r.Headers.CacheControl.NoStore) 'full API audit query and no-store'
+    return ($r.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json)
+}
 try {
     $url = Create 300
     $get = $client.GetAsync("$DevelopmentUrl$url").GetAwaiter().GetResult()
@@ -31,6 +36,14 @@ try {
     Check ((Submit $url 'question1=yes&question2=no').StatusCode -eq 404) 'full API used POST rejected'
     $used = Revoke $script:lastGrant.grantId
     Check ($used.StatusCode -eq 409 -and ($used.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json).status -eq 'USED') 'full API USED revocation conflict'
+    $logs = Audit $script:lastGrant.grantId
+    Check (@($logs.events | Where-Object { $_.action -eq 'TeacherGrant.Create' -and $_.actorType -eq 'DevelopmentTestOperator' }).Count -eq 1 -and @($logs.events | Where-Object { $_.action -eq 'TeacherResponse.Submit' -and $_.result -eq 'Success' -and $_.actorType -eq 'TeacherGrantBearer' }).Count -eq 1 -and @($logs.events | Where-Object { $_.result -eq 'Rejected:USED' }).Count -eq 1) 'full API create/submit/USED rejection events'
+    Check ($logs.notice.Contains('尚非正式持久化稽核') -and @($logs.events | Where-Object { !$_.eventId -or !$_.occurredAtUtc -or !$_.requestCorrelationId -or $_.resourceId -ne $script:lastGrant.grantId }).Count -eq 0) 'full API event fields and memory notice'
+    $limited = Audit $script:lastGrant.grantId 1
+    Check (@($limited.events).Count -eq 1) 'full API audit limit applies after GrantId filter'
+    $logJson = $logs | ConvertTo-Json -Depth 6
+    $token = $url.Split('=')[1]
+    Check (!$logJson.Contains($token) -and !$logJson.Contains($url) -and !$logJson.Contains('sometimes') -and !$logJson.Contains('dev-case-001')) 'full API events exclude token, URL, answers and case'
     $url = Create 300
     $pending = @(1..20 | ForEach-Object {
         $body = New-Object System.Net.Http.StringContent 'question1=yes&question2=no', ([Text.Encoding]::UTF8), 'application/x-www-form-urlencoded'
@@ -38,12 +51,16 @@ try {
     })
     $results = @($pending | ForEach-Object { $_.GetAwaiter().GetResult() })
     Check (@($results | Where-Object { $_.StatusCode -eq 200 }).Count -eq 1 -and @($results | Where-Object { $_.StatusCode -eq 404 }).Count -eq 19) 'full API 20 concurrent requests: one success'
+    $logs = Audit $script:lastGrant.grantId
+    Check (@($logs.events | Where-Object { $_.action -eq 'TeacherResponse.Submit' -and $_.result -eq 'Success' }).Count -eq 1) 'full API parallel submissions emit one success event'
     $url = Create 1
     Check ($client.GetAsync("$DevelopmentUrl$url").GetAwaiter().GetResult().IsSuccessStatusCode) 'full API opens before expiry'
     Start-Sleep -Milliseconds 1200
     Check ((Submit $url 'question1=yes&question2=no').StatusCode -eq 404) 'full API rejects expiry after opening'
     $expired = Revoke $script:lastGrant.grantId
     Check ($expired.StatusCode -eq 409 -and ($expired.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json).status -eq 'EXPIRED') 'full API EXPIRED revocation conflict'
+    $logs = Audit $script:lastGrant.grantId
+    Check (@($logs.events | Where-Object { $_.result -eq 'Rejected:EXPIRED' }).Count -eq 1) 'full API expired rejection event'
     $url = Create 300
     $id = $script:lastGrant.grantId
     Check ($client.GetAsync("$DevelopmentUrl$url").GetAwaiter().GetResult().IsSuccessStatusCode) 'full API opens before revocation'
@@ -55,6 +72,8 @@ try {
     Check ((Submit $url 'question1=yes&question2=no').StatusCode -eq 404) 'full API revoked opened form submission rejected'
     $repeat = Revoke $id
     Check ($repeat.StatusCode -eq 200 -and $repeat.Content.ReadAsStringAsync().GetAwaiter().GetResult() -eq $first) 'full API repeat revocation is identical'
+    $logs = Audit $id
+    Check (@($logs.events | Where-Object { $_.action -eq 'TeacherGrant.Revoke' -and $_.result -eq 'Success' }).Count -eq 1 -and @($logs.events | Where-Object { $_.result -eq 'Rejected:REVOKED' }).Count -eq 1) 'full API first revoke only and revoked rejection event'
     Check ((Revoke ([Guid]::NewGuid())).StatusCode -eq 404) 'full API unknown ID is 404'
     Check ((Revoke 'not-a-guid').StatusCode -eq 400) 'full API malformed ID is 400 in Development'
     foreach ($iteration in 1..20) {
@@ -78,6 +97,13 @@ try {
         $body = New-Object System.Net.Http.StringContent '{bad', ([Text.Encoding]::UTF8), 'application/json'
         $r = $client.PostAsync("$ProductionUrl/api/dev/teacher-grants/$id/revoke", $body).GetAwaiter().GetResult()
         Check ($r.StatusCode -eq 404 -and $r.Headers.CacheControl.NoStore) 'full API Production revoke malformed route/body is uncached 404'
+    }
+    foreach ($query in @('', '?grantId=bad&limit=invalid')) {
+        $r = $client.GetAsync("$ProductionUrl/api/dev/audit-logs$query").GetAwaiter().GetResult()
+        Check ($r.StatusCode -eq 404 -and $r.Headers.CacheControl.NoStore) 'full API Production audit query including malformed query disabled'
+    }
+    foreach ($query in @('limit=0', 'limit=201', 'grantId=bad')) {
+        Check ($client.GetAsync("$DevelopmentUrl/api/dev/audit-logs?$query").GetAwaiter().GetResult().StatusCode -eq 400) 'full API audit query validation'
     }
     foreach ($path in @('/teacher/test-form', $url)) {
         Check ($client.GetAsync("$ProductionUrl$path").GetAwaiter().GetResult().StatusCode -eq 404) 'full API Production GET disabled'

@@ -17,12 +17,16 @@ public sealed class TeacherTestFormController(IWebHostEnvironment environment) :
             "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
         var service = HttpContext.RequestServices.GetRequiredService<ITeacherGrantService>();
         if (Request.Query["token"].Count != 1 || service.Validate(token) is null)
+        {
+            // Let the synchronized service record known terminal-state rejection exactly once.
+            service.Submit(Request.Query["token"].Count == 1 ? token : null, null, null, HttpContext.TraceIdentifier);
             return NotFound("連結無效或已到期");
+        }
         if (!Request.HasFormContentType) return BadRequest("兩題皆必填，請選擇合法選項後重送。");
         var form = await Request.ReadFormAsync();
         var result = service.Submit(token,
             form["question1"].Count == 1 ? form["question1"].ToString() : null,
-            form["question2"].Count == 1 ? form["question2"].ToString() : null);
+            form["question2"].Count == 1 ? form["question2"].ToString() : null, HttpContext.TraceIdentifier);
         if (result == EarlyInterventionCare.Api.Development.SubmissionResult.InvalidGrant)
             return NotFound("連結無效或已到期");
         if (result == EarlyInterventionCare.Api.Development.SubmissionResult.InvalidAnswers)

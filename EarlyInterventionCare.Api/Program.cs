@@ -5,9 +5,10 @@ using EarlyInterventionCare.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 // ASP.NET request-start messages include query strings; do not log bearer links.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddSingleton<IAuditLogService, InMemoryAuditLogService>();
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
     builder.Services.AddSingleton<ITeacherGrantService, InMemoryTeacherGrantService>();
 }
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

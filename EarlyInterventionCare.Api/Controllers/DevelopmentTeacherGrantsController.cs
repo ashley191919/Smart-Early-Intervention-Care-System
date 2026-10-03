@@ -18,7 +18,7 @@ public sealed class DevelopmentTeacherGrantsController(IWebHostEnvironment envir
     {
         if (!environment.IsDevelopment()) return NotFound();
         var service = HttpContext.RequestServices.GetRequiredService<ITeacherGrantService>();
-        var result = service.Revoke(grantId);
+        var result = service.Revoke(grantId, HttpContext.TraceIdentifier);
         if (result is null) return NotFound();
         return result.Status == "REVOKED" ? Ok(result) : Conflict(result);
     }
@@ -29,6 +29,6 @@ public sealed class DevelopmentTeacherGrantsController(IWebHostEnvironment envir
     {
         if (!environment.IsDevelopment()) return NotFound();
         var service = HttpContext.RequestServices.GetRequiredService<ITeacherGrantService>();
-        return Ok(service.Create(request.ExpiresInSeconds));
+        return Ok(service.Create(request.ExpiresInSeconds, HttpContext.TraceIdentifier));
     }
 }
