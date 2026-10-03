@@ -1,0 +1,45 @@
+@baseUrl = https://localhost:7127
+# Replace with the current Visual Studio HTTPS origin if different.
+# Copy only the token from the creation response into this local variable.
+@token = paste-token-here
+
+### Default: omit expiresInSeconds to use 300 seconds
+POST {{baseUrl}}/api/dev/teacher-grants
+Content-Type: application/json
+
+{}
+
+### Five-minute grant
+POST {{baseUrl}}/api/dev/teacher-grants
+Content-Type: application/json
+
+{ "expiresInSeconds": 300 }
+
+### Fast expiry: open returned URL, wait at least two seconds, open again
+POST {{baseUrl}}/api/dev/teacher-grants
+Content-Type: application/json
+
+{ "expiresInSeconds": 1 }
+
+### Invalid range: expect 400 and errors.expiresInSeconds or Errors.ExpiresInSeconds
+POST {{baseUrl}}/api/dev/teacher-grants
+Content-Type: application/json
+
+{ "expiresInSeconds": 3601 }
+
+### Valid token: 200, two questions, no submit button, no-store
+GET {{baseUrl}}/teacher/test-form?token={{token}}
+
+### Extra parameters must not change the fixed fixture
+GET {{baseUrl}}/teacher/test-form?token={{token}}&caseId=other&formId=other&taskId=other
+
+### Missing token: 404, generic message, no questions
+GET {{baseUrl}}/teacher/test-form
+
+### Invalid token: 404, generic message, no token reflected
+GET {{baseUrl}}/teacher/test-form?token=invalid
+
+# Also alter one character of a real token: expect 404.
+# Restart the Development process: the old token must return 404.
+# Start with Production (without Development launch profile): both routes must
+# return 404, including POST with malformed JSON. Never paste real tokens into Git.
