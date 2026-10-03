@@ -17,6 +17,7 @@ $taskReferences = @(Get-ChildItem $taskCore.FullName,$taskAspNet.FullName -Filte
 $taskGlobals = Join-Path $taskOutput 'GlobalUsings.cs'
 @'
 global using System;
+global using System.Collections.Generic;
 global using System.Linq;
 global using System.Net.Http;
 global using System.Threading.Tasks;

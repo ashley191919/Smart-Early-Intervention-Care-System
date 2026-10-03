@@ -6,4 +6,12 @@ public sealed record TestTeacherGrant(
     string CaseId,
     string QuestionnaireVersionId,
     string TaskId,
-    DateTimeOffset ExpiresAtUtc);
+    DateTimeOffset ExpiresAtUtc,
+    string TaskVersionId = "dev-task-v1",
+    string Status = "ACTIVE");
+
+public sealed record TeacherResponse(Guid ResponseId, Guid GrantId, string CaseId,
+    string TaskId, string TaskVersionId, string QuestionnaireVersionId,
+    string Question1, string Question2, DateTimeOffset SubmittedAtUtc);
+
+public enum SubmissionResult { Success, InvalidGrant, InvalidAnswers, SaveFailed }
