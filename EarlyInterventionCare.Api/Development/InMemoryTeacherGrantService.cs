@@ -63,6 +63,28 @@ public sealed class InMemoryTeacherGrantService(TimeProvider clock) : ITeacherGr
         }
     }
 
+    public RevokeTeacherGrantResponse? Revoke(Guid grantId)
+    {
+        lock (gate)
+        {
+            foreach (var pair in grants)
+            {
+                var grant = pair.Value.Grant;
+                if (grant.GrantId != grantId) continue;
+                // Terminal states take precedence over expiration; preserve first revocation time.
+                if (grant.Status is "REVOKED" or "USED")
+                    return new(grantId, grant.Status, grant.RevokedAtUtc);
+                var now = clock.GetUtcNow();
+                if (grant.ExpiresAtUtc <= now)
+                    return new(grantId, "EXPIRED", null);
+                var revoked = grant with { Status = "REVOKED", RevokedAtUtc = now };
+                grants[pair.Key] = pair.Value with { Grant = revoked };
+                return new(grantId, revoked.Status, revoked.RevokedAtUtc);
+            }
+            return null;
+        }
+    }
+
     // Read-only in-process verification snapshot; no HTTP inspection endpoint.
     internal TeacherResponse[] Responses
     {

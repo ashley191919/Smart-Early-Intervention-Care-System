@@ -141,6 +141,57 @@ try
         "save preparation failure preserves grant and stores no response");
     Check(service.Submit(retryToken, "yes", "no") == SubmissionResult.Success
         && service.Responses.Length == 1, "retry after save failure succeeds once");
+
+    async Task<HttpResponseMessage> Revoke(Guid id) =>
+        await client.PostAsync($"/api/dev/teacher-grants/{id}/revoke", null);
+    var revocable = await Create(client, 300);
+    Check((await client.GetAsync(revocable.TeacherFormUrl)).IsSuccessStatusCode,
+        "form opens before revocation");
+    var revokedHttp = await Revoke(revocable.GrantId);
+    var revoked = (await revokedHttp.Content.ReadFromJsonAsync<RevokeTeacherGrantResponse>())!;
+    Check(revokedHttp.StatusCode == HttpStatusCode.OK && revokedHttp.Headers.CacheControl?.NoStore == true
+        && revoked.GrantId == revocable.GrantId && revoked.Status == "REVOKED"
+        && revoked.RevokedAtUtc?.Offset == TimeSpan.Zero, "revoke returns REVOKED and UTC timestamp without token");
+    await Invalid(client, revocable.TeacherFormUrl, "revoked GET rejects form");
+    Check((await Submit(revocable.TeacherFormUrl, ("question1", "yes"), ("question2", "no"))).StatusCode == HttpStatusCode.NotFound
+        && !store.Responses.Any(r => r.GrantId == revocable.GrantId), "revocation first rejects opened form submission without response");
+    var repeatHttp = await Revoke(revocable.GrantId);
+    Check(repeatHttp.StatusCode == HttpStatusCode.OK
+        && await repeatHttp.Content.ReadFromJsonAsync<RevokeTeacherGrantResponse>() == revoked,
+        "repeat revocation preserves identical result and first timestamp");
+    var usedHttp = await Revoke(grant.GrantId);
+    Check(usedHttp.StatusCode == HttpStatusCode.Conflict
+        && (await usedHttp.Content.ReadFromJsonAsync<RevokeTeacherGrantResponse>())!.Status == "USED"
+        && store.Responses.Single(r => r.GrantId == grant.GrantId) == saved,
+        "submission first returns USED conflict and preserves original response");
+    var expiredHttp = await Revoke(opened.GrantId);
+    Check(expiredHttp.StatusCode == HttpStatusCode.Conflict
+        && (await expiredHttp.Content.ReadFromJsonAsync<RevokeTeacherGrantResponse>())!.Status == "EXPIRED",
+        "expired grant returns EXPIRED conflict");
+    var unknownHttp = await Revoke(Guid.NewGuid());
+    Check(unknownHttp.StatusCode == HttpStatusCode.NotFound && unknownHttp.Headers.CacheControl?.NoStore == true,
+        "unknown grant ID returns uncached 404");
+    Check((await client.PostAsync("/api/dev/teacher-grants/not-a-guid/revoke", null)).StatusCode == HttpStatusCode.BadRequest,
+        "Development malformed grant ID returns 400");
+    Check(service.Revoke(equality.GrantId)?.Status == "EXPIRED", "exact expiration boundary cannot revoke");
+    var timed = service.Create(1);
+    var timedRevoked = service.Revoke(timed.GrantId);
+    clock.Now = timed.ExpiresAtUtc;
+    Check(service.Revoke(timed.GrantId) == timedRevoked, "repeat revoke after expiration still preserves first result");
+    for (var i = 0; i < 30; i++)
+    {
+        var race = await Create(client, 300);
+        var revokeTask = Revoke(race.GrantId);
+        var submitTask = Submit(race.TeacherFormUrl, ("question1", "yes"), ("question2", "no"));
+        await Task.WhenAll(revokeTask, submitTask);
+        var revokeResult = (await revokeTask.Result.Content.ReadFromJsonAsync<RevokeTeacherGrantResponse>())!.Status;
+        var count = store.Responses.Count(r => r.GrantId == race.GrantId);
+        Check((revokeTask.Result.StatusCode == HttpStatusCode.OK && revokeResult == "REVOKED"
+                && submitTask.Result.StatusCode == HttpStatusCode.NotFound && count == 0)
+            || (revokeTask.Result.StatusCode == HttpStatusCode.Conflict && revokeResult == "USED"
+                && submitTask.Result.StatusCode == HttpStatusCode.OK && count == 1),
+            "concurrent revoke/submit has one valid terminal outcome");
+    }
 }
 finally { await dev.StopAsync(); await dev.DisposeAsync(); }
 
@@ -156,6 +207,13 @@ var production = await Start("Production");
 try
 {
     using var client = Client(production);
+    foreach (var id in new[] { Guid.NewGuid().ToString(), "not-a-guid" })
+    {
+        var disabled = await client.PostAsync($"/api/dev/teacher-grants/{id}/revoke",
+            new StringContent("{bad", Encoding.UTF8, "application/json"));
+        Check(disabled.StatusCode == HttpStatusCode.NotFound && disabled.Headers.CacheControl?.NoStore == true,
+            "Production revoke including malformed route/body is uncached 404");
+    }
     Check((await client.PostAsync(oldUrl, new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("question1", "yes") }))).StatusCode == HttpStatusCode.NotFound, "Production submission disabled");
     Check((await client.GetAsync(oldUrl)).StatusCode == HttpStatusCode.NotFound, "Production GET is 404 without grant service registration");
     Check((await client.PostAsJsonAsync("/api/dev/teacher-grants", new { })).StatusCode == HttpStatusCode.NotFound,

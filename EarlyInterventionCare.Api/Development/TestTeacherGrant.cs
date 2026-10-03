@@ -8,7 +8,8 @@ public sealed record TestTeacherGrant(
     string TaskId,
     DateTimeOffset ExpiresAtUtc,
     string TaskVersionId = "dev-task-v1",
-    string Status = "ACTIVE");
+    string Status = "ACTIVE",
+    DateTimeOffset? RevokedAtUtc = null);
 
 public sealed record TeacherResponse(Guid ResponseId, Guid GrantId, string CaseId,
     string TaskId, string TaskVersionId, string QuestionnaireVersionId,

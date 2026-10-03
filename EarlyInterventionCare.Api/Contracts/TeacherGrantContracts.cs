@@ -10,3 +10,7 @@ public sealed class CreateTeacherGrantRequest
 
 public sealed record CreateTeacherGrantResponse(
     Guid GrantId, string TeacherFormUrl, DateTimeOffset ExpiresAtUtc);
+
+// Development fixture only; this does not verify parental authority.
+public sealed record RevokeTeacherGrantResponse(
+    Guid GrantId, string Status, DateTimeOffset? RevokedAtUtc);
