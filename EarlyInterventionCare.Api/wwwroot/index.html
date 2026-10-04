@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>登入｜早療智慧動態照顧系統</title>
-  <link rel="stylesheet" href="/css/login.css?v=20261004-desktop2">
-  <link rel="stylesheet" href="/css/teacher-access.css?v=20261004-desktop2">
+  <link rel="stylesheet" href="/css/login.css?v=20261004-stage1">
+  <link rel="stylesheet" href="/css/teacher-access.css?v=20261004-stage1">
   <script src="/js/login.js" defer></script>
   <script src="/js/teacher-access.js" defer></script>
 </head>
@@ -40,13 +40,14 @@
       <section id="panel-teacher" class="role-panel" role="tabpanel" aria-labelledby="tab-teacher" hidden>
         <p class="teacher-intro">老師您好，請輸入由家長提供給您的「專屬授權碼」即可登入填寫學校量表。</p>
         <form id="teacher-form">
-          <div class="field"><label for="teacher-code">授權碼</label><input id="teacher-code" name="authorizationCode" placeholder="XXXX-XXXX" autocomplete="off" maxlength="80" spellcheck="false" aria-describedby="teacher-code-help" required><p class="field-help" id="teacher-code-help">請輸入家長提供的授權碼</p></div>
+          <div class="field"><label for="teacher-code">授權碼</label><input id="teacher-code" name="authorizationCode" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" maxlength="80" spellcheck="false" aria-describedby="teacher-code-help" required><p class="field-help" id="teacher-code-help">開發測試：可展開下方「試做畫面預覽」產生測試授權碼</p></div>
           <button class="primary-button" type="submit">驗證授權碼</button>
           <p class="form-status" role="status" hidden></p>
         </form>
         <div class="divider"><span>或</span></div>
         <button id="scan-qr" class="secondary-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/></svg>掃描 QR Code</button>
         <p class="teacher-notice"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>授權不限時，提交成功或撤銷後失效</p>
+        <div class="teacher-workspace-preview"><a class="secondary-button" href="/teacher-workspace.html">預覽教師填答工作台</a><p>前端操作示範，尚未驗證授權；請使用虛構資料。</p></div>
       </section>
 
       <section id="panel-medical" class="role-panel" role="tabpanel" aria-labelledby="tab-medical" hidden>
@@ -64,7 +65,7 @@
           <div class="authorization-spinner" aria-hidden="true"></div>
           <h2 id="verifying-title" tabindex="-1">正在驗證授權</h2>
           <p class="state-description">系統正在確認您的授權資訊<br>請稍候…</p>
-          <p class="state-preview-note">畫面預覽，尚未進行實際驗證</p>
+          <p class="state-preview-note">正在查核開發測試授權；不代表已驗證家長同意</p>
           <button class="text-button" data-teacher-view="input" type="button">返回輸入授權碼</button>
         </div>
         <div id="teacher-failure" class="teacher-state" hidden>
@@ -73,7 +74,7 @@
           <p class="state-description">此授權碼或 QR Code 已無法使用</p>
           <div class="failure-reasons"><p>可能原因：</p><ul><li>授權碼輸入有誤</li><li>授權已被使用</li><li>家長已取消授權</li></ul></div>
           <button class="primary-button" data-teacher-view="input" type="button">重新輸入授權碼</button>
-          <p class="state-preview-note">失敗畫面示範，未查核實際授權狀態</p>
+          <p class="state-preview-note">授權碼不正確或已被撤銷時，無法取得填答任務</p>
         </div>
         <div id="teacher-scan" class="teacher-state scan-state" hidden>
           <h2 id="scan-title" tabindex="-1">掃描 QR Code</h2>
@@ -89,8 +90,8 @@
         </div>
         <div id="teacher-unavailable" class="teacher-state" hidden>
           <span class="authorization-pending-icon" aria-hidden="true">i</span>
-          <h2 id="unavailable-title" tabindex="-1">授權驗證尚未啟用</h2>
-          <p class="state-description">目前僅提供前端畫面預覽。<br>尚未查核授權碼，也未取得問卷授權。</p>
+          <h2 id="unavailable-title" tabindex="-1">測試授權服務無法使用</h2>
+          <p class="state-description">開發測試授權服務目前無法使用。<br>請確認專案以 Development 啟動，或稍後重試。</p>
           <button class="primary-button" data-teacher-view="input" type="button">返回輸入授權碼</button>
         </div>
       </section>
@@ -102,9 +103,9 @@
       <p>天主教輔仁大學附設醫院</p>
       <p>登入即表示您已閱讀本系統之 <button class="footer-link" data-info="privacy" type="button">隱私權政策</button> 與 <button class="footer-link" data-info="security" type="button">資料保護安全聲明</button></p>
       <p class="copyright" lang="en">© 2026 Fu Jen Catholic University Hospital. All rights reserved.</p>
-      <p class="prototype-note">介面試做版：登入、簡訊與授權碼驗證尚未串接。</p>
+      <p class="prototype-note">開發試做版：教師測試授權已啟用；家長與醫療登入尚未串接。</p>
       <details id="teacher-preview-controls" class="teacher-preview-controls" hidden>
-        <summary>試做畫面預覽</summary>
+        <summary>試做畫面預覽與測試授權</summary><button id="create-test-code" class="secondary-button" type="button">產生測試授權碼並填入</button><p id="test-code-status" class="prototype-note" role="status" hidden></p>
         <nav aria-label="教師畫面預覽">
           <button data-teacher-view="input" type="button">授權碼輸入</button>
           <button data-teacher-view="verifying" type="button">驗證中</button>

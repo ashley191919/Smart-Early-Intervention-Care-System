@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教師填答工作台｜早療智慧動態照顧系統</title>
+<link rel="stylesheet" href="/css/teacher-workspace.css?v=20261004-desktop900">
+<meta name="referrer" content="no-referrer">
+<script src="/js/teacher-workspace.js?v=20261004-desktop900" defer></script>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true"><defs>
+<symbol id="i-leaf" viewBox="0 0 24 24"><path d="M12 21v-9M12 14C4 14 3 8 4 3c7 0 10 5 8 11ZM12 17c0-7 4-10 9-9 0 6-3 10-9 9Z"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></symbol>
+<symbol id="i-form" viewBox="0 0 24 24"><path d="M7 4H4v17h16V4h-3M8 2h8v5H8ZM8 11h8M8 15h8"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4M12 17h.01"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9S4 17 4 12V6Z"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M20 12H4m6-6-6 6 6 6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+</defs></svg>
+<div class="app">
+<aside class="sidebar">
+ <div class="brand"><span class="brandmark"><svg><use href="#i-leaf"/></svg></span><div><strong>早療智慧動態照顧</strong><small>教師填答工作台</small></div></div>
+ <div><p class="side-label">教師填答工作台</p><nav class="nav" aria-label="主選單">
+ <button type="button" data-nav="home" class="active" aria-current="page"><svg><use href="#i-home"/></svg>任務首頁</button>
+ <button type="button" data-nav="tasks"><svg><use href="#i-form"/></svg>本次問卷<span class="badge" id="nav-count">2</span></button>
+ <button type="button" data-nav="help"><svg><use href="#i-help"/></svg>填寫協助</button>
+ </nav></div>
+ <div class="side-note"><strong><svg><use href="#i-shield"/></svg>指定問卷授權規則（示意）</strong><p>僅提供本次指定問卷。授權不限時；本次指定問卷全部提交成功或家長撤銷授權後失效。</p><button type="button" class="demo-reset" id="reset-demo">重新體驗示範</button><a class="return-login" href="/?role=teacher">返回教師登入</a></div>
+</aside>
+<div class="workspace">
+ <header class="topbar"><div class="hospital-brand"><span class="hospital-mark" aria-hidden="true"><span></span></span><div><p class="hospital-name">天主教輔仁大學附設醫院</p><p class="hospital-english" lang="en">FU JEN CATHOLIC UNIVERSITY HOSPITAL</p></div></div><div class="breadcrumb">教師端 <span aria-hidden="true">／</span><b id="crumb">任務首頁</b></div><div class="session"><span class="session-dot"></span><span class="session-label" id="session-label">教師端畫面預覽</span><span class="demo">互動示範</span><span class="avatar" aria-label="教師身分">師</span></div></header>
+ <main class="content">
+ <section class="page" id="home-page" aria-labelledby="home-title">
+  <div class="heading-row"><div><div class="eyebrow">TEACHER WORKSPACE</div><h1 id="home-title" tabindex="-1">教師填答工作台</h1><p class="prototype-disclaimer">目前為未驗證授權的畫面預覽，請使用虛構資料；示範完成不代表正式提交。</p><p class="subtitle">謝謝您提供校園觀察，讓孩子的評估資料更完整。</p></div><span class="date" id="today"></span></div>
+  <div class="welcome"><div><span class="tag">每一份觀察，都讓我們更了解孩子</span><h2>老師您好，這裡是兩份評量表的填答預覽。</h2><p>請先確認幼兒資訊，再依各量表說明填答。填寫途中可以暫存本頁草稿，完成後再確認提交。</p></div><div class="welcome-art" aria-hidden="true"><span class="leaf"></span><span class="leaf two"></span><div class="art-sheet"><svg style="color:#86a47c"><use href="#i-form"/></svg><i></i><i></i><i></i></div><span class="art-check"><svg><use href="#i-check"/></svg></span></div></div>
+  <div class="completion-banner" id="completion-banner" hidden>本次問卷已全部送出，填答授權已結束。謝謝老師的協助。</div>
+  <div class="grid"><div>
+   <div class="panel child"><div class="child-avatar"><svg><use href="#i-user"/></svg></div><div><div class="child-label">本次填答對象 · 示範資料</div><h3>王○安</h3><div class="child-meta"><span>個案代碼 DEMO-001</span><span>男 · 4 歲</span></div></div><div class="child-end"><strong>授權情境示意，尚未驗證</strong>僅顯示填答所需資訊</div></div>
+   <div class="section-title" id="task-heading"><h2>本次待填問卷</h2><small id="task-summary">已完成 0 / 2 份</small></div>
+   <div id="task-list"></div>
+   <div class="privacy"><svg><use href="#i-shield"/></svg><span>教師端僅顯示本次授權內容；填答資料預計供獲授權的醫療團隊評估參考。</span></div>
+  </div><aside class="aside">
+   <div class="panel deadline"><div class="side-title"><svg><use href="#i-clock"/></svg>本次填答授權</div><div class="deadline-date" id="deadline-date"></div><div class="deadline-time">提交成功或家長撤銷後失效</div><div class="deadline-note"><svg><use href="#i-clock"/></svg><span id="deadline-note">正式版規則：全部提交成功或家長撤銷後失效。本頁尚未驗證或使用任何授權。</span></div></div>
+   <div class="panel tips"><div class="side-title"><svg><use href="#i-help"/></svg>開始前的小提醒</div><ol><li><strong>確認填答對象</strong>確認本次幼兒資訊與家長邀請相符。</li><li><strong>依校園實際觀察填答</strong>各問卷的觀察期間與作答方式，SNAP-IV 依過去一星期；克氏量表依日常行為表現。</li><li><strong>送出前再看一次</strong>完成檢查並確認後，即結束該份問卷的填答。</li></ol><button type="button" class="btn ghost" id="help-link">查看填寫協助 <svg><use href="#i-arrow"/></svg></button></div>
+  </aside></div>
+ </section>
+ <section class="page" id="form-page" hidden aria-labelledby="form-title">
+  <button type="button" class="btn ghost back" id="back-home"><svg><use href="#i-back"/></svg>返回任務首頁</button>
+  <div class="heading-row"><div><div class="eyebrow">QUESTIONNAIRE</div><h1 id="form-title" tabindex="-1"></h1><p class="subtitle">王○安 · DEMO-001 · 示範資料</p></div><span class="tag">量表填寫預覽</span></div>
+  <div class="form-layout"><form class="panel form-card" id="questionnaire" novalidate><div class="form-intro" id="form-instructions"></div><div class="respondent-fields"><label><span class="field-label">填表人姓名 <span class="required">必填</span></span><input id="respondent-name" maxlength="50" autocomplete="off" placeholder="請輸入示範姓名" required></label><label><span class="field-label">填表日期 <span class="required">必填</span></span><input id="respondent-date" type="date" required></label><label><span class="field-label">與受試者的關係</span><input value="老師" readonly></label><label><span class="field-label">幼兒資訊（示範）</span><input value="王○安 / 男 / 4 歲" readonly></label></div><div id="questions"></div><label for="observation"><strong>補充校園觀察</strong><span class="hint">（選填）</span></label><p class="hint">此欄為平台另增的選填欄位，不屬於原量表題目。請使用虛構內容體驗。</p><textarea id="observation" maxlength="1000" placeholder="例如：在團體活動時，經老師提醒後能回到活動中……"></textarea><div class="error" id="form-error" role="alert" hidden></div><div class="form-actions"><span class="save-state" id="save-state" aria-live="polite">尚未儲存草稿</span><div style="display:flex;gap:9px"><button type="button" class="btn secondary" id="save-draft">儲存草稿</button><button type="submit" class="btn">檢查並送出 <svg><use href="#i-arrow"/></svg></button></div></div></form><aside class="panel form-side"><div class="side-title"><svg><use href="#i-form"/></svg>本份填答進度</div><div class="progress-label"><span id="form-progress-text"></span><span id="form-progress-percent"></span></div><div class="track"><span id="form-progress-bar"></span></div><p>本頁草稿可於同次預覽接續填寫，重新整理後清除。正式版授權不限時，提交成功後不可再修改。</p><p id="form-deadline"></p><button type="button" class="btn secondary" id="form-help">填寫協助</button></aside></div>
+ </section>
+ <section class="page" id="success-page" hidden aria-labelledby="success-title"><div class="panel success"><div class="success-icon"><svg><use href="#i-check"/></svg></div><div class="eyebrow">SUBMISSION COMPLETE</div><h1 id="success-title" tabindex="-1">本份問卷已完成</h1><p id="success-description"></p><div class="receipt"><div class="receipt-row"><span>填答對象</span><strong>王○安 · DEMO-001</strong></div><div class="receipt-row"><span>問卷名稱</span><strong id="receipt-form"></strong></div><div class="receipt-row"><span>填表人</span><strong id="receipt-respondent"></strong></div><div class="receipt-row"><span>填表日期</span><strong id="receipt-date"></strong></div><div class="receipt-row"><span>示範送出時間</span><strong id="receipt-time"></strong></div><div class="receipt-row"><span>本次完成進度</span><strong id="receipt-progress"></strong></div></div><p class="hint">這是前端操作示範，填答未傳送至醫院或任何伺服器，也未消耗正式授權。</p><div class="success-actions" id="success-actions"></div></div></section>
+ <section class="page" id="help-page" hidden aria-labelledby="help-title"><div class="heading-row"><div><div class="eyebrow">FILLING GUIDE</div><h1 id="help-title" tabindex="-1">填寫協助</h1><p class="subtitle">讓您安心完成本次觀察填答。</p></div></div><div class="panel help-card"><h3>我可以分次完成嗎？</h3><p>可以先按「儲存草稿」，再透過原授權連結接續填寫；授權不限時，提交成功或家長撤銷後失效。這份示範的草稿僅暫存於本頁記憶體，重新整理、關閉頁面或離開後會清除；尚未提供跨次填答保存。</p><h3>幼兒資訊不符合，怎麼辦？</h3><p>請先停止填答，與提供邀請的家長確認，或透過正式平台提供的承辦窗口協助處理。</p><h3>送出後可以修改嗎？</h3><p>依目前規劃，確認送出後即結束該份問卷的填答權限。若需要更正，請聯絡承辦窗口，由授權流程另行處理。</p><h3>授權遭撤銷或已使用，怎麼辦？</h3><p>請聯絡提供邀請的家長或承辦窗口，確認是否需要重新授權。</p><h3>關於這份畫面提案</h3><p>幼兒資料為虛構範例；SNAP-IV 26 題與克氏行為量表 14 題依資料夾中的 PDF 整理，僅調整標點與換行。填表人、填表日期與幼兒資訊分開呈現。本頁不提供醫療判讀，也未串接正式提交服務。</p><button type="button" class="btn secondary" id="help-return">返回任務首頁</button><a class="btn secondary" href="/?role=teacher" style="margin:10px">返回教師登入</a><button type="button" class="btn ghost" id="help-reset" style="margin-left:16px">重新體驗示範</button></div></section>
+ <footer class="footer"><span>天主教輔仁大學附設醫院 · 早療智慧動態照顧系統</span><span>教師前端試做版 · 草稿僅暫存本頁 · 尚未驗證授權或串接提交</span></footer>
+ </main>
+</div></div>
+<dialog id="confirm-dialog" aria-labelledby="dialog-title"><h2 id="dialog-title">確認送出本份問卷？</h2><p>請確認您已依實際觀察完成填答。送出後，該份問卷的填答權限即結束。</p><div class="review-line" id="review-line"></div><p class="hint">此按鈕僅模擬送出，不會傳送任何資料。</p><div class="dialog-actions"><button type="button" class="btn secondary" id="cancel-submit">返回檢查</button><button type="button" class="btn" id="confirm-submit">確認送出</button></div></dialog>
+<dialog id="reset-dialog" aria-labelledby="reset-title"><h2 id="reset-title">重新體驗示範</h2><p>這會清除本頁的示範草稿與完成狀態，回到初始畫面。</p><div class="dialog-actions"><button type="button" class="btn secondary" id="cancel-reset">保留目前進度</button><button type="button" class="btn" id="confirm-reset">重新開始</button></div></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+
+</body>
+</html>

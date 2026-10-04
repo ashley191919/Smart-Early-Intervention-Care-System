@@ -2,6 +2,7 @@ using EarlyInterventionCare.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using EarlyInterventionCare.Api.Development;
 using EarlyInterventionCare.Api.Services;
+using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 // ASP.NET request-start messages include query strings; do not log bearer links.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
@@ -10,7 +11,15 @@ builder.Services.AddSingleton<IAuditLogService, InMemoryAuditLogService>();
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddSingleton<ITeacherGrantService, InMemoryTeacherGrantService>();
+    builder.Services.AddSingleton<TeacherWorkspaceService>();
 }
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("teacher-workspace-code", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -46,6 +55,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

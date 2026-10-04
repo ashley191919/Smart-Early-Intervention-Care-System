@@ -9,11 +9,13 @@ public static class TeacherAccessMiddleware
         {
             var protectedPath = context.Request.Path.StartsWithSegments("/api/dev/teacher-grants")
                 || context.Request.Path.StartsWithSegments("/api/dev/audit-logs")
+                || context.Request.Path.StartsWithSegments("/api/dev/teacher-workspace")
                 || context.Request.Path.StartsWithSegments("/teacher/test-form");
             if (protectedPath)
             {
                 context.Response.Headers["Cache-Control"] = "no-store";
                 context.Response.Headers["Pragma"] = "no-cache";
+                context.Response.Headers["Referrer-Policy"] = "no-referrer";
                 if (!app.Environment.IsDevelopment())
                 {
                     context.Response.StatusCode = StatusCodes.Status404NotFound;
