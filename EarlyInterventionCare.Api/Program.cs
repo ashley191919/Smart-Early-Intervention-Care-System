@@ -41,6 +41,10 @@ app.UseDevelopmentTeacherAccess();
 
 app.UseHttpsRedirection();
 
+// Serve the login prototype and its local assets from wwwroot.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthorization();
 
 app.MapControllers();

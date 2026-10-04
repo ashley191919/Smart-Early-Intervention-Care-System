@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>登入｜早療智慧動態照顧系統</title>
+  <link rel="stylesheet" href="/css/login.css">
+  <script src="/js/login.js" defer></script>
+</head>
+<body>
+  <main class="login-page">
+    <section class="login-card" aria-labelledby="system-title">
+      <header class="brand">
+        <div class="hospital-brand">
+          <span class="hospital-mark" aria-hidden="true"><span></span></span>
+          <div><p class="hospital-name">天主教輔仁大學附設醫院</p><p class="hospital-english" lang="en">FU JEN CATHOLIC UNIVERSITY HOSPITAL</p></div>
+        </div>
+        <h1 id="system-title">早療智慧動態照顧系統</h1>
+        <p class="system-english" lang="en">Early Intervention Smart Care System</p>
+      </header>
+
+      <div class="role-tabs" role="tablist" aria-label="選擇登入身分">
+        <button id="tab-parent" class="role-tab" role="tab" aria-selected="true" aria-controls="panel-parent" type="button">家長/照顧者</button>
+        <button id="tab-teacher" class="role-tab" role="tab" aria-selected="false" aria-controls="panel-teacher" tabindex="-1" type="button">幼兒園教師</button>
+        <button id="tab-medical" class="role-tab" role="tab" aria-selected="false" aria-controls="panel-medical" tabindex="-1" type="button">醫療行政</button>
+      </div>
+
+      <section id="panel-parent" class="role-panel" role="tabpanel" aria-labelledby="tab-parent">
+        <form id="parent-form">
+          <div class="field"><label for="child-id">孩童身分證字號 / 病歷號</label><input id="child-id" name="childIdentifier" placeholder="請輸入孩童身分證字號" autocomplete="off" maxlength="40" required></div>
+          <div class="field"><label for="parent-phone">家長手機號碼</label><input id="parent-phone" name="phone" type="tel" placeholder="09XX-XXX-XXX" autocomplete="tel" inputmode="tel" maxlength="20" required><span id="phone-error" class="field-error" hidden>請輸入 09 開頭的 10 碼手機號碼。</span></div>
+          <button class="primary-button" type="submit">取得驗證碼</button>
+          <p class="form-status" role="status" hidden></p>
+        </form>
+      </section>
+
+      <section id="panel-teacher" class="role-panel" role="tabpanel" aria-labelledby="tab-teacher" hidden>
+        <p class="teacher-intro">老師您好，請輸入由家長提供給您的「專屬授權碼」即可登入填寫學校量表。</p>
+        <form id="teacher-form">
+          <div class="field"><label for="teacher-code">授權碼</label><input id="teacher-code" name="authorizationCode" placeholder="XXXX-XXXX" autocomplete="off" maxlength="80" spellcheck="false" aria-describedby="teacher-code-help" required><p class="field-help" id="teacher-code-help">請輸入家長提供的授權碼</p></div>
+          <button class="primary-button" type="submit">驗證授權碼</button>
+          <p class="form-status" role="status" hidden></p>
+        </form>
+        <div class="divider"><span>或</span></div>
+        <button id="scan-qr" class="secondary-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/></svg>掃描 QR Code</button>
+        <p class="teacher-notice"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>授權不限時，提交成功或撤銷後失效</p>
+      </section>
+
+      <section id="panel-medical" class="role-panel" role="tabpanel" aria-labelledby="tab-medical" hidden>
+        <form id="medical-form">
+          <div class="field"><label for="unit-code">單位代碼</label><input id="unit-code" name="unitCode" placeholder="請輸入單位代碼" autocomplete="off" maxlength="40" required></div>
+          <div class="field"><label for="staff-account">醫護人員帳號</label><input id="staff-account" name="account" placeholder="請輸入醫護人員帳號" autocomplete="username" maxlength="80" required></div>
+          <div class="field"><label for="staff-password">登入密碼</label><input id="staff-password" name="password" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" maxlength="256" required></div>
+          <button class="primary-button" type="submit">安全登入</button>
+          <p class="form-status" role="status" hidden></p>
+        </form>
+      </section>
+
+      <div class="faq-section" id="faq-section"><button id="open-faq" class="faq-button" type="button"><span class="help-icon" aria-hidden="true">?</span>系統操作說明與常見問題 (FAQ)</button></div>
+    </section>
+
+    <footer class="page-footer">
+      <p>天主教輔仁大學附設醫院</p>
+      <p>登入即表示您已閱讀本系統之 <button class="footer-link" data-info="privacy" type="button">隱私權政策</button> 與 <button class="footer-link" data-info="security" type="button">資料保護安全聲明</button></p>
+      <p class="copyright" lang="en">© 2026 Fu Jen Catholic University Hospital. All rights reserved.</p>
+      <p class="prototype-note">介面試做版：登入、簡訊與授權碼驗證尚未串接。</p>
+    </footer>
+  </main>
+
+  <dialog id="info-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-header"><h2 id="dialog-title"></h2><button id="close-dialog" class="close-button" type="button" aria-label="關閉說明">×</button></div>
+    <div id="dialog-content"></div>
+    <button id="dialog-done" class="primary-button" type="button">我知道了</button>
+  </dialog>
+</body>
+</html>
