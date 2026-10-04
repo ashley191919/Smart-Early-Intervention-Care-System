@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="早療智慧動態照護系統醫療人員登入頁面">
+    <title>醫療人員登入｜早療智慧動態照護系統</title>
+    <link rel="stylesheet" href="css/auth-common.css">
+    <link rel="stylesheet" href="css/staff-login.css">
+</head>
+<body>
+    <main class="login-page">
+        <section class="login-card" aria-labelledby="system-title">
+            <header class="system-header">
+                <div class="hospital-brand">
+                    <img class="hospital-logo" src="images/hospital-logo.png" alt="天主教輔仁大學附設醫院院徽">
+                 <div class="hospital-name">
+                    <span class="hospital-title">天主教輔仁大學附設醫院</span>
+                    <span class="hospital-subtitle">FU JEN CATHOLIC UNIVERSITY HOSPITAL</span>
+                 </div>
+                </div>
+                <h1 id="system-title">早療智慧動態照護系統</h1>
+                <p class="system-subtitle">Early Intervention Smart Care System</p>
+            </header>
+
+            <nav class="role-tabs" aria-label="使用者身分選擇">
+                <a href="#" class="role-tab">家長／照顧者</a>
+                <a href="#" class="role-tab">幼兒園教師</a>
+                <a href="#" class="role-tab is-active" aria-current="page">醫療行政</a>
+            </nav>
+
+            <form class="login-form" novalidate>
+                <div class="form-field">
+                    <label for="organization-code">單位代碼</label>
+                    <input id="organization-code" name="organization-code" type="text" placeholder="請輸入單位代碼" autocomplete="organization">
+                </div>
+
+                <div class="form-field">
+                    <label for="staff-account">醫療人員帳號</label>
+                    <input id="staff-account" name="staff-account" type="text" placeholder="請輸入醫療人員帳號" autocomplete="username">
+                </div>
+
+                <div class="form-field">
+                    <label for="staff-password">登入密碼</label>
+                    <input id="staff-password" name="staff-password" type="password" placeholder="請輸入登入密碼" autocomplete="current-password">
+                </div>
+
+                <button class="login-button" type="button">安全登入</button>
+                <a class="forgot-password-link" href="staff-forgot-password.html">忘記密碼？</a>
+            </form>
+
+            <section class="verification-state" aria-live="polite" aria-labelledby="verification-title" hidden>
+                <div class="loading-spinner" aria-hidden="true"></div>
+                <h2 id="verification-title">登入驗證中</h2>
+                <p>正在驗證您的身分，請稍候…</p>
+            </section>
+
+            <section class="login-error-state" aria-live="polite" aria-labelledby="login-error-title" hidden>
+                <div class="login-error-icon" aria-hidden="true">!</div>
+                <h2 id="login-error-title">登入失敗</h2>
+                <p>帳號、密碼或單位代碼有誤，請確認後重新輸入。</p>
+                <button class="retry-login-button" type="button">重新登入</button>
+            </section>
+
+            <div class="help-link-wrap">
+                <a class="help-link" href="#">ⓘ 系統操作說明與常見問題（FAQ）</a>
+            </div>
+        </section>
+
+        <footer class="page-footer">
+            <p>輔仁大學附設醫院 兒童發展聯合評估中心｜聯絡電話：02-8512-8888 分機 12345</p>
+            <p>登入即表示您同意本系統之<a href="#">服務條款</a>與<a href="#">隱私權政策</a></p>
+            <p>© 2026 Fu Jen Catholic University Hospital. All rights reserved.</p>
+        </footer>
+    </main>
+
+    <script src="js/staff-login.js"></script>
+</body>
+</html>
