@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>登入｜早療智慧動態照顧系統</title>
-  <link rel="stylesheet" href="/css/login.css">
+  <link rel="stylesheet" href="/css/login.css?v=20261004-desktop2">
+  <link rel="stylesheet" href="/css/teacher-access.css?v=20261004-desktop2">
   <script src="/js/login.js" defer></script>
+  <script src="/js/teacher-access.js" defer></script>
 </head>
 <body>
   <main class="login-page">
@@ -57,6 +59,42 @@
         </form>
       </section>
 
+      <section id="teacher-flow" class="teacher-flow" aria-labelledby="teacher-state-title" hidden>
+        <div id="teacher-verifying" class="teacher-state" hidden>
+          <div class="authorization-spinner" aria-hidden="true"></div>
+          <h2 id="verifying-title" tabindex="-1">正在驗證授權</h2>
+          <p class="state-description">系統正在確認您的授權資訊<br>請稍候…</p>
+          <p class="state-preview-note">畫面預覽，尚未進行實際驗證</p>
+          <button class="text-button" data-teacher-view="input" type="button">返回輸入授權碼</button>
+        </div>
+        <div id="teacher-failure" class="teacher-state" hidden>
+          <span class="authorization-error-icon" aria-hidden="true">!</span>
+          <h2 id="failure-title" tabindex="-1">授權無法使用</h2>
+          <p class="state-description">此授權碼或 QR Code 已無法使用</p>
+          <div class="failure-reasons"><p>可能原因：</p><ul><li>授權碼輸入有誤</li><li>授權已被使用</li><li>家長已取消授權</li></ul></div>
+          <button class="primary-button" data-teacher-view="input" type="button">重新輸入授權碼</button>
+          <p class="state-preview-note">失敗畫面示範，未查核實際授權狀態</p>
+        </div>
+        <div id="teacher-scan" class="teacher-state scan-state" hidden>
+          <h2 id="scan-title" tabindex="-1">掃描 QR Code</h2>
+          <p class="state-description">請使用鏡頭掃描家長提供的 QR Code</p>
+          <div class="scanner-frame" aria-label="QR Code 掃描框示意，相機尚未啟用" role="img">
+            <span class="scanner-corner top-left"></span><span class="scanner-corner top-right"></span>
+            <span class="scanner-corner bottom-left"></span><span class="scanner-corner bottom-right"></span>
+            <span class="scanner-line"></span>
+          </div>
+          <p class="scan-help">將 QR Code 對準掃描框</p>
+          <p class="state-preview-note">掃描畫面預覽，相機尚未啟用</p>
+          <button class="secondary-button" data-teacher-view="input" type="button">使用授權碼</button>
+        </div>
+        <div id="teacher-unavailable" class="teacher-state" hidden>
+          <span class="authorization-pending-icon" aria-hidden="true">i</span>
+          <h2 id="unavailable-title" tabindex="-1">授權驗證尚未啟用</h2>
+          <p class="state-description">目前僅提供前端畫面預覽。<br>尚未查核授權碼，也未取得問卷授權。</p>
+          <button class="primary-button" data-teacher-view="input" type="button">返回輸入授權碼</button>
+        </div>
+      </section>
+
       <div class="faq-section" id="faq-section"><button id="open-faq" class="faq-button" type="button"><span class="help-icon" aria-hidden="true">?</span>系統操作說明與常見問題 (FAQ)</button></div>
     </section>
 
@@ -65,6 +103,15 @@
       <p>登入即表示您已閱讀本系統之 <button class="footer-link" data-info="privacy" type="button">隱私權政策</button> 與 <button class="footer-link" data-info="security" type="button">資料保護安全聲明</button></p>
       <p class="copyright" lang="en">© 2026 Fu Jen Catholic University Hospital. All rights reserved.</p>
       <p class="prototype-note">介面試做版：登入、簡訊與授權碼驗證尚未串接。</p>
+      <details id="teacher-preview-controls" class="teacher-preview-controls" hidden>
+        <summary>試做畫面預覽</summary>
+        <nav aria-label="教師畫面預覽">
+          <button data-teacher-view="input" type="button">授權碼輸入</button>
+          <button data-teacher-view="verifying" type="button">驗證中</button>
+          <button data-teacher-view="failure" type="button">驗證失敗</button>
+          <button data-teacher-view="scan" type="button">QR Code 掃描</button>
+        </nav>
+      </details>
     </footer>
   </main>
 

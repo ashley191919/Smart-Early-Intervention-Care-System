@@ -87,3 +87,21 @@ dialog::backdrop { background: #243a3c66; }
   .page-footer { max-width: 400px; }
 }
 @media (prefers-reduced-motion: reduce) { .primary-button:active { transform: none; } }
+
+/* Desktop design baseline: 1440 × 900. Keep overflow available for extra messages. */
+@media (min-width: 1024px) {
+  .login-page { min-height: max(900px, 100svh); padding: 65px 32px 20px; }
+  .login-card { flex-shrink: 0; padding-bottom: 24px; }
+  .brand { padding-top: 32px; }
+  .role-tabs { margin-top: 20px; }
+  .role-tab { padding: 10px 0; }
+  .role-panel { padding-top: 20px; }
+  .field { margin-bottom: 14px; }
+  .teacher-intro { margin-bottom: 16px; }
+  .divider { margin: 20px 0; }
+  .teacher-notice { margin-top: 16px; padding-top: 16px; }
+  .faq-section { margin-top: 20px; padding-top: 16px; }
+  .page-footer { padding-top: 16px; font-size: 10px; line-height: 1.6; }
+  .page-footer p { margin: 2px 0; }
+  .prototype-note { font-size: 10px; }
+}

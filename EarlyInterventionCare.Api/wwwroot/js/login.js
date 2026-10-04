@@ -22,6 +22,7 @@ function selectRole(tab, focus = false) {
   });
   document.querySelector("#phone-error").hidden = true;
   document.querySelector("#faq-section").hidden = tab.id === "tab-teacher";
+  document.dispatchEvent(new CustomEvent("login-role-change", { detail: tab.id }));
   if (focus) tab.focus();
 }
 
@@ -69,11 +70,6 @@ document.querySelector("#medical-form").addEventListener("submit", event => {
   showStatus(event.target, "醫療人員登入功能尚未串接，本次未登入。請待登入接口完成後再使用帳號驗證。");
 });
 
-document.querySelector("#teacher-form").addEventListener("submit", event => {
-  event.preventDefault();
-  showStatus(event.target, "授權碼驗證功能尚未串接，本次未取得問卷授權。目前的教師測試表單仍使用既有授權連結。");
-});
-
 function openInfo(title, paragraphs) {
   document.querySelector("#dialog-title").textContent = title;
   const content = document.querySelector("#dialog-content");
@@ -85,10 +81,6 @@ function openInfo(title, paragraphs) {
   dialog.showModal();
 }
 
-document.querySelector("#scan-qr").addEventListener("click", () => openInfo("掃描 QR Code", [
-  "請使用手機相機掃描家長提供的 QR Code，並開啟其中的授權連結。",
-  "本試做版尚未串接 QR Code 掃描，也未啟用相機。教師授權不限時；提交成功或撤銷後失效。"
-]));
 document.querySelector("#open-faq").addEventListener("click", () => openInfo("系統操作說明與常見問題", [
   "家長／照顧者：輸入孩童身分證字號或病歷號，以及登記的家長手機號碼，再取得驗證碼。",
   "幼兒園教師：使用家長提供的授權碼或 QR Code，進入指定問卷。",
