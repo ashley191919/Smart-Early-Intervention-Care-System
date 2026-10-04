@@ -39,9 +39,9 @@ static async Task<WebApplication> Start(string environment)
 
 static HttpClient Client(WebApplication app) => new() { BaseAddress = new Uri(app.Urls.Single()) };
 
-static async Task<CreateTeacherGrantResponse> Create(HttpClient client, int seconds)
+static async Task<CreateTeacherGrantResponse> Create(HttpClient client)
 {
-    var response = await client.PostAsJsonAsync("/api/dev/teacher-grants", new { expiresInSeconds = seconds });
+    var response = await client.PostAsJsonAsync("/api/dev/teacher-grants", new { });
     Check(response.StatusCode == HttpStatusCode.OK && response.Headers.CacheControl?.NoStore == true,
         "creation succeeds and forbids caching");
     return (await response.Content.ReadFromJsonAsync<CreateTeacherGrantResponse>())!;
@@ -51,7 +51,7 @@ static async Task Invalid(HttpClient client, string path, string label)
 {
     var response = await client.GetAsync(path);
     var html = await response.Content.ReadAsStringAsync();
-    Check(response.StatusCode == HttpStatusCode.NotFound && html.Contains("連結無效或已到期")
+    Check(response.StatusCode == HttpStatusCode.NotFound && html.Contains("連結無效或已失效")
         && !html.Contains("<fieldset>") && response.Headers.CacheControl?.NoStore == true, label);
 }
 
@@ -62,15 +62,15 @@ try
     using var client = Client(dev);
     var defaultResponse = await client.PostAsJsonAsync("/api/dev/teacher-grants", new { });
     var defaultGrant = (await defaultResponse.Content.ReadFromJsonAsync<CreateTeacherGrantResponse>())!;
-    Check(defaultGrant.ExpiresAtUtc > DateTimeOffset.UtcNow.AddSeconds(290), "default lifetime is 300 seconds");
-    var grant = await Create(client, 300);
+    Check(! (await defaultResponse.Content.ReadAsStringAsync()).Contains("expires", StringComparison.OrdinalIgnoreCase), "creation has no expiration fields");
+    var grant = await Create(client);
     oldUrl = grant.TeacherFormUrl;
     Check(oldUrl.StartsWith("/teacher/test-form?token="), "link is same-origin relative path");
     var valid = await client.GetAsync(oldUrl);
     var html = await valid.Content.ReadAsStringAsync();
     Check(valid.IsSuccessStatusCode && html.Split("<fieldset>").Length == 3
         && html.Contains("開發測試：回覆僅暫存於記憶體，服務重啟後清除") && html.Contains("type=\"submit\"")
-        && valid.Headers.CacheControl?.NoStore == true, "valid link shows two required fixture questions with submit");
+        && html.Contains("填答不限時") && valid.Headers.CacheControl?.NoStore == true, "valid link shows two required fixture questions with submit");
     Check((await client.GetStringAsync(oldUrl)) == html, "GET does not consume grant");
     Check((await client.GetStringAsync(oldUrl + "&caseId=other&formId=other&taskId=other")) == html,
         "extra identifiers cannot change scope");
@@ -81,12 +81,6 @@ try
     await Invalid(client, oldUrl[..^1] + last, "modified token rejected");
     await Invalid(client, "/teacher/test-form?token=" + new string('A', 1000), "oversized token rejected");
     await Invalid(client, oldUrl + "&token=invalid", "duplicate token rejected");
-    foreach (var seconds in new[] { 0, 3601 })
-    {
-        var bad = await client.PostAsJsonAsync("/api/dev/teacher-grants", new { expiresInSeconds = seconds });
-        Check(bad.StatusCode == HttpStatusCode.BadRequest &&
-            (await bad.Content.ReadAsStringAsync()).Contains("ExpiresInSeconds"), "out-of-range field validation");
-    }
     async Task<HttpResponseMessage> Submit(string url, params (string, string)[] answers) =>
         await client.PostAsync(url, new FormUrlEncodedContent(answers.Select(a => new KeyValuePair<string, string>(a.Item1, a.Item2))));
     var store = (InMemoryTeacherGrantService)dev.Services.GetRequiredService<ITeacherGrantService>();
@@ -113,39 +107,38 @@ try
     await Invalid(client, oldUrl, "used link cannot reopen form");
     Check((await Submit(oldUrl, ("question1", "yes"), ("question2", "yes"))).StatusCode == HttpStatusCode.NotFound
         && store.Responses.Length == 1, "used link cannot submit again");
-    var concurrent = await Create(client, 300);
+    var concurrent = await Create(client);
     var results = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ =>
         Submit(concurrent.TeacherFormUrl, ("question1", "no"), ("question2", "yes"))));
     Check(results.Count(r => r.StatusCode == HttpStatusCode.OK) == 1
         && results.Count(r => r.StatusCode == HttpStatusCode.NotFound) == 19
         && store.Responses.Count(r => r.GrantId == concurrent.GrantId) == 1,
         "20 concurrent submissions save exactly one response");
-    var opened = await Create(client, 1);
-    Check((await client.GetAsync(opened.TeacherFormUrl)).IsSuccessStatusCode, "open form before expiration");
-    await Task.Delay(1200);
-    Check((await Submit(opened.TeacherFormUrl, ("question1", "yes"), ("question2", "yes"))).StatusCode == HttpStatusCode.NotFound
-        && !store.Responses.Any(r => r.GrantId == opened.GrantId), "expiration after opening rejects submission");
-    var quick = await Create(client, 1);
-    await Task.Delay(1200);
-    await Invalid(client, quick.TeacherFormUrl, "expired grant rejected");
     var clock = new TestClock();
-    var service = new InMemoryTeacherGrantService(clock, new InMemoryAuditLogService(TimeProvider.System));
-    var equality = service.Create(1);
-    clock.Now = equality.ExpiresAtUtc;
-    Check(service.Submit(equality.TeacherFormUrl.Split("token=")[1], "yes", "no") == SubmissionResult.InvalidGrant && service.Validate(equality.TeacherFormUrl.Split("token=")[1]) is null,
-        "exact expiration boundary is invalid");
-    var retry = service.Create(300);
+    var service = new InMemoryTeacherGrantService(clock, new InMemoryAuditLogService(clock));
+    var longLived = service.Create();
+    var longToken = longLived.TeacherFormUrl.Split("token=")[1];
+    clock.Now = clock.Now.AddYears(10);
+    Check(service.Validate(longToken) != null, "grant remains valid after ten years");
+    Check(service.Submit(longToken, "yes", "no") == SubmissionResult.Success,
+        "submission after ten years succeeds");
+    clock.Now = clock.Now.AddYears(10);
+    Check(service.Validate(longToken) == null && service.Submit(longToken, "yes", "no") == SubmissionResult.InvalidGrant,
+        "elapsed time never restores a used grant");
+    Check(service.Responses.Single().SubmittedAtUtc == clock.Now.AddYears(-10), "delayed submission preserves UTC timestamp");
+    var beforeRetry = service.Responses.Length;
+    var retry = service.Create();
     var retryToken = retry.TeacherFormUrl.Split("token=")[1];
-    clock.ReadsUntilFailure = 2; // Fail while preparing submission time, before atomic save.
+    clock.ReadsUntilFailure = 1; // Fail while preparing submission time, before atomic save.
     Check(service.Submit(retryToken, "yes", "no") == SubmissionResult.SaveFailed
-        && service.Responses.Length == 0 && service.Validate(retryToken) != null,
+        && service.Responses.Length == beforeRetry && service.Validate(retryToken) != null,
         "save preparation failure preserves grant and stores no response");
     Check(service.Submit(retryToken, "yes", "no") == SubmissionResult.Success
-        && service.Responses.Length == 1, "retry after save failure succeeds once");
+        && service.Responses.Length == beforeRetry + 1, "retry after save failure succeeds once");
 
     async Task<HttpResponseMessage> Revoke(Guid id) =>
         await client.PostAsync($"/api/dev/teacher-grants/{id}/revoke", null);
-    var revocable = await Create(client, 300);
+    var revocable = await Create(client);
     Check((await client.GetAsync(revocable.TeacherFormUrl)).IsSuccessStatusCode,
         "form opens before revocation");
     var revokedHttp = await Revoke(revocable.GrantId);
@@ -165,23 +158,23 @@ try
         && (await usedHttp.Content.ReadFromJsonAsync<RevokeTeacherGrantResponse>())!.Status == "USED"
         && store.Responses.Single(r => r.GrantId == grant.GrantId) == saved,
         "submission first returns USED conflict and preserves original response");
-    var expiredHttp = await Revoke(opened.GrantId);
-    Check(expiredHttp.StatusCode == HttpStatusCode.Conflict
-        && (await expiredHttp.Content.ReadFromJsonAsync<RevokeTeacherGrantResponse>())!.Status == "EXPIRED",
-        "expired grant returns EXPIRED conflict");
     var unknownHttp = await Revoke(Guid.NewGuid());
     Check(unknownHttp.StatusCode == HttpStatusCode.NotFound && unknownHttp.Headers.CacheControl?.NoStore == true,
         "unknown grant ID returns uncached 404");
     Check((await client.PostAsync("/api/dev/teacher-grants/not-a-guid/revoke", null)).StatusCode == HttpStatusCode.BadRequest,
         "Development malformed grant ID returns 400");
-    Check(service.Revoke(equality.GrantId)?.Status == "EXPIRED", "exact expiration boundary cannot revoke");
-    var timed = service.Create(1);
-    var timedRevoked = service.Revoke(timed.GrantId);
-    clock.Now = timed.ExpiresAtUtc;
-    Check(service.Revoke(timed.GrantId) == timedRevoked, "repeat revoke after expiration still preserves first result");
+    var longRevocable = service.Create();
+    var longRevokeToken = longRevocable.TeacherFormUrl.Split("token=")[1];
+    clock.Now = clock.Now.AddYears(10);
+    var longRevoked = service.Revoke(longRevocable.GrantId);
+    Check(longRevoked?.Status == "REVOKED", "unused grant can be revoked after ten years");
+    clock.Now = clock.Now.AddYears(10);
+    Check(service.Revoke(longRevocable.GrantId) == longRevoked && service.Validate(longRevokeToken) == null
+        && service.Submit(longRevokeToken, "yes", "no") == SubmissionResult.InvalidGrant,
+        "elapsed time preserves first revocation and never restores access");
     for (var i = 0; i < 30; i++)
     {
-        var race = await Create(client, 300);
+        var race = await Create(client);
         var revokeTask = Revoke(race.GrantId);
         var submitTask = Submit(race.TeacherFormUrl, ("question1", "yes"), ("question2", "no"));
         await Task.WhenAll(revokeTask, submitTask);
@@ -203,9 +196,8 @@ try
         "20 parallel submissions emit exactly one success event");
     var revokeEvents = audit.Query("TeacherGrant", revocable.GrantId.ToString(), 200);
     Check(revokeEvents.Count(e => e.Action == "TeacherGrant.Revoke") == 1
-        && revokeEvents.Any(e => e.Result == "Rejected:REVOKED")
-        && audit.Query("TeacherGrant", opened.GrantId.ToString()).Any(e => e.Result == "Rejected:EXPIRED"),
-        "first revoke only and revoked/expired rejection events");
+        && revokeEvents.Any(e => e.Result == "Rejected:REVOKED"),
+        "first revoke only and revoked rejection events");
     Check(grantEvents.All(e => e.EventId != Guid.Empty && e.OccurredAtUtc.Offset == TimeSpan.Zero
         && !string.IsNullOrWhiteSpace(e.RequestCorrelationId) && e.ResourceId == grant.GrantId.ToString())
         && grantEvents.Where(e => e.Action == "TeacherGrant.Create").All(e => e.ActorType == "DevelopmentTestOperator")
@@ -221,7 +213,7 @@ try
             "audit query validates bounds and grant ID");
     var isolatedAudit = new InMemoryAuditLogService(TimeProvider.System);
     var isolated = new InMemoryTeacherGrantService(TimeProvider.System, isolatedAudit);
-    var secretGrant = isolated.Create(300, "safe-correlation");
+    var secretGrant = isolated.Create("safe-correlation");
     var secretToken = secretGrant.TeacherFormUrl.Split("token=")[1];
     isolated.Submit(secretToken, "yes", "sometimes", "safe-correlation");
     var beforeUnknown = isolatedAudit.Query().Count;
@@ -232,12 +224,12 @@ try
         && !json.Contains(secretGrant.TeacherFormUrl) && !json.Contains("dev-case-001")
         && !json.Contains("sometimes") && !json.Contains("password-OTP-sensitive-answer"), "audit excludes unknown token, hash, URL, answers and case content");
     var failureStore = new InMemoryTeacherGrantService(TimeProvider.System, new ThrowingAudit());
-    var failureGrant = failureStore.Create(300);
+    var failureGrant = failureStore.Create();
     var failureToken = failureGrant.TeacherFormUrl.Split("token=")[1];
     Check(failureStore.Submit(failureToken, "yes", "no") == SubmissionResult.Success
         && failureStore.Validate(failureToken) == null && failureStore.Responses.Length == 1,
         "throwing audit cannot fail saved submission or restore USED grant");
-    var failureRevoke = failureStore.Create(300);
+    var failureRevoke = failureStore.Create();
     Check(failureStore.Revoke(failureRevoke.GrantId)?.Status == "REVOKED"
         && failureStore.Validate(failureRevoke.TeacherFormUrl.Split("token=")[1]) == null,
         "throwing audit cannot restore revoked grant");

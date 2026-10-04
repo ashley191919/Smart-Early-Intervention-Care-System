@@ -1,15 +1,12 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace EarlyInterventionCare.Api.Contracts;
 
 public sealed class CreateTeacherGrantRequest
 {
-    [Range(1, 3600)]
-    public int ExpiresInSeconds { get; init; } = 300;
+    // No expiration settings: grants remain active until submitted or revoked.
 }
 
 public sealed record CreateTeacherGrantResponse(
-    Guid GrantId, string TeacherFormUrl, DateTimeOffset ExpiresAtUtc);
+    Guid GrantId, string TeacherFormUrl);
 
 // Development fixture only; this does not verify parental authority.
 public sealed record RevokeTeacherGrantResponse(

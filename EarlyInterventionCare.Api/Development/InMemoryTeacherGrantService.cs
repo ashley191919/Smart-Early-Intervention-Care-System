@@ -12,23 +12,20 @@ public sealed class InMemoryTeacherGrantService(TimeProvider clock, IAuditLogSer
     private readonly Dictionary<string, Entry> grants = new();
     private readonly object gate = new();
 
-    public CreateTeacherGrantResponse Create(int expiresInSeconds, string? requestCorrelationId = null)
+    public CreateTeacherGrantResponse Create(string? requestCorrelationId = null)
     {
-        if (expiresInSeconds is < 1 or > 3600)
-            throw new ArgumentOutOfRangeException(nameof(expiresInSeconds));
         lock (gate)
         {
-            var now = clock.GetUtcNow();
             while (true)
             {
                 var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
                     .TrimEnd('=').Replace('+', '-').Replace('/', '_');
                 var grant = new TestTeacherGrant(Guid.NewGuid(), "dev-case-001",
-                    "dev-questionnaire-v1", "dev-task-001", now.AddSeconds(expiresInSeconds));
+                    "dev-questionnaire-v1", "dev-task-001");
                 if (grants.TryAdd(Hash(token), new Entry(grant)))
                 {
                     Record(grant, "DevelopmentTestOperator", "development-test", "TeacherGrant.Create", "Success", requestCorrelationId);
-                    return new(grant.GrantId, $"/teacher/test-form?token={token}", grant.ExpiresAtUtc);
+                    return new(grant.GrantId, $"/teacher/test-form?token={token}");
                 }
             }
         }
@@ -47,8 +44,7 @@ public sealed class InMemoryTeacherGrantService(TimeProvider clock, IAuditLogSer
             {
                 var entry = KnownEntry(token);
                 if (entry is null) return SubmissionResult.InvalidGrant;
-                var rejected = entry.Grant.Status != "ACTIVE" ? entry.Grant.Status
-                    : entry.Grant.ExpiresAtUtc <= clock.GetUtcNow() ? "EXPIRED" : null;
+                var rejected = entry.Grant.Status != "ACTIVE" ? entry.Grant.Status : null;
                 if (rejected != null)
                 {
                     Record(entry.Grant, "TeacherGrantBearer", entry.Grant.GrantId.ToString(),
@@ -60,12 +56,6 @@ public sealed class InMemoryTeacherGrantService(TimeProvider clock, IAuditLogSer
                 var response = new TeacherResponse(Guid.NewGuid(), grant.GrantId, grant.CaseId,
                     grant.TaskId, grant.TaskVersionId, grant.QuestionnaireVersionId,
                     question1!, question2!, clock.GetUtcNow());
-                if (response.SubmittedAtUtc >= grant.ExpiresAtUtc)
-                {
-                    Record(grant, "TeacherGrantBearer", grant.GrantId.ToString(),
-                        "TeacherResponse.Submit", "Rejected:EXPIRED", requestCorrelationId);
-                    return SubmissionResult.InvalidGrant;
-                }
                 // Finish all potentially failing preparation before replacing the existing entry.
                 var saved = new Entry(grant with { Status = "USED" }, response);
                 grants[Hash(token!)] = saved;
@@ -88,13 +78,10 @@ public sealed class InMemoryTeacherGrantService(TimeProvider clock, IAuditLogSer
             {
                 var grant = pair.Value.Grant;
                 if (grant.GrantId != grantId) continue;
-                // Terminal states take precedence over expiration; preserve first revocation time.
+                // Preserve terminal states and the first revocation time.
                 if (grant.Status is "REVOKED" or "USED")
                     return new(grantId, grant.Status, grant.RevokedAtUtc);
-                var now = clock.GetUtcNow();
-                if (grant.ExpiresAtUtc <= now)
-                    return new(grantId, "EXPIRED", null);
-                var revoked = grant with { Status = "REVOKED", RevokedAtUtc = now };
+                var revoked = grant with { Status = "REVOKED", RevokedAtUtc = clock.GetUtcNow() };
                 grants[pair.Key] = pair.Value with { Grant = revoked };
                 Record(revoked, "DevelopmentTestOperator", "development-test", "TeacherGrant.Revoke", "Success", requestCorrelationId);
                 return new(grantId, revoked.Status, revoked.RevokedAtUtc);
@@ -112,8 +99,7 @@ public sealed class InMemoryTeacherGrantService(TimeProvider clock, IAuditLogSer
     private Entry? ActiveEntry(string? token)
     {
         var entry = KnownEntry(token);
-        return entry != null && entry.Grant.Status == "ACTIVE"
-            && entry.Grant.ExpiresAtUtc > clock.GetUtcNow() ? entry : null;
+        return entry != null && entry.Grant.Status == "ACTIVE" ? entry : null;
     }
 
     private Entry? KnownEntry(string? token)

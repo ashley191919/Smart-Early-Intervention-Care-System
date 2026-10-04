@@ -1,5 +1,7 @@
 # 共用操作紀錄（開發版本）
 
+教師授權與問卷填答不限時，僅在提交成功或主動撤銷後失效。建立授權的 JSON 為 `{}`，回傳 GrantId 與 TeacherFormUrl，不再提供期限欄位。授權仍存於記憶體，服務重啟後舊連結失效。
+
 紀錄僅存於記憶體，服務重啟後清除，尚非正式持久化稽核。未驗證家長權限或教師本人身分。
 
 A、B 可透過 DI 注入 `IAuditLogService`，呼叫 `TryWrite(AuditLogRequest)`；服務產生 EventId 與 UTC OccurredAtUtc。回傳 false 代表未保存。紀錄失敗不能回滾已完成的業務狀態；若替換實作，呼叫端也應隔離例外。不得因失敗重做已成功的提交。
@@ -25,7 +27,7 @@ C 模組事件：
 |---|---|---|---|
 | TeacherGrant.Create | DevelopmentTestOperator / development-test | TeacherGrant / GrantId | Success |
 | TeacherGrant.Revoke | DevelopmentTestOperator / development-test | TeacherGrant / GrantId | Success（僅首次） |
-| TeacherResponse.Submit | TeacherGrantBearer / GrantId | TeacherGrant / GrantId | Success 或 Rejected:USED、Rejected:EXPIRED、Rejected:REVOKED |
+| TeacherResponse.Submit | TeacherGrantBearer / GrantId | TeacherGrant / GrantId | Success 或 Rejected:USED、Rejected:REVOKED |
 
 教師提交以授權 ID 識別持有人，不代表已驗證教師本人。未知或格式錯誤 Token 不建立事件，也不保存 Token 或其雜湊。欄位驗證失敗不建立成功事件。
 

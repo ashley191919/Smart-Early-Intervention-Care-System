@@ -20,7 +20,7 @@ public sealed class TeacherTestFormController(IWebHostEnvironment environment) :
         {
             // Let the synchronized service record known terminal-state rejection exactly once.
             service.Submit(Request.Query["token"].Count == 1 ? token : null, null, null, HttpContext.TraceIdentifier);
-            return NotFound("連結無效或已到期");
+            return NotFound("連結無效或已失效");
         }
         if (!Request.HasFormContentType) return BadRequest("兩題皆必填，請選擇合法選項後重送。");
         var form = await Request.ReadFormAsync();
@@ -28,7 +28,7 @@ public sealed class TeacherTestFormController(IWebHostEnvironment environment) :
             form["question1"].Count == 1 ? form["question1"].ToString() : null,
             form["question2"].Count == 1 ? form["question2"].ToString() : null, HttpContext.TraceIdentifier);
         if (result == EarlyInterventionCare.Api.Development.SubmissionResult.InvalidGrant)
-            return NotFound("連結無效或已到期");
+            return NotFound("連結無效或已失效");
         if (result == EarlyInterventionCare.Api.Development.SubmissionResult.InvalidAnswers)
             return BadRequest("兩題皆必填，請返回表單選擇合法選項後重送。");
         if (result == EarlyInterventionCare.Api.Development.SubmissionResult.SaveFailed)
@@ -49,7 +49,7 @@ public sealed class TeacherTestFormController(IWebHostEnvironment environment) :
         if (grant is null)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
-            return Content("<!doctype html><html lang=\"zh-Hant\"><meta charset=\"utf-8\"><title>連結無效</title><p>連結無效或已到期</p></html>", "text/html; charset=utf-8");
+            return Content("<!doctype html><html lang=\"zh-Hant\"><meta charset=\"utf-8\"><title>連結無效</title><p>連結無效或已失效</p></html>", "text/html; charset=utf-8");
         }
 
         // All displayed content is a fixed fixture. Query parameters cannot select data.
@@ -62,6 +62,7 @@ public sealed class TeacherTestFormController(IWebHostEnvironment environment) :
             <p>開發測試：回覆僅暫存於記憶體，服務重啟後清除</p>
             <p>虛構個案：dev-case-001；問卷版本：dev-questionnaire-v1；填答任務：dev-task-001</p>
             <p>這是固定測試資料，不代表真實家長同意。兩題皆必填。</p>
+            <p>填答不限時；提交成功或授權被撤銷後，此連結失效。</p>
             <form method="post"><fieldset><legend>1. 測試幼兒是否能在提醒後參與團體活動？</legend>
             <label><input type="radio" required name="question1" value="yes">可以</label>
             <label><input type="radio" required name="question1" value="sometimes">有時可以</label>

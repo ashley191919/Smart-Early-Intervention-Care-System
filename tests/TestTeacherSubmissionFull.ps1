@@ -1,10 +1,10 @@
-﻿param([string]$DevelopmentUrl = 'http://127.0.0.1:5190', [string]$ProductionUrl = 'http://127.0.0.1:5191')
+param([string]$DevelopmentUrl = 'http://127.0.0.1:5190', [string]$ProductionUrl = 'http://127.0.0.1:5191')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Net.Http
 $client = New-Object System.Net.Http.HttpClient
 function Check($condition, $label) { if (!$condition) { throw "FAIL: $label" }; Write-Host "PASS: $label" }
-function Create($seconds) {
-    $body = New-Object System.Net.Http.StringContent ('{"expiresInSeconds":' + $seconds + '}'), ([Text.Encoding]::UTF8), 'application/json'
+function Create() {
+    $body = New-Object System.Net.Http.StringContent '{}', ([Text.Encoding]::UTF8), 'application/json'
     $r = $client.PostAsync("$DevelopmentUrl/api/dev/teacher-grants", $body).GetAwaiter().GetResult()
     Check ($r.IsSuccessStatusCode) 'full API creates grant'
     $script:lastGrant = $r.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json
@@ -23,7 +23,7 @@ function Audit($id, $limit = 200) {
     return ($r.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json)
 }
 try {
-    $url = Create 300
+    $url = Create
     $get = $client.GetAsync("$DevelopmentUrl$url").GetAwaiter().GetResult()
     Check ($get.IsSuccessStatusCode -and $get.Headers.CacheControl.NoStore) 'full API form and no-store'
     foreach ($body in @('question1=yes', 'question1=bad&question2=no', 'question1=yes&question1=no&question2=no')) {
@@ -44,7 +44,7 @@ try {
     $logJson = $logs | ConvertTo-Json -Depth 6
     $token = $url.Split('=')[1]
     Check (!$logJson.Contains($token) -and !$logJson.Contains($url) -and !$logJson.Contains('sometimes') -and !$logJson.Contains('dev-case-001')) 'full API events exclude token, URL, answers and case'
-    $url = Create 300
+    $url = Create
     $pending = @(1..20 | ForEach-Object {
         $body = New-Object System.Net.Http.StringContent 'question1=yes&question2=no', ([Text.Encoding]::UTF8), 'application/x-www-form-urlencoded'
         $client.PostAsync("$DevelopmentUrl$url", $body)
@@ -53,15 +53,13 @@ try {
     Check (@($results | Where-Object { $_.StatusCode -eq 200 }).Count -eq 1 -and @($results | Where-Object { $_.StatusCode -eq 404 }).Count -eq 19) 'full API 20 concurrent requests: one success'
     $logs = Audit $script:lastGrant.grantId
     Check (@($logs.events | Where-Object { $_.action -eq 'TeacherResponse.Submit' -and $_.result -eq 'Success' }).Count -eq 1) 'full API parallel submissions emit one success event'
-    $url = Create 1
-    Check ($client.GetAsync("$DevelopmentUrl$url").GetAwaiter().GetResult().IsSuccessStatusCode) 'full API opens before expiry'
+    $url = Create
+    Check (!$script:lastGrant.PSObject.Properties['expiresAtUtc']) 'full API response has no expiration'
+    $page = $client.GetAsync("$DevelopmentUrl$url").GetAwaiter().GetResult()
+    Check ($page.IsSuccessStatusCode -and $page.Content.ReadAsStringAsync().GetAwaiter().GetResult().Contains('填答不限時')) 'full API explains no time limit'
     Start-Sleep -Milliseconds 1200
-    Check ((Submit $url 'question1=yes&question2=no').StatusCode -eq 404) 'full API rejects expiry after opening'
-    $expired = Revoke $script:lastGrant.grantId
-    Check ($expired.StatusCode -eq 409 -and ($expired.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json).status -eq 'EXPIRED') 'full API EXPIRED revocation conflict'
-    $logs = Audit $script:lastGrant.grantId
-    Check (@($logs.events | Where-Object { $_.result -eq 'Rejected:EXPIRED' }).Count -eq 1) 'full API expired rejection event'
-    $url = Create 300
+    Check ((Submit $url 'question1=yes&question2=no').IsSuccessStatusCode) 'full API delayed submission succeeds'
+    $url = Create
     $id = $script:lastGrant.grantId
     Check ($client.GetAsync("$DevelopmentUrl$url").GetAwaiter().GetResult().IsSuccessStatusCode) 'full API opens before revocation'
     $revoked = Revoke $id
@@ -77,7 +75,7 @@ try {
     Check ((Revoke ([Guid]::NewGuid())).StatusCode -eq 404) 'full API unknown ID is 404'
     Check ((Revoke 'not-a-guid').StatusCode -eq 400) 'full API malformed ID is 400 in Development'
     foreach ($iteration in 1..20) {
-        $url = Create 300
+        $url = Create
         $id = $script:lastGrant.grantId
         $body = New-Object System.Net.Http.StringContent 'question1=yes&question2=no', ([Text.Encoding]::UTF8), 'application/x-www-form-urlencoded'
         # Alternate request launch order; either terminal result is valid.

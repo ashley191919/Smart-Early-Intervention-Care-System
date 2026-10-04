@@ -29,6 +29,6 @@ public sealed class DevelopmentTeacherGrantsController(IWebHostEnvironment envir
     {
         if (!environment.IsDevelopment()) return NotFound();
         var service = HttpContext.RequestServices.GetRequiredService<ITeacherGrantService>();
-        return Ok(service.Create(request.ExpiresInSeconds, HttpContext.TraceIdentifier));
+        return Ok(service.Create(HttpContext.TraceIdentifier));
     }
 }

@@ -6,7 +6,6 @@ public sealed record TestTeacherGrant(
     string CaseId,
     string QuestionnaireVersionId,
     string TaskId,
-    DateTimeOffset ExpiresAtUtc,
     string TaskVersionId = "dev-task-v1",
     string Status = "ACTIVE",
     DateTimeOffset? RevokedAtUtc = null);
