@@ -62,7 +62,14 @@ app.UseHttpsRedirection();
 
 // Serve the login prototype and its local assets from wwwroot.
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        if (context.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+            context.Context.Response.Headers.CacheControl = "no-store";
+    }
+});
 
 app.UseAuthorization();
 app.UseRateLimiter();

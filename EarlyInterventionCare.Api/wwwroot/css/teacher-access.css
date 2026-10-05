@@ -56,3 +56,12 @@
 .teacher-workspace-preview p { margin:9px 0 0; color:#9299a3; text-align:center; font-size:11px; }
 
 #create-test-code{font-size:12px;min-height:38px;margin:12px 0 8px}#test-code-status{max-width:430px;margin:8px auto}
+#teacher-invitation-dialog { width:min(480px,calc(100% - 32px)); max-height:calc(100dvh - 48px); overflow-y:auto; box-sizing:border-box; }
+#teacher-invitation-dialog p { font-size:14px; line-height:1.7; }
+#teacher-invitation-qr { display:block; width:208px; height:208px; max-width:100%; margin:12px auto; }
+#teacher-invitation-dialog label { display:block; margin-bottom:6px; font-size:14px; font-weight:600; }
+#teacher-invitation-url { width:100%; box-sizing:border-box; resize:none; padding:10px; border:1px solid #d4dfdd; border-radius:8px; font-family:inherit; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.invitation-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.invitation-actions .secondary-button { flex:1; text-align:center; text-decoration:none; }
+.invitation-local-note { color:#697876; }
+#teacher-invitation-status { min-height:24px; }

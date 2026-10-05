@@ -40,7 +40,12 @@ public sealed class DevelopmentTeacherWorkspaceController(IWebHostEnvironment en
     public async Task<IActionResult> Create(CancellationToken ct)
     {
         if (!environment.IsDevelopment()) return NotFound();
-        return Ok(await service.CreateAsync(HttpContext.TraceIdentifier, ct));
+        var origin = TeacherInvitation.LocalOrigin(Request);
+        var grant = await service.CreateAsync(HttpContext.TraceIdentifier, ct);
+        var invitation = TeacherInvitation.Generate(origin, grant.AuthorizationCode);
+        return Ok(new { grant.GrantId, grant.AuthorizationCode, grant.TaskId,
+            grant.QuestionnaireVersionId, grant.Notice, invitationUrl = invitation.Url,
+            qrCodeDataUrl = invitation.QrImage });
     }
 
     [HttpPost("verify")]

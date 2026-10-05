@@ -6,9 +6,9 @@
   <meta name="referrer" content="no-referrer">
   <title>登入｜早療智慧動態照顧系統</title>
   <link rel="stylesheet" href="/css/login.css?v=20261004-stage1">
-  <link rel="stylesheet" href="/css/teacher-access.css?v=20261004-stage1">
+  <link rel="stylesheet" href="/css/teacher-access.css?v=20261006-invitation">
   <script src="/js/login.js" defer></script>
-  <script src="/js/teacher-access.js" defer></script>
+  <script src="/js/teacher-access.js?v=20261006-invitation" defer></script>
 </head>
 <body>
   <main class="login-page">
@@ -105,7 +105,7 @@
       <p class="copyright" lang="en">© 2026 Fu Jen Catholic University Hospital. All rights reserved.</p>
       <p class="prototype-note">開發試做版：教師測試授權已啟用；家長與醫療登入尚未串接。</p>
       <details id="teacher-preview-controls" class="teacher-preview-controls" hidden>
-        <summary>試做畫面預覽與測試授權</summary><button id="create-test-code" class="secondary-button" type="button">產生測試授權碼並填入</button><p id="test-code-status" class="prototype-note" role="status" hidden></p>
+        <summary>試做畫面預覽與測試授權</summary><button id="create-test-code" class="secondary-button" type="button">產生測試授權碼並填入</button><button id="show-teacher-invitation" class="secondary-button" type="button" hidden>查看邀請連結與 QR Code</button><p id="test-code-status" class="prototype-note" role="status" hidden></p>
         <nav aria-label="教師畫面預覽">
           <button data-teacher-view="input" type="button">授權碼輸入</button>
           <button data-teacher-view="verifying" type="button">驗證中</button>
@@ -116,6 +116,16 @@
     </footer>
   </main>
 
+  <dialog id="teacher-invitation-dialog" aria-labelledby="teacher-invitation-title">
+    <div class="dialog-header"><h2 id="teacher-invitation-title">教師測試邀請</h2><button id="close-teacher-invitation" class="close-button" type="button" aria-label="關閉教師邀請">×</button></div>
+    <p>開發測試：僅包含虛構個案，尚未驗證家長同意。連結開啟後，請按「驗證授權碼」。</p>
+    <img id="teacher-invitation-qr" width="208" height="208" alt="教師邀請 QR Code，內容與下方邀請連結相同">
+    <label for="teacher-invitation-url">邀請連結</label><textarea id="teacher-invitation-url" readonly rows="2" spellcheck="false"></textarea>
+    <p class="invitation-local-note">目前是本機網址，手機掃描無法連到這台電腦。可先在同一台電腦開啟連結測試。</p>
+    <div class="invitation-actions"><button id="copy-teacher-invitation" class="secondary-button" type="button">複製邀請連結</button><a id="open-teacher-invitation" class="secondary-button" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">開啟邀請連結</a></div>
+    <p id="teacher-invitation-status" role="status"></p>
+    <button id="teacher-invitation-done" class="primary-button" type="button">返回授權驗證</button>
+  </dialog>
   <dialog id="info-dialog" aria-labelledby="dialog-title">
     <div class="dialog-header"><h2 id="dialog-title"></h2><button id="close-dialog" class="close-button" type="button" aria-label="關閉說明">×</button></div>
     <div id="dialog-content"></div>
