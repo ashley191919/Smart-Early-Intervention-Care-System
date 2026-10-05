@@ -1,5 +1,7 @@
 # 第一階段：開發測試授權驗證與指定 SNAP-IV 任務
 
+最新整合順序與完成狀態見 [進度藍圖](progress-roadmap.md)；本文件描述已完成的開發測試流程，不代表正式家長授權及 MySQL 儲存已完成。
+
 ## 操作
 
 重新啟動更新後的 VS2022 專案，並使用 Development 環境。開啟與 Swagger 同一主機及連接埠的 `/?role=teacher`：

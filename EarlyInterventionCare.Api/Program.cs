@@ -25,7 +25,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString)
+        // Explicit local development version keeps build/migration scaffolding offline.
+        new MySqlServerVersion(new Version(8, 0, 46))
     )
 );
 // Add services to the container.
