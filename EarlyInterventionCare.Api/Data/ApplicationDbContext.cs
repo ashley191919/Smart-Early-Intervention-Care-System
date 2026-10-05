@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles { get; set; }
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
+    public DbSet<Organization> Organizations { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<FormAccessToken> FormAccessTokens { get; set; }
 
@@ -52,6 +53,26 @@ public class ApplicationDbContext : DbContext
                 .HasConstraintName("FK_RolePermissions_Permissions").OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Organization>(entity =>
+        {
+            entity.ToTable("organizations");
+            entity.HasKey(o => o.Id);
+            entity.Property(o => o.Id).HasColumnType("int").UseMySqlIdentityColumn();
+            entity.Property(o => o.Code).HasColumnType("varchar(50)").HasMaxLength(50).IsRequired();
+            entity.Property(o => o.Name).HasColumnType("varchar(200)").HasMaxLength(200).IsRequired();
+            entity.Property(o => o.Status).HasColumnType("varchar(20)").HasMaxLength(20)
+                .IsRequired().HasDefaultValue("ACTIVE");
+            entity.Property(o => o.CreatedAt).HasColumnType("datetime").IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP").ValueGeneratedOnAdd();
+
+            var updatedAt = entity.Property(o => o.UpdatedAt).HasColumnType("datetime").IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP").ValueGeneratedOnAddOrUpdate();
+            updatedAt.Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore);
+            updatedAt.Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+            entity.HasIndex(o => o.Code).IsUnique().HasDatabaseName("OrganizationCode");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
@@ -59,6 +80,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(u => u.Id).HasColumnType("int").UseMySqlIdentityColumn();
             entity.Property(u => u.Username).HasColumnType("varchar(100)").HasMaxLength(100).IsRequired();
             entity.Property(u => u.PasswordHash).HasColumnType("varchar(255)").HasMaxLength(255).IsRequired();
+            entity.Property(u => u.OrganizationId).HasColumnType("int").IsRequired();
             entity.Property(u => u.RoleId).HasColumnType("int").IsRequired();
             entity.Property(u => u.Phone).HasColumnType("varchar(20)").HasMaxLength(20).IsRequired(false);
             entity.Property(u => u.Status).HasColumnType("varchar(20)").HasMaxLength(20)
@@ -74,7 +96,10 @@ public class ApplicationDbContext : DbContext
             updatedAt.Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
             entity.HasIndex(u => u.Username).IsUnique().HasDatabaseName("Username");
+            entity.HasIndex(u => u.OrganizationId).HasDatabaseName("FK_Users_Organizations");
             entity.HasIndex(u => u.RoleId).HasDatabaseName("FK_Users_Roles");
+            entity.HasOne(u => u.Organization).WithMany(o => o.Users).HasForeignKey(u => u.OrganizationId)
+                .HasConstraintName("FK_Users_Organizations").OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(u => u.Role).WithMany().HasForeignKey(u => u.RoleId)
                 .HasConstraintName("FK_Users_Roles").OnDelete(DeleteBehavior.Restrict);
         });
