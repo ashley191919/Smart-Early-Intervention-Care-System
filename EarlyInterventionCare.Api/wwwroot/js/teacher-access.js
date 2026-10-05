@@ -73,7 +73,7 @@ createTestCode.addEventListener("click",async()=>{
     const result=await response.json();
     if(document.querySelector("#tab-teacher").getAttribute("aria-selected")!=="true")return;
     teacherCode.value=result.authorizationCode;teacherCode.setCustomValidity("");showTeacherView("input");
-    status.textContent="測試授權碼已填入。請按「驗證授權碼」。僅含虛構個案與 SNAP-IV；重啟服務後失效。";
+    status.textContent="測試授權碼已填入。請按「驗證授權碼」。僅含虛構個案與 SNAP-IV；已存入 MySQL，重啟後可使用原碼。再次建立會撤銷舊測試碼。";
   }catch{status.textContent="無法建立測試授權，請確認服務已更新且以 Development 啟動。";}
   finally{createTestCode.disabled=false;}
 });

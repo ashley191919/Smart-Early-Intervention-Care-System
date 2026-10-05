@@ -42,10 +42,10 @@ assert 'httponly' in headers['Set-Cookie'].lower() and 'samesite=strict' in head
 assert verified['workspaceUrl'] == '/teacher-workspace.html?mode=authorized'
 status, headers, task = call('GET', '/task?caseId=other-case&questionnaireId=clancy')
 assert status == 200 and 'no-store' in headers['Cache-Control']
-assert task['grantId'] == grant['grantId'] and task['patient']['caseId'] == 'DEV-SNAP-001'
+assert task['grantId'] == grant['grantId'] and task['patient']['caseId'] == '10000000-0000-4000-8000-000000000001'
 assert len(task['questionnaires']) == 1
 q = task['questionnaires'][0]
-assert q['id'] == 'snap' and q['versionId'] == 'dev-snap-iv-v1'
+assert q['id'] == 'snap' and q['versionId'] == '30000000-0000-4000-8000-000000000001'
 assert len(q['questions']) == 26 and q['options'] == ['完全沒有', '有一點點', '還算不少', '非常的多']
 anonymous = urllib.request.build_opener()
 assert call('GET', '/task', opener=anonymous)[0] == 401

@@ -1,6 +1,6 @@
 # 共用個案、問卷、任務與教師授權規格 v1.1
 
-狀態：依使用者補充更新的對接基準；九張核心模型與 InitialSharedCore migration 已套用至使用者本機 earlycare_dev，虛構 seed 重跑及跨連線查回通過；現有教師測試 API 尚未改接 MySQL。更新日期：2026-10-05。檔名沿用 shared-contract-v1.md。實作進度見 database/migration-setup.md。
+狀態：依使用者補充更新的對接基準；九張核心模型與 InitialSharedCore migration 已套用至使用者本機 earlycare_dev，虛構 seed 重跑及跨連線查回通過；教師開發 API 的授權、會話及任務查詢已改接 MySQL；草稿及正式提交尚未實作。更新日期：2026-10-06。檔名沿用 shared-contract-v1.md。實作進度見 database/migration-setup.md。
 
 ### 已確認與待確認
 
@@ -158,9 +158,9 @@ Idempotency-Key 為提交請求 UUID，按 grant + key 唯一。相同 key、同
 
 ## 10. 現有程式與正式規格的差異
 
-目前 /api/dev/teacher-workspace/* 是記憶體開發接口、固定字串 taskId／caseId、單一 SNAP JSON 與臨時會話，沒有正式 draft 或 response 儲存；本規格的草稿仍待實作。既有兩題 /teacher/test-form 是另一個測試模組。兩者暫時保留，遷移時建立真正 UUID 與資料表，不能將每次重啟後的固定 fixture 當作正式主鍵。
+目前 /api/dev/teacher-workspace/* 的授權、會話與任務查詢已使用 MySQL，caseId／taskId／versionId 均取資料庫 UUID；僅操作虛構 seed。版本 snapshot 轉換為既有畫面格式，同時回傳 questionIds／optionValues 供後續答案保存使用。尚無正式 draft 或 response 儲存。既有兩題 /teacher/test-form 仍是另一個記憶體測試模組。
 
-現有 JSON 的 questions 陣列與 0 起算索引只是畫面試做；正式版本改成 questionId + optionValue，選項值為字串，分數為數字。現有「驗證新碼會登出同一碼舊會話」可保留為 v1 單一有效會話政策；正式會話過期與 CSRF 防護尚待實作。
+現有 JSON 的 questions 陣列與 0 起算索引只是畫面試做；正式版本改成 questionId + optionValue，選項值為字串，分數為數字。現有「驗證新碼會登出同一碼舊會話」可保留為 v1 單一有效會話政策；開發會話固定 8 小時，到期重驗原碼；正式 CSRF、身分及同意對接仍待實作。
 
 附錄建表草案：database/shared-schema-v1.sql。草案未接 users／consents 外鍵，未包括家長綁定、聯絡人、狀態歷程、Excel 修訂、去重收據、FHIR、自動計分與全部稽核欄位；不能直接宣告整體系統已完成，也不要在未備份的現有資料庫執行。後續透過 EF Core migration 實作，而不是與 raw SQL 並行管理正式 schema。
 

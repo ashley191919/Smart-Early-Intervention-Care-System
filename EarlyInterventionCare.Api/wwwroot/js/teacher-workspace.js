@@ -79,15 +79,15 @@ for(const id of ['reset-demo','help-reset'])$(id).addEventListener('click',()=>$
 function applyTask(task){
   assignedTask=task;forms=task.questionnaires;
   document.querySelector('.child h3').textContent=task.patient.displayName;
-  document.querySelector('.child-meta').textContent=`個案代碼 ${task.patient.caseId} · ${task.patient.sex} · ${task.patient.age} 歲`;
+  document.querySelector('.child-meta').textContent=`個案代碼 ${task.patient.caseCode} · ${task.patient.sex} · ${task.patient.age} 歲`;
   document.querySelector('.child-end strong').textContent='開發測試授權已驗證';
   document.querySelector('.prototype-disclaimer').textContent=task.notice;
   document.querySelector('.welcome h2').textContent='已取得本次指定的 SNAP-IV 填答任務。';
   document.querySelector('.welcome p').textContent='第一階段已接通測試授權與任務查詢，草稿與正式提交尚未串接。';
-  document.querySelector('#form-page .subtitle').textContent=`${task.patient.displayName} · ${task.patient.caseId} · 虛構個案`;
-  document.querySelector('.child-label').textContent='本次填答對象 · 後端固定測試資料';
+  document.querySelector('#form-page .subtitle').textContent=`${task.patient.displayName} · ${task.patient.caseCode} · 虛構個案`;
+  document.querySelector('.child-label').textContent='本次填答對象 · MySQL 虛構測試資料';
   document.querySelector('.side-note strong').textContent='開發測試授權';
-  document.querySelector('.side-note p').textContent='授權不限時，撤銷或服務重啟後失效。此階段未保存或提交答案。';
+  document.querySelector('.side-note p').textContent='授權已存入 MySQL，撤銷後失效。會話 8 小時後需重驗原碼；答案尚未保存。';
   document.querySelector('.demo').textContent='開發測試';document.querySelector('.deadline-time').textContent='本階段已支援撤銷，正式提交尚未串接';document.querySelector('.tips li:nth-child(2)').lastChild.textContent=' 本次指定 SNAP-IV，依過去一星期的狀況填答。';document.querySelector('.tips li:nth-child(3)').lastChild.textContent=' 此階段先取得與填寫指定任務，正式提交尚未串接。';
   document.querySelector('.footer').lastElementChild.textContent='測試授權已驗證 · 答案僅暫存本頁 · 正式提交尚未串接';
   document.querySelector('#questionnaire button[type="submit"]').textContent='正式提交尚未串接';
@@ -106,10 +106,20 @@ async function loadAssignedTask(){
     const main=document.querySelector('.content');main.replaceChildren();
     const panel=document.createElement('div');panel.className='panel help-card';
     const heading=document.createElement('h1');heading.textContent='無法取得填答任務';
-    const note=document.createElement('p');note.textContent='請先驗證有效的測試授權碼。授權撤銷或開發服務重啟後，請重新取得授權。';
+    const note=document.createElement('p');note.textContent='請先驗證有效的測試授權碼。會話到期時請重驗原授權碼；若授權已撤銷，請重新取得授權。';
     const link=document.createElement('a');link.className='btn';link.href='/?role=teacher';link.textContent='返回教師入口';
     panel.append(heading,note,link);main.append(panel);main.hidden=false;
     $('session-label').textContent='尚未取得有效測試授權';document.querySelectorAll('[data-nav]').forEach(b=>b.disabled=true);$('reset-demo').hidden=true;
   }
 }
-if(authorizedMode)loadAssignedTask();else renderHome();
+if(authorizedMode){
+  document.querySelectorAll('a[href="/?role=teacher"]').forEach(link=>link.addEventListener('click',async event=>{
+    event.preventDefault();
+    try{
+      const response=await fetch('/api/dev/teacher-workspace/logout',{method:'POST',credentials:'same-origin',cache:'no-store'});
+      if(!response.ok)throw new Error('unavailable');
+      location.assign('/?role=teacher');
+    }catch{toast('暫時無法登出，請確認服務連線後再試。');}
+  }));
+  loadAssignedTask();
+}else renderHome();

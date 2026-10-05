@@ -1,6 +1,6 @@
 # 本機九張核心表與第一份 migration
 
-日期：2026-10-05。已完成程式模型、InitialSharedCore migration 及驗證。使用者已回報本機 `--apply --seed` 全部通過：migration 已套用 1 份、待套用 0 份，seed 重跑無重複資料且透過新 DbContext 查回成功。教師開發 API 尚未改接 MySQL。
+日期：2026-10-05。已完成程式模型、InitialSharedCore migration 及驗證。使用者已回報本機 `--apply --seed` 全部通過：migration 已套用 1 份、待套用 0 份，seed 重跑無重複資料且透過新 DbContext 查回成功。2026-10-06 教師開發 API 授權與任務查詢已改接 MySQL，獨立資料庫整合測試通過；使用者本機網站待驗收。
 
 ## 已建立
 
@@ -61,7 +61,7 @@ SELECT task_status FROM case_questionnaires
 WHERE task_id = '40000000-0000-4000-8000-000000000001';
 ```
 
-預期一個虛構個案、一份 PENDING 教師任務。使用者本機工具已驗證跨連線查回及 seed 不重複；網站重啟後的教師流程需在 API 改接 MySQL 後再驗收。這只完成共用資料底座，現有教師授權仍是記憶體服務，草稿及正式提交 API 尚未接上 MySQL。
+預期一個虛構個案、一份 PENDING 教師任務。使用者本機工具已驗證跨連線查回及 seed 不重複；網站重啟後的教師流程已於獨立測試資料庫通過，使用者本機仍需照操作文件驗收。這只完成共用資料底座，教師授權與任務查詢已改接 MySQL，草稿及正式提交 API 尚未接上 MySQL。
 
 正式身分、院所、家長綁定、同意與完成收據表仍需後續 migration；本模型不能當成正式家長同意與權限已完成。狀態轉移、版本不可變、教師角色限定及同時只有一筆 ACTIVE grant 等規則仍須服務交易驗證。
 

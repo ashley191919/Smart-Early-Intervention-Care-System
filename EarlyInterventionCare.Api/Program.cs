@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using EarlyInterventionCare.Api.Development;
 using EarlyInterventionCare.Api.Services;
 using System.Threading.RateLimiting;
+using MySqlConnector;
 var builder = WebApplication.CreateBuilder(args);
 // ASP.NET request-start messages include query strings; do not log bearer links.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
@@ -11,7 +12,7 @@ builder.Services.AddSingleton<IAuditLogService, InMemoryAuditLogService>();
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddSingleton<ITeacherGrantService, InMemoryTeacherGrantService>();
-    builder.Services.AddSingleton<TeacherWorkspaceService>();
+    builder.Services.AddScoped<TeacherWorkspaceService>();
 }
 builder.Services.AddRateLimiter(options =>
 {
@@ -21,6 +22,14 @@ builder.Services.AddRateLimiter(options =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrWhiteSpace(connectionString))
+{
+    var settings = new MySqlConnectionStringBuilder(connectionString) { DateTimeKind = MySqlDateTimeKind.Utc };
+    if (builder.Environment.IsDevelopment() &&
+        (settings.Server is not ("localhost" or "127.0.0.1" or "::1") || settings.Database != "earlycare_dev"))
+        throw new InvalidOperationException("Development teacher workflow requires a local earlycare_dev database.");
+    connectionString = settings.ConnectionString;
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
