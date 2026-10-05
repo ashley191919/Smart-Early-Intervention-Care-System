@@ -7,7 +7,7 @@ using MySqlConnector;
 var expectedTables = new HashSet<string>(StringComparer.Ordinal)
 {
     "cases", "questionnaires", "questionnaire_versions", "case_questionnaires", "teacher_grants",
-    "teacher_grant_tasks", "teacher_sessions", "questionnaire_drafts", "questionnaire_responses"
+    "teacher_grant_tasks", "teacher_sessions", "questionnaire_drafts", "questionnaire_responses", "audit_logs"
 };
 try
 {
@@ -21,7 +21,7 @@ try
     var database = apply || seed || args.Contains("--database");
     await using var context = new ApplicationDbContextFactory().CreateDbContext(database ? [] : ["--offline"]);
     var tables = context.Model.GetEntityTypes().Select(e => e.GetTableName()!).ToHashSet(StringComparer.Ordinal);
-    if (!tables.SetEquals(expectedTables)) throw new InvalidOperationException("Expected exactly nine core tables.");
+    if (!tables.SetEquals(expectedTables)) throw new InvalidOperationException("Expected nine core tables plus audit_logs.");
     var task = context.Model.FindEntityType(typeof(QuestionnaireTask))!;
     if (!task.GetForeignKeys().Any(f => f.Properties.Select(p => p.Name).SequenceEqual(new[]
         { "QuestionnaireVersionId", "QuestionnaireId", "RespondentRole" })))
@@ -40,7 +40,10 @@ try
     if (context.Model.GetEntityTypes().SelectMany(e => e.GetProperties())
         .Any(p => p.ClrType == typeof(bool) && p.GetColumnType() != "tinyint(1)"))
         throw new InvalidOperationException("MySQL boolean columns must use valid tinyint(1) mapping.");
-    Console.WriteLine("PASS: nine-table model, role/version scope, draft concurrency, unique response and restricted deletes.");
+    var audit = context.Model.FindEntityType(typeof(AuditRecord))!;
+    if (audit.GetForeignKeys().Any() || !audit.GetIndexes().Any(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { "ResourceType", "ResourceId", "OccurredAtUtc" })))
+        throw new InvalidOperationException("Audit evidence must be independent and indexed by resource/time.");
+    Console.WriteLine("PASS: nine core tables plus audit_logs, role/version scope, draft concurrency, unique response and restricted deletes.");
     if (!database) return 0;
 
     await context.Database.OpenConnectionAsync();
@@ -57,7 +60,10 @@ try
             throw new InvalidOperationException("Database is not empty or migration-managed; no changes applied.");
         var appliedBefore = (await context.Database.GetAppliedMigrationsAsync()).ToArray();
         if (appliedBefore.Length == 0 && existing.Any(expectedTables.Contains))
+        {
             await InitialMigrationResume.RunAsync(context, existing);
+            await context.Database.MigrateAsync();
+        }
         else
             await context.Database.MigrateAsync();
         Console.WriteLine("PASS: migration applied to local earlycare_dev.");

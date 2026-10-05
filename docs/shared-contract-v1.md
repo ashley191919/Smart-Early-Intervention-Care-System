@@ -180,3 +180,9 @@ Idempotency-Key 為提交請求 UUID，按 grant + key 唯一。相同 key、同
 - 重送／並行提交只保存一份 response；撤銷與提交並行有單一一致結果。
 - MySQL 保存後，重啟服務仍保留個案、版本、任務、授權狀態、草稿與正式答案；登入會話可以要求重新驗證，不得因此刪除資料。
 - 所有教師畫面以 1440 × 900 驗收；首頁與完成頁完整顯示，長表單在主內容區捲動。
+
+## 操作紀錄擴充（2026-10-06）
+
+第十張 audit_logs 經第二份 EF migration 加入；原九張核心表保留。欄位為 event_id、occurred_at_utc、actor_type、actor_id、action、resource_type、resource_id、result、request_correlation_id，不增加自由文字或憑證／答案欄位。不設業務外鍵連帶刪除，也不開放修改／刪除 HTTP API。本次為 Development 教師事件，actor 不代表已確認真實身分。
+
+授權變更 commit 後以獨立 context 記錄，沿用 IAuditLogService best-effort 契約；寫入失敗發固定警告，不撤回已完成業務，尚非保證零遺失的正式稽核。查詢僅限本機 Development；正式醫護權限／院所範圍與可靠交付另待 A/B 整合。細節與使用者本機驗收見 teacher-audit-testing.md。

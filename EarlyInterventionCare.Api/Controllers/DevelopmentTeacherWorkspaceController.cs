@@ -53,7 +53,7 @@ public sealed class DevelopmentTeacherWorkspaceController(IWebHostEnvironment en
     public async Task<IActionResult> Verify(VerifyWorkspaceCodeRequest request, CancellationToken ct)
     {
         if (!environment.IsDevelopment()) return NotFound();
-        await service.LogoutAsync(Request.Cookies[CookieName], ct);
+        await service.LogoutAsync(Request.Cookies[CookieName], ct, HttpContext.TraceIdentifier);
         Response.Cookies.Delete(CookieName, Cookie);
         var session = await service.VerifyAsync(request.Code, HttpContext.TraceIdentifier, ct);
         if (session is null) return Unauthorized(new { code = "GRANT_UNAVAILABLE", message = "測試授權碼無效或已失效。", traceId = HttpContext.TraceIdentifier });
@@ -80,7 +80,7 @@ public sealed class DevelopmentTeacherWorkspaceController(IWebHostEnvironment en
     public async Task<IActionResult> Logout(CancellationToken ct)
     {
         if (!environment.IsDevelopment()) return NotFound();
-        await service.LogoutAsync(Request.Cookies[CookieName], ct);
+        await service.LogoutAsync(Request.Cookies[CookieName], ct, HttpContext.TraceIdentifier);
         Response.Cookies.Delete(CookieName, Cookie);
         return NoContent();
     }

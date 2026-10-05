@@ -12,7 +12,7 @@ internal static class InitialMigrationResume
     {
         var applied = (await context.Database.GetAppliedMigrationsAsync()).ToArray();
         var pending = (await context.Database.GetPendingMigrationsAsync()).ToArray();
-        if (applied.Length != 0 || pending.Length != 1 || !pending[0].EndsWith("_InitialSharedCore", StringComparison.Ordinal))
+        if (applied.Length != 0 || pending.Length == 0 || !pending[0].EndsWith("_InitialSharedCore", StringComparison.Ordinal) || existing.Contains("audit_logs"))
             throw new InitialMigrationResumeException("Resume only supports the unapplied InitialSharedCore migration.");
         foreach (var entity in context.Model.GetEntityTypes())
         {

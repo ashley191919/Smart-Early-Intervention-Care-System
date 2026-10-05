@@ -71,3 +71,7 @@ WHERE task_id = '40000000-0000-4000-8000-000000000001';
 - 已於獨立臨時 MySQL 8.0.46 驗證：全新資料庫套用、重現舊 1064 後保留兩張空表接續、Windows 小寫歷程表、重複執行、seed 保存及新 DbContext 查回。臨時實例使用另一個本機連接埠，不操作使用者 earlycare_dev。
 - 使用者本機已驗證：修正版工具接續匹配的空表、套用 InitialSharedCore、已套用 1 份／待套用 0 份、seed 重跑不重複及新 DbContext 查回。依據為使用者回報的終端機成功輸出。
 - 未驗證：MySQL 外鍵拒絕的實際寫入測試及網站重啟整合；模型關聯檢查不等於已測試資料庫拒絕所有非法寫入。
+
+## 2026-10-06 操作紀錄擴充
+
+新增第二份 AddAuditLogs migration，僅建立 audit_logs 與兩個查詢索引，原九張核心表與 InitialSharedCore 保留。目前模型為九張核心表加一張操作紀錄表；套用後 migration 數量為 2。獨立 port 33318 已完成升級及重啟／故障測試，使用者已回報本機套用與驗收成功。沿用 CoreDatabaseHarness --apply，不需要重建資料庫或重新 seed；詳細操作見 [操作紀錄驗收](../teacher-audit-testing.md)。初始空表接續工具仍只接續第一份 migration，完成後再正常套用後續 migration。

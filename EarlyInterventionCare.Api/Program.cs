@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ASP.NET request-start messages include query strings; do not log bearer links.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
-builder.Services.AddSingleton<IAuditLogService, InMemoryAuditLogService>();
+builder.Services.AddSingleton<IAuditLogService, MySqlAuditLogService>();
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddSingleton<ITeacherGrantService, InMemoryTeacherGrantService>();

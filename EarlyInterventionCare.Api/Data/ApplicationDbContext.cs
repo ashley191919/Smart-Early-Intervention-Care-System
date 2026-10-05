@@ -14,6 +14,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<TeacherSession> TeacherSessions => Set<TeacherSession>();
     public DbSet<QuestionnaireDraft> QuestionnaireDrafts => Set<QuestionnaireDraft>();
     public DbSet<QuestionnaireResponse> QuestionnaireResponses => Set<QuestionnaireResponse>();
+    public DbSet<AuditRecord> AuditLogs => Set<AuditRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -35,9 +35,9 @@
 
 接口均禁止快取。所有新增 API 在 Production 回傳 404。驗證接口依來源 IP 每分鐘限 20 次，超出回傳 429。此為開發測試限流，正式部署仍需另行確認完整安全規格。
 
-會話 Cookie 為 HttpOnly、SameSite=Strict，路徑限制於上述 API 前綴；HTTPS 使用 Secure。HTTP localhost 僅供本機開發。碼與會話值在伺服器以雜湊索引保存，不寫入瀏覽器持久儲存、網址、稽核事件或應用日誌。不同網址參數不能改變被指派的個案或問卷。
+會話 Cookie 為 HttpOnly、SameSite=Strict，路徑限制於上述 API 前綴；HTTPS 使用 Secure。HTTP localhost 僅供本機開發。碼與會話值在伺服器以雜湊索引保存，不寫入瀏覽器持久儲存、URL query、稽核事件或應用日誌；邀請 fragment 暫帶授權碼並在入口清除。不同網址參數不能改變被指派的個案或問卷。
 
-新事件：TeacherWorkspace.Create／Verify／Revoke／Replace，記錄於既有共用記憶體 audit 服務，ResourceType 為 TeacherWorkspaceGrant，不記錄授權碼或答案。
+操作紀錄已改接 MySQL audit_logs：TeacherWorkspace.Create／Verify／Revoke／Replace／Logout／VerifyDenied。ResourceType 為 TeacherWorkspaceGrant，不記錄授權碼或答案；未知授權使用 unknown。第二份 migration 的使用者已回報本機驗收成功，詳見 [操作紀錄驗收](teacher-audit-testing.md)。沿用 best-effort 契約，寫入失敗不回滾已完成業務。
 
 ## 檔案
 

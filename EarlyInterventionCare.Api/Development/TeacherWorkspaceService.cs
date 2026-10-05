@@ -64,12 +64,17 @@ public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogSe
     public async Task<string?> VerifyAsync(string? code, string correlationId, CancellationToken ct = default)
     {
         var normalized = code?.Trim().Replace("-", "").ToUpperInvariant();
-        if (!IsToken(normalized, 16)) return null;
+        if (!IsToken(normalized, 16)) { RecordDenied(null, correlationId); return null; }
         var hash = Hash(normalized!);
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var entries = await db.TeacherGrants.FromSqlInterpolated($"SELECT * FROM teacher_grants WHERE code_hash = {hash} FOR UPDATE").ToListAsync(ct);
         var entry = entries.SingleOrDefault();
-        if (!Eligible(entry) || !await HasAvailableTasks(entry!, ct)) return null;
+        if (!Eligible(entry) || !await HasAvailableTasks(entry!, ct))
+        {
+            await tx.RollbackAsync(ct);
+            RecordDenied(entry is { IsDevelopment: true } ? entry.GrantId : null, correlationId);
+            return null;
+        }
         await RevokeSessions(entry!.GrantId, ct);
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         var now = Now;
@@ -116,7 +121,7 @@ public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogSe
         await tx.CommitAsync(ct); Record(id, "TeacherWorkspace.Revoke", correlationId); return true;
     }
 
-    public async Task LogoutAsync(string? token, CancellationToken ct = default)
+    public async Task LogoutAsync(string? token, CancellationToken ct = default, string? correlationId = null)
     {
         if (!IsToken(token, 64)) return;
         var hash = Hash(token!);
@@ -125,8 +130,10 @@ public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogSe
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await LockGrant(id.Value, ct);
         var session = await db.TeacherSessions.SingleOrDefaultAsync(s => s.SessionHash == hash, ct);
-        if (session is not null && session.SessionStatus == "ACTIVE") { session.SessionStatus = "REVOKED"; session.RevokedAtUtc = Now; await db.SaveChangesAsync(ct); }
+        var changed = session is not null && session.SessionStatus == "ACTIVE";
+        if (changed) { session!.SessionStatus = "REVOKED"; session.RevokedAtUtc = Now; await db.SaveChangesAsync(ct); }
         await tx.CommitAsync(ct);
+        if (changed) Record(id.Value, "TeacherWorkspace.Logout", correlationId ?? Guid.NewGuid().ToString());
     }
 
     private static bool Eligible(TeacherGrant? grant) => grant is { IsDevelopment: true, RespondentRole: "TEACHER", GrantStatus: "ACTIVE" } && grant.CaseId == CoreDevelopmentSeed.CaseId;
@@ -155,6 +162,11 @@ public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogSe
     }
     private void Record(Guid id, string action, string correlationId)
     {
-        try { audit.TryWrite(new("DevelopmentTestOperator", "development-test", action, "TeacherWorkspaceGrant", id.ToString(), "Success", correlationId)); } catch { }
+        var bearer = action is "TeacherWorkspace.Verify" or "TeacherWorkspace.Logout";
+        try { audit.TryWrite(new(bearer ? "TeacherGrantBearer" : "DevelopmentTestOperator", bearer ? id.ToString() : "development-test", action, "TeacherWorkspaceGrant", id.ToString(), "Success", correlationId)); } catch { }
+    }
+    private void RecordDenied(Guid? id, string correlationId)
+    {
+        try { audit.TryWrite(new("Anonymous", "unknown", "TeacherWorkspace.VerifyDenied", "TeacherWorkspaceGrant", id?.ToString() ?? "unknown", "Denied", correlationId)); } catch { }
     }
 }
