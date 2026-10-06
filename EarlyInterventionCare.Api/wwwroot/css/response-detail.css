@@ -1,0 +1,52 @@
+/* Shared staff-dashboard.css owns the shell, font, content alignment, Card geometry and Avatar. */
+.response-back-nav { margin-bottom: 12px; font-size: 12px; }
+.response-back-nav a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.response-panel { margin-bottom: 20px; }
+.response-info-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 20px 24px; margin: 0; }
+.response-info-grid > div, .response-summary-grid > div { min-width: 0; }
+.response-info-grid dt, .response-summary-grid dt { color: var(--text-secondary); font-size: 11px; }
+.response-info-grid dd { display: flex; align-items: center; min-height: 34px; margin: 5px 0 0; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; }
+/* Same completed Badge as Case Detail form records; this is response status, not case status. */
+.response-status-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
+.response-completed { color: #6e8c79; background: #f0f5f1; border-color: #dce6df; }
+.response-demo-note { margin: 0 0 18px; padding: 10px 14px; color: #7e8e8b; font-size: 12px; background: var(--brand-teal-pale); border: 1px solid #d3e2df; border-radius: 9px; overflow-wrap: anywhere; }
+.response-questions { margin: 0; padding: 0; list-style: none; }
+.response-question { min-width: 0; padding: 20px 0; }
+.response-question:first-child { padding-top: 0; }
+.response-question:last-child { padding-bottom: 0; }
+.response-question + .response-question { border-top: 1px solid var(--line-color); }
+.response-question h3 { margin: 0 0 8px; color: #4b5563; font-size: 14px; font-weight: 600; }
+.response-question-text { margin: 0 0 14px; color: #737b86; font-size: 14px; overflow-wrap: anywhere; }
+.response-answer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.response-answer > div { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.response-answer dt { flex-shrink: 0; color: var(--text-secondary); font-size: 12px; }
+.response-answer dd { min-width: 0; margin: 0; padding: 7px 12px; color: var(--brand-teal-dark); font-size: 13px; background: var(--brand-teal-pale); border-radius: 8px; overflow-wrap: anywhere; }
+.response-answer .response-answer-score { color: #737b86; background: var(--page-background); }
+.response-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 16px 24px; margin: 0; }
+.response-summary-grid dd { margin: 5px 0 0; color: #4b5563; font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+.response-score-heading { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+.response-demo-badge { display: inline-block; padding: 2px 8px; color: var(--brand-teal-dark); font-size: 11px; background: var(--brand-teal-pale); border: 1px solid #d3e2df; border-radius: 6px; }
+.response-total-score dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; color: var(--brand-teal-dark); }
+.response-total-score strong { font-size: 30px; line-height: 1.4; }
+.response-total-score dd > span { font-size: 13px; font-weight: 400; }
+.response-score-note { margin: 16px 0 22px; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.response-subtitle { margin: 0 0 12px; color: #4b5563; font-size: 14px; font-weight: 600; }
+.response-section-scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.response-section-scores > div { min-width: 0; padding: 12px 16px; background: var(--page-background); border: 1px solid var(--line-color); border-radius: 9px; }
+.response-section-scores dt { color: var(--text-secondary); font-size: 12px; }
+.response-section-scores dd { margin: 5px 0 0; color: #4b5563; font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+.response-scoring-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 16px 0 0; padding-top: 14px; font-size: 12px; border-top: 1px solid var(--line-color); }
+.response-scoring-meta > div { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.response-scoring-meta dt { color: var(--text-secondary); }
+.response-scoring-meta dd { min-width: 0; margin: 0; color: #737b86; overflow-wrap: anywhere; }
+@media (max-width: 1100px) {
+    .response-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+    .response-info-grid, .response-summary-grid, .response-section-scores, .response-answer { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .response-question { padding: 18px 0; }
+    .response-answer > div { align-items: flex-start; flex-direction: column; gap: 6px; }
+    .response-answer dd { max-width: 100%; }
+    .response-scoring-meta { flex-direction: column; gap: 12px; }
+    .response-scoring-meta > div { flex-direction: column; gap: 4px; }
+}
