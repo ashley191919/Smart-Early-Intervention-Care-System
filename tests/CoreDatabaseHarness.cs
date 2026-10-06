@@ -3,11 +3,15 @@ using EarlyInterventionCare.Api.Data.Entities;
 using EarlyInterventionCare.Api.Development;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using EarlyInterventionCare.Api.Models.Authentication;
+using EarlyInterventionCare.Api.Models.Authorization;
 
 var expectedTables = new HashSet<string>(StringComparer.Ordinal)
 {
     "cases", "questionnaires", "questionnaire_versions", "case_questionnaires", "teacher_grants",
-    "teacher_grant_tasks", "teacher_sessions", "questionnaire_drafts", "questionnaire_responses", "audit_logs"
+    "teacher_grant_tasks", "teacher_sessions", "questionnaire_drafts", "questionnaire_responses", "audit_logs",
+    "users", "roles", "permissions", "role_permissions", "organizations"
 };
 try
 {
@@ -21,7 +25,28 @@ try
     var database = apply || seed || args.Contains("--database");
     await using var context = new ApplicationDbContextFactory().CreateDbContext(database ? [] : ["--offline"]);
     var tables = context.Model.GetEntityTypes().Select(e => e.GetTableName()!).ToHashSet(StringComparer.Ordinal);
-    if (!tables.SetEquals(expectedTables)) throw new InvalidOperationException("Expected nine core tables plus audit_logs.");
+    if (!tables.SetEquals(expectedTables)) throw new InvalidOperationException("Expected teacher core, audit and five identity tables.");
+    foreach (var type in new[] { typeof(User), typeof(Role), typeof(Permission), typeof(Organization) })
+    {
+        var entity = context.Model.FindEntityType(type)!;
+        var key = entity.FindPrimaryKey()!.Properties.Single();
+        if (key.ClrType != typeof(Guid) || key.GetColumnType() != "char(36)")
+            throw new InvalidOperationException("Identity primary keys must be UUID CHAR(36).");
+    }
+    var grant = context.Model.FindEntityType(typeof(TeacherGrant))!;
+    var issuer = grant.GetForeignKeys().Single(f => f.PrincipalEntityType.ClrType == typeof(User));
+    if (issuer.IsRequired || issuer.DeleteBehavior != DeleteBehavior.Restrict ||
+        issuer.Properties.Single().ClrType != typeof(Guid?))
+        throw new InvalidOperationException("Grant issuer must remain optional and use a restricted UUID User foreign key.");
+    if (context.Model.GetEntityTypes().Any(e => e.ClrType.Name == "FormAccessToken"))
+        throw new InvalidOperationException("Legacy FormAccessToken must not be part of the integrated EF model.");
+    var roles = context.GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>()
+        .Model.FindEntityType(typeof(Role))!.GetSeedData().ToArray();
+    if (roles.Length != 5 || roles.Any(r => r["Id"] is not Guid id || id == Guid.Empty))
+        throw new InvalidOperationException("Five fixed UUID role seeds are required.");
+    var user = context.Model.FindEntityType(typeof(User))!;
+    if (!user.GetForeignKeys().Single(f => f.PrincipalEntityType.ClrType == typeof(Organization)).IsRequired)
+        throw new InvalidOperationException("User organization must remain required.");
     var task = context.Model.FindEntityType(typeof(QuestionnaireTask))!;
     if (!task.GetForeignKeys().Any(f => f.Properties.Select(p => p.Name).SequenceEqual(new[]
         { "QuestionnaireVersionId", "QuestionnaireId", "RespondentRole" })))
@@ -43,7 +68,9 @@ try
     var audit = context.Model.FindEntityType(typeof(AuditRecord))!;
     if (audit.GetForeignKeys().Any() || !audit.GetIndexes().Any(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { "ResourceType", "ResourceId", "OccurredAtUtc" })))
         throw new InvalidOperationException("Audit evidence must be independent and indexed by resource/time.");
-    Console.WriteLine("PASS: nine core tables plus audit_logs, role/version scope, draft concurrency, unique response and restricted deletes.");
+    Console.WriteLine("PASS: teacher core plus audit and UUID identity tables; optional User issuer, fixed role seeds, required organization, scope/concurrency and restricted deletes.");
+    if ((apply || seed) && context.Database.HasPendingModelChanges())
+        throw new InvalidOperationException("Integrated model needs a reviewed migration before apply/seed; no database changes performed.");
     if (!database) return 0;
 
     await context.Database.OpenConnectionAsync();

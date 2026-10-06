@@ -9,6 +9,7 @@ public sealed class TeacherGrant
     public byte[] CodeHash { get; set; } = null!;
     public string GrantStatus { get; set; } = null!;
     public Guid? IssuedByUserId { get; set; }
+    public EarlyInterventionCare.Api.Models.Authentication.User? IssuedByUser { get; set; }
     public Guid? ConsentReferenceId { get; set; }
     public bool IsDevelopment { get; set; }
     public DateTime CreatedAtUtc { get; set; }

@@ -1,5 +1,7 @@
 using EarlyInterventionCare.Api.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using EarlyInterventionCare.Api.Models.Authentication;
+using EarlyInterventionCare.Api.Models.Authorization;
 
 namespace EarlyInterventionCare.Api.Data;
 
@@ -16,8 +18,16 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<QuestionnaireResponse> QuestionnaireResponses => Set<QuestionnaireResponse>();
     public DbSet<AuditRecord> AuditLogs => Set<AuditRecord>();
 
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<Organization> Organizations => Set<Organization>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        AuthorizationSeed.Seed(modelBuilder);
     }
 }

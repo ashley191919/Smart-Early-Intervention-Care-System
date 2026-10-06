@@ -114,6 +114,8 @@ internal sealed class TeacherGrantConfiguration : IEntityTypeConfiguration<Teach
         entity.HasIndex(e => e.CodeHash).IsUnique().HasDatabaseName("uq_grants_code_hash");
         entity.HasAlternateKey(e => new { e.GrantId, e.CaseId, e.RespondentRole }).HasName("uq_grants_scope");
         entity.HasIndex(e => new { e.CaseId, e.GrantStatus }).HasDatabaseName("ix_grants_case_status");
+        entity.HasOne(e => e.IssuedByUser).WithMany().HasForeignKey(e => e.IssuedByUserId)
+            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_grants_issued_by_user");
         entity.HasOne<CaseRecord>().WithMany()
             .HasForeignKey(e => e.CaseId).HasPrincipalKey(e => e.CaseId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_grants_case");
