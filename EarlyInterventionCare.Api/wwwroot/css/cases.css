@@ -1,0 +1,53 @@
+/* Keep the Dashboard shell unchanged; only style the case list. */
+.cases-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-bottom: 24px; }
+.cases-search { position: relative; flex: 1 1 260px; max-width: 390px; }
+.cases-search > svg { position: absolute; top: 50%; left: 13px; width: 18px; height: 18px; color: var(--text-secondary); transform: translateY(-50%); pointer-events: none; }
+.cases-search input {
+    width: 100%;
+    min-height: 39px;
+    padding: 8px 13px 8px 40px;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.75;
+    background: var(--page-background);
+    border: 1px solid #d3e2df;
+    border-radius: 9px;
+}
+.cases-search input::placeholder { color: var(--text-secondary); opacity: 1; }
+.cases-search input:focus-visible, .cases-table-wrap:focus-visible { outline: 3px solid #476f6b; outline-offset: 3px; }
+.cases-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.cases-filter { padding: 5px 12px; color: var(--brand-teal-dark); font-size: 12px; line-height: 1.6; background: #fff; border: 1px solid #d3e2df; border-radius: 8px; }
+.cases-filter:hover { background: var(--brand-teal-pale); }
+.cases-filter.is-selected { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
+.cases-filter.is-selected:hover { color: var(--brand-teal-dark); background: var(--brand-teal-pale); }
+.cases-table { min-width: 860px; }
+.cases-table .case-avatar { border-radius: 50%; }
+.cases-panel .status-pending-contact { color: #b18f58; background: #fbf4e9; border-color: #eee2cd; }
+.cases-panel .status-in-progress { color: var(--brand-teal-dark); background: var(--brand-teal-pale); border-color: #d3e2df; }
+.cases-panel .status-completed { color: #6e8c79; background: #f0f5f1; border-color: #dce6df; }
+.cases-panel .priority-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
+.cases-panel .priority-high { color: #bd7770; background: #faeeed; border-color: #edd8d5; }
+.cases-panel .priority-normal { color: #a3aab4; }
+.cases-table tbody tr:hover { background: #fafcfb; }
+.cases-panel .cases-empty { padding: 44px 16px; color: var(--text-secondary); font-size: 13px; text-align: center; }
+.cases-list-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; padding-top: 18px; border-top: 1px solid var(--line-color); }
+.cases-range { margin: 0; color: var(--text-secondary); font-size: 12px; }
+.cases-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cases-page-button { display: inline-grid; place-items: center; min-width: 32px; height: 32px; padding: 0 8px; color: #737b86; font-size: 12px; background: #fff; border: 1px solid #d3e2df; border-radius: 8px; }
+.cases-page-button:not(:disabled):hover { background: var(--brand-teal-pale); }
+.cases-page-button.is-current { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
+.cases-page-button.is-current:hover { color: var(--brand-teal-dark); background: var(--brand-teal-pale); }
+.cases-page-button:disabled { color: #a3aab4; cursor: default; opacity: .45; }
+.cases-panel [hidden] { display: none !important; }
+@media (max-width: 850px) {
+    .cases-search { max-width: none; }
+    .cases-filters { margin-left: 0; }
+}
+@media (max-width: 520px) {
+    .cases-toolbar { gap: 14px; margin-bottom: 20px; }
+    .cases-search { flex-basis: 100%; }
+    .cases-filter { padding: 5px 10px; }
+    .cases-list-footer { justify-content: center; }
+    .cases-range { width: 100%; text-align: center; }
+}

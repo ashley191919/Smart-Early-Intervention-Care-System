@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="早療智慧動態照護系統醫療人員後台">
+    <title>醫療人員後台｜早療智慧動態照護系統</title>
+    <link rel="stylesheet" href="css/staff-dashboard.css">
+</head>
+<body>
+    <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M12 21V11M12 15C5 15 3 10 4 4c6 0 8 4 8 11ZM12 17c0-6 3-9 9-9 0 6-3 9-9 9Z"/></symbol>
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11H3ZM9 21v-8h6v8"/></symbol>
+        <symbol id="icon-person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol>
+        <symbol id="icon-clipboard" viewBox="0 0 24 24"><path d="M8 5H4v16h16V5h-4M8 3h8v5H8ZM8 12h8M8 16h6"/></symbol>
+        <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4M12 1v1"/></symbol>
+        <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 16v-5M12 16V7M17 16V4"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m10 3-1 3-3 1-3-1-2 4 3 2-1 3-2 2 3 3 3-2 3 1 1 3h4l1-3 3-1 3 1 2-4-3-2 1-3 2-2-3-3-3 2-3-1-1-3Z" transform="translate(1 -1) scale(.92)"/></symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="icon-alert" viewBox="0 0 24 24"><path d="m12 3 10 18H2ZM12 9v5M12 17v.1"/></symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+    </svg>
+    <div class="dashboard-shell">
+        <aside class="sidebar" aria-label="主要導覽">
+            <a class="brand" href="#main-content" aria-label="早療智慧動態照護系統首頁">
+                <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
+                <span class="brand-copy">
+                    <strong>早療智慧動態照護</strong>
+                    <small>醫療人員工作台</small>
+                </span>
+            </a>
+
+            <nav class="main-nav" aria-label="系統功能">
+                <p class="nav-label">醫療人員工作台</p>
+                <a class="nav-item is-active" href="staff-dashboard.html" aria-current="page"><svg aria-hidden="true"><use href="#icon-home"/></svg>總覽</a>
+                <a class="nav-item" href="cases.html"><svg aria-hidden="true"><use href="#icon-person"/></svg>個案管理</a>
+                <a class="nav-item" href="#assessments"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg>評估與紀錄</a>
+                <a class="nav-item" href="#alerts"><svg aria-hidden="true"><use href="#icon-bell"/></svg>追蹤提醒 <span class="notification-count">3</span></a>
+                <a class="nav-item" href="#reports"><svg aria-hidden="true"><use href="#icon-chart"/></svg>統計報表</a>
+                <p class="nav-label nav-label-secondary">系統</p>
+                <a class="nav-item" href="#settings"><svg aria-hidden="true"><use href="#icon-settings"/></svg>系統設定</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>輔仁大學附設醫院</p>
+                <small>兒童發展聯合評估中心</small>
+            </div>
+        </aside>
+
+        <div class="page-area">
+            <header class="topbar">
+                <div class="hospital-header">
+                    <img class="hospital-header-logo" src="images/hospital-logo.png" alt="天主教輔仁大學附設醫院院徽">
+                    <span class="hospital-header-copy"><strong>天主教輔仁大學附設醫院</strong><small>FU JEN CATHOLIC UNIVERSITY HOSPITAL</small></span>
+                </div>
+                <div class="topbar-spacer"></div>
+                <button class="topbar-action" type="button" aria-label="通知"><svg aria-hidden="true"><use href="#icon-bell"/></svg><i></i></button>
+                <button class="staff-menu" type="button" aria-label="開啟使用者選單">
+                    <span class="staff-avatar">王</span>
+                    <span class="staff-details"><strong>王怡安</strong><small>醫療行政人員</small></span>
+                    <svg class="chevron" aria-hidden="true"><use href="#icon-chevron"/></svg>
+                </button>
+            </header>
+
+            <main id="main-content" class="dashboard-content">
+                <section class="page-heading" id="dashboard" aria-labelledby="dashboard-title">
+                    <div>
+                        <p class="eyebrow">MEDICAL WORKSPACE</p>
+                        <h1 id="dashboard-title">醫療人員工作台</h1>
+                        <p>王怡安，您好。以下是需要您關注的個案與早療照護資訊。</p>
+                    </div>
+                    <a class="primary-button" href="case-create.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增個案</a>
+                </section>
+
+                <section class="summary-grid" aria-label="個案摘要">
+                    <article class="summary-card"><div class="summary-icon icon-teal"><svg aria-hidden="true"><use href="#icon-person"/></svg></div><div><p>個案總數</p><strong>24</strong><small class="positive">所有追蹤個案</small></div></article>
+                    <article class="summary-card"><div class="summary-icon icon-amber"><svg aria-hidden="true"><use href="#icon-clock"/></svg></div><div><p>待聯繫</p><strong>5</strong><small>尚待聯繫個案</small></div></article>
+                    <article class="summary-card"><div class="summary-icon icon-coral"><svg aria-hidden="true"><use href="#icon-alert"/></svg></div><div><p>進行中</p><strong>8</strong><small class="attention">持續追蹤中</small></div></article>
+                    <article class="summary-card"><div class="summary-icon icon-blue"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg></div><div><p>已完成</p><strong>11</strong><small class="positive">已完成照護追蹤</small></div></article>
+                </section>
+
+                <div class="content-grid">
+                    <section class="panel follow-up-panel" id="alerts" aria-labelledby="follow-up-title">
+                        <div class="panel-heading"><div><h2 id="follow-up-title">近期追蹤</h2><p>掌握個案處理狀態與優先程度</p></div><a href="cases.html">查看全部 →</a></div>
+                        <div class="follow-up-filters" role="group" aria-label="近期追蹤處理狀態篩選">
+                            <button class="follow-up-filter is-selected" type="button" data-filter-field="status" data-filter-value="all" aria-pressed="true" aria-controls="follow-up-list">全部</button>
+                            <button class="follow-up-filter" type="button" data-filter-field="status" data-filter-value="pending-contact" aria-pressed="false" aria-controls="follow-up-list">待聯繫</button>
+                            <button class="follow-up-filter" type="button" data-filter-field="status" data-filter-value="in-progress" aria-pressed="false" aria-controls="follow-up-list">進行中</button>
+                            <button class="follow-up-filter" type="button" data-filter-field="status" data-filter-value="completed" aria-pressed="false" aria-controls="follow-up-list">已完成</button>
+                        </div>
+                        <div class="follow-up-filter-info">
+                            <p class="follow-up-filter-hint">優先個案置前；已完成個案依最近更新時間排序。</p>
+                            <p class="follow-up-result-count" role="status" aria-live="polite" aria-atomic="true">全部：顯示 6 筆個案</p>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th scope="col">個案姓名／編號</th><th scope="col">處理狀態</th><th scope="col">優先程度</th><th scope="col">最近更新</th><th scope="col"><span class="sr-only">操作</span></th></tr></thead>
+                                <tbody id="follow-up-list">
+                                    <tr class="follow-up-case" data-status="pending-contact" data-priority="high" data-updated="2026-10-06">
+                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">王</span><span><strong>王○安</strong><small>DEMO-001</small></span></div></td>
+                                        <td><span class="status-badge status-pending-contact">待聯繫</span></td>
+                                        <td><span class="priority-badge priority-high">優先</span></td>
+                                        <td><time datetime="2026-10-06">2026/10/06</time></td>
+                                        <td><button class="text-button" type="button" aria-label="查看個案：王○安 DEMO-001">查看個案 →</button></td>
+                                    </tr>
+                                    <tr class="follow-up-case" data-status="in-progress" data-priority="normal" data-updated="2026-10-05">
+                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">陳</span><span><strong>陳○恩</strong><small>DEMO-002</small></span></div></td>
+                                        <td><span class="status-badge status-in-progress">進行中</span></td>
+                                        <td><span class="sr-only">一般</span></td>
+                                        <td><time datetime="2026-10-05">2026/10/05</time></td>
+                                        <td><button class="text-button" type="button" aria-label="查看個案：陳○恩 DEMO-002">查看個案 →</button></td>
+                                    </tr>
+                                    <tr class="follow-up-case" data-status="pending-contact" data-priority="normal" data-updated="2026-10-04">
+                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">林</span><span><strong>林○宇</strong><small>DEMO-003</small></span></div></td>
+                                        <td><span class="status-badge status-pending-contact">待聯繫</span></td>
+                                        <td><span class="sr-only">一般</span></td>
+                                        <td><time datetime="2026-10-04">2026/10/04</time></td>
+                                        <td><button class="text-button" type="button" aria-label="查看個案：林○宇 DEMO-003">查看個案 →</button></td>
+                                    </tr>
+                                    <tr class="follow-up-case" data-status="in-progress" data-priority="high" data-updated="2026-10-03">
+                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">張</span><span><strong>張○庭</strong><small>DEMO-004</small></span></div></td>
+                                        <td><span class="status-badge status-in-progress">進行中</span></td>
+                                        <td><span class="priority-badge priority-high">優先</span></td>
+                                        <td><time datetime="2026-10-03">2026/10/03</time></td>
+                                        <td><button class="text-button" type="button" aria-label="查看個案：張○庭 DEMO-004">查看個案 →</button></td>
+                                    </tr>
+                                    <tr class="follow-up-case" data-status="completed" data-priority="normal" data-updated="2026-10-02">
+                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">李</span><span><strong>李○安</strong><small>DEMO-005</small></span></div></td>
+                                        <td><span class="status-badge status-completed">已完成</span></td>
+                                        <td><span class="sr-only">一般</span></td>
+                                        <td><time datetime="2026-10-02">2026/10/02</time></td>
+                                        <td><button class="text-button" type="button" aria-label="查看個案：李○安 DEMO-005">查看個案 →</button></td>
+                                    </tr>
+                                    <tr class="follow-up-case" data-status="in-progress" data-priority="normal" data-updated="2026-10-01">
+                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">黃</span><span><strong>黃○恩</strong><small>DEMO-006</small></span></div></td>
+                                        <td><span class="status-badge status-in-progress">進行中</span></td>
+                                        <td><span class="sr-only">一般</span></td>
+                                        <td><time datetime="2026-10-01">2026/10/01</time></td>
+                                        <td><button class="text-button" type="button" aria-label="查看個案：黃○恩 DEMO-006">查看個案 →</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="follow-up-empty" hidden>目前沒有符合此條件的近期個案。</p>
+                    </section>
+
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="js/staff-dashboard.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="早療智慧動態照護系統個案詳細資料 Demo">
+    <title>個案詳細資料｜早療智慧動態照護系統</title>
+    <link rel="stylesheet" href="css/staff-dashboard.css">
+    <link rel="stylesheet" href="css/case-detail.css">
+</head>
+<body>
+    <!-- 專題展示用 Demo B；未來由同一個 case-detail.html 依 API 資料決定空狀態或紀錄列表。 -->
+    <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M12 21V11M12 15C5 15 3 10 4 4c6 0 8 4 8 11ZM12 17c0-6 3-9 9-9 0 6-3 9-9 9Z"/></symbol>
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11H3ZM9 21v-8h6v8"/></symbol>
+        <symbol id="icon-person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol>
+        <symbol id="icon-clipboard" viewBox="0 0 24 24"><path d="M8 5H4v16h16V5h-4M8 3h8v5H8ZM8 12h8M8 16h6"/></symbol>
+        <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4M12 1v1"/></symbol>
+        <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 16v-5M12 16V7M17 16V4"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m10 3-1 3-3 1-3-1-2 4 3 2-1 3-2 2 3 3 3-2 3 1 1 3h4l1-3 3-1 3 1 2-4-3-2 1-3 2-2-3-3-3 2-3-1-1-3Z" transform="translate(1 -1) scale(.92)"/></symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    </svg>
+
+    <div class="dashboard-shell">
+        <aside class="sidebar" aria-label="主要導覽">
+            <a class="brand" href="staff-dashboard.html" aria-label="早療智慧動態照護系統首頁">
+                <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
+                <span class="brand-copy">
+                    <strong>早療智慧動態照護</strong>
+                    <small>醫療人員工作台</small>
+                </span>
+            </a>
+
+            <nav class="main-nav" aria-label="系統功能">
+                <p class="nav-label">醫療人員工作台</p>
+                <a class="nav-item" href="staff-dashboard.html"><svg aria-hidden="true"><use href="#icon-home"/></svg>總覽</a>
+                <a class="nav-item is-active" href="cases.html" aria-current="page"><svg aria-hidden="true"><use href="#icon-person"/></svg>個案管理</a>
+                <a class="nav-item" href="#assessments"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg>評估與紀錄</a>
+                <a class="nav-item" href="staff-dashboard.html#alerts"><svg aria-hidden="true"><use href="#icon-bell"/></svg>追蹤提醒 <span class="notification-count">3</span></a>
+                <a class="nav-item" href="#reports"><svg aria-hidden="true"><use href="#icon-chart"/></svg>統計報表</a>
+                <p class="nav-label nav-label-secondary">系統</p>
+                <a class="nav-item" href="#settings"><svg aria-hidden="true"><use href="#icon-settings"/></svg>系統設定</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>輔仁大學附設醫院</p>
+                <small>兒童發展聯合評估中心</small>
+            </div>
+        </aside>
+
+        <div class="page-area">
+            <header class="topbar">
+                <div class="hospital-header">
+                    <img class="hospital-header-logo" src="images/hospital-logo.png" alt="天主教輔仁大學附設醫院院徽">
+                    <span class="hospital-header-copy"><strong>天主教輔仁大學附設醫院</strong><small>FU JEN CATHOLIC UNIVERSITY HOSPITAL</small></span>
+                </div>
+                <div class="topbar-spacer"></div>
+                <button class="topbar-action" type="button" aria-label="通知"><svg aria-hidden="true"><use href="#icon-bell"/></svg><i></i></button>
+                <button class="staff-menu" type="button" aria-label="開啟使用者選單">
+                    <span class="staff-avatar">王</span>
+                    <span class="staff-details"><strong>王怡安</strong><small>醫療行政人員</small></span>
+                    <svg class="chevron" aria-hidden="true"><use href="#icon-chevron"/></svg>
+                </button>
+            </header>
+
+            <main id="main-content" class="dashboard-content case-detail-content">
+                <nav class="detail-back-nav" aria-label="返回導覽"><a href="cases.html">← 返回個案管理</a></nav>
+                <section class="page-heading detail-heading" aria-labelledby="case-detail-title" data-case-status="in-progress" data-priority="high">
+                    <div>
+                        <p class="eyebrow">MEDICAL WORKSPACE</p>
+                        <h1 id="case-detail-title">個案詳細資料</h1>
+                        <div class="detail-identity">
+                            <div class="case-person">
+                                <span class="case-avatar" aria-hidden="true">王</span>
+                                <span><strong>王○安</strong><small>個案編號：DEMO-001</small></span>
+                            </div>
+                            <span class="status-badge status-in-progress">進行中</span>
+                            <span class="priority-badge priority-high">優先</span>
+                        </div>
+                        <p class="detail-demo-note">目前為專題展示 Demo B：已指派 2 份表單，其中 1 份已完成。</p>
+                    </div>
+                    <a class="primary-button" href="form-assign.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>指派表單</a>
+                </section>
+
+                <section class="summary-grid detail-summary-grid" aria-label="個案摘要">
+                    <article class="summary-card detail-summary-card">
+                        <div class="summary-icon icon-amber"><svg aria-hidden="true"><use href="#icon-person"/></svg></div>
+                        <div><p>處理狀態</p><strong>進行中</strong><small>個案處理進度</small></div>
+                    </article>
+                    <article class="summary-card detail-summary-card">
+                        <div class="summary-icon icon-teal"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg></div>
+                        <!-- 表單進度 = 已完成份數 / 已指派總份數；與個案處理狀態分開。 -->
+                        <div><p>表單進度</p><strong>1 / 2</strong><small>已完成 1 份，共指派 2 份</small></div>
+                    </article>
+                    <article class="summary-card detail-summary-card">
+                        <div class="summary-icon icon-blue"><svg aria-hidden="true"><use href="#icon-bell"/></svg></div>
+                        <div><p>最近更新</p><strong><time datetime="2026-10-06">2026/10/06</time></strong><small>Demo 更新日期</small></div>
+                    </article>
+                </section>
+
+                <div class="detail-tabs" role="tablist" aria-label="個案詳細資料頁籤">
+                    <button id="detail-tab-basic" class="detail-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="detail-panel-basic" tabindex="0">基本資料</button>
+                    <button id="detail-tab-forms" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-forms" tabindex="-1">表單紀錄</button>
+                    <button id="detail-tab-results" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-results" tabindex="-1">填答結果</button>
+                </div>
+
+                <section id="detail-panel-basic" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-basic" tabindex="0">
+                    <div class="detail-basic-grid">
+                        <section class="panel" aria-labelledby="detail-child-title">
+                            <div class="panel-heading"><h2 id="detail-child-title">兒童基本資料</h2></div>
+                            <dl class="detail-data-grid">
+                                <div><dt>姓名</dt><dd>王○安</dd></div>
+                                <div><dt>性別</dt><dd>男</dd></div>
+                                <div><dt>出生日期</dt><dd><time datetime="2021-05-12">2021/05/12</time></dd></div>
+                                <div><dt>身分證字號</dt><dd>A12*******</dd></div>
+                                <div class="detail-data-wide"><dt>聯絡地址</dt><dd>新北市○○區○○路</dd></div>
+                            </dl>
+                        </section>
+                        <section class="panel" aria-labelledby="detail-contact-title">
+                            <div class="panel-heading"><h2 id="detail-contact-title">家長／主要聯絡人</h2></div>
+                            <dl class="detail-data-grid">
+                                <div><dt>聯絡人姓名</dt><dd>王○美</dd></div>
+                                <div><dt>與兒童關係</dt><dd>母親</dd></div>
+                                <div><dt>手機號碼</dt><dd>0912***678</dd></div>
+                                <div><dt>電子郵件</dt><dd>w***@example.com</dd></div>
+                            </dl>
+                        </section>
+                    </div>
+                </section>
+
+                <section id="detail-panel-forms" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-forms" tabindex="0" hidden>
+                    <section class="panel" aria-labelledby="detail-forms-title">
+                        <div class="panel-heading"><div><h2 id="detail-forms-title">表單紀錄</h2><p>表單填寫狀態與個案處理狀態分開顯示。</p></div></div>
+                        <div class="detail-form-records">
+                            <div class="table-wrap detail-table-wrap" role="region" aria-label="表單紀錄，可橫向捲動" tabindex="0">
+                                <table class="detail-forms-table">
+                                    <caption class="sr-only">Demo 指派表單、填答對象、填寫狀態、日期與操作</caption>
+                                    <thead><tr><th scope="col">表單</th><th scope="col">填答對象</th><th scope="col">表單狀態</th><th scope="col">指派日期</th><th scope="col">完成日期</th><th scope="col">操作</th></tr></thead>
+                                    <tbody>
+                                        <tr class="detail-form-record" data-form-status="completed">
+                                            <td>SNAP-IV 評量表</td><td>家長</td>
+                                            <td><span class="detail-form-badge detail-form-completed">已完成</span></td>
+                                            <td><time datetime="2026-10-05">2026/10/05</time></td>
+                                            <td><time datetime="2026-10-06">2026/10/06</time></td>
+                                            <td><a class="text-button" href="response-detail.html" aria-label="查看 SNAP-IV 評量表填答結果">查看結果 →</a></td>
+                                        </tr>
+                                        <tr class="detail-form-record" data-form-status="pending">
+                                            <td>克氏行為量表</td><td>家長</td>
+                                            <td><span class="detail-form-badge detail-form-pending">待填寫</span></td>
+                                            <td><time datetime="2026-10-06">2026/10/06</time></td>
+                                            <td>—</td><td>—</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="detail-empty" aria-labelledby="detail-forms-empty-title">
+                                <h3 id="detail-forms-empty-title">目前尚未指派任何表單</h3>
+                                <p>為此個案選擇需要填寫的評估表單。</p>
+                                <a class="primary-button" href="form-assign.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>指派表單</a>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <section id="detail-panel-results" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-results" tabindex="0" hidden>
+                    <section class="panel" aria-labelledby="detail-results-title">
+                        <div class="panel-heading"><div><h2 id="detail-results-title">填答結果</h2><p>僅顯示已完成的表單紀錄。</p></div></div>
+                        <div class="detail-result-records">
+                            <article class="detail-result-record" data-form-status="completed" aria-labelledby="detail-result-title">
+                                <div>
+                                    <h3 id="detail-result-title">SNAP-IV 評量表</h3>
+                                    <dl class="detail-result-meta">
+                                        <div><dt>填答者</dt><dd>家長</dd></div>
+                                        <div><dt>完成時間</dt><dd><time datetime="2026-10-06T14:30">2026/10/06 14:30</time></dd></div>
+                                    </dl>
+                                </div>
+                                <a class="text-button" href="response-detail.html" aria-label="查看 SNAP-IV 評量表填答結果">查看結果 →</a>
+                            </article>
+                            <div class="detail-empty" aria-labelledby="detail-results-empty-title">
+                                <h3 id="detail-results-empty-title">目前尚無填答結果</h3>
+                                <p>表單完成填寫後，結果將顯示於此。</p>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+                <noscript><p class="detail-demo-note">請啟用 JavaScript，以切換表單紀錄與填答結果頁籤。</p></noscript>
+            </main>
+        </div>
+    </div>
+    <script src="js/case-detail.js" defer></script>
+</body>
+</html>

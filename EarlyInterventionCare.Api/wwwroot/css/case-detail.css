@@ -1,0 +1,56 @@
+/* Shared Dashboard CSS owns the shell, content alignment, Avatar and Card geometry. */
+.detail-back-nav { margin-bottom: 12px; font-size: 12px; }
+.detail-back-nav a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.detail-heading { align-items: flex-start; flex-wrap: wrap; }
+.detail-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; }
+.detail-demo-note { margin: 10px 0 0; color: var(--text-secondary); font-size: 12px; }
+/* Match Cases case-status and priority badges exactly; form badges remain separate. */
+.case-detail-content .status-pending-contact { color: #b18f58; background: #fbf4e9; border-color: #eee2cd; }
+.case-detail-content .status-in-progress { color: var(--brand-teal-dark); background: var(--brand-teal-pale); border-color: #d3e2df; }
+.case-detail-content .status-completed { color: #6e8c79; background: #f0f5f1; border-color: #dce6df; }
+.case-detail-content .priority-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
+.case-detail-content .priority-high { color: #bd7770; background: #faeeed; border-color: #edd8d5; }
+.detail-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.detail-summary-card strong { font-size: 16px; line-height: 1.5; }
+.detail-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--line-color); }
+.detail-tab { padding: 7px 15px; color: #737b86; font-size: 12px; background: transparent; border: 1px solid transparent; border-radius: 8px; }
+.detail-tab:hover { background: var(--brand-teal-pale); }
+.detail-tab.is-active { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
+.detail-tab:focus-visible, .detail-tab-panel:focus-visible, .detail-table-wrap:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
+.detail-tab-panel[hidden] { display: none !important; }
+.detail-basic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.detail-data-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; margin: 0; }
+.detail-data-grid > div { min-width: 0; }
+.detail-data-wide { grid-column: 1 / -1; }
+.detail-data-grid dt { color: var(--text-secondary); font-size: 11px; }
+.detail-data-grid dd { margin: 5px 0 0; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; }
+.detail-forms-table { min-width: 780px; }
+.detail-form-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
+.detail-form-pending { color: #b18f58; background: #fbf4e9; border-color: #eee2cd; }
+.detail-form-completed { color: #6e8c79; background: #f0f5f1; border-color: #dce6df; }
+.detail-result-record { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; background: var(--page-background); border: 1px solid var(--line-color); border-radius: 9px; }
+.detail-result-record + .detail-result-record { margin-top: 12px; }
+.detail-result-record h3 { margin: 0 0 8px; color: #4b5563; font-size: 14px; font-weight: 500; }
+.detail-result-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; font-size: 12px; }
+.detail-result-meta > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.detail-result-meta dt { color: var(--text-secondary); }
+.detail-result-meta dd { margin: 0; color: #737b86; }
+.detail-empty { margin: 0; padding: 30px 14px; color: var(--text-secondary); font-size: 13px; text-align: center; background: var(--page-background); border-radius: 9px; }
+.detail-empty h3 { margin: 0 0 6px; color: #737b86; font-size: 14px; font-weight: 500; }
+.detail-empty p { margin: 0; }
+.detail-empty .primary-button { margin-top: 16px; }
+/* Static HTML empty states: removing all record rows/items reveals the message, without data JS. */
+.detail-form-records:has(.detail-form-record) > .detail-empty,
+.detail-result-records:has(.detail-result-record) > .detail-empty { display: none; }
+.detail-form-records:not(:has(.detail-form-record)) > .detail-table-wrap { display: none; }
+@media (max-width: 850px) {
+    .detail-basic-grid { grid-template-columns: minmax(0, 1fr); }
+    .detail-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+    .detail-summary-grid { grid-template-columns: minmax(0, 1fr); }
+    .detail-data-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .detail-tabs { gap: 4px; }
+    .detail-tab { padding: 7px 12px; }
+    .detail-result-record { padding: 14px; }
+}

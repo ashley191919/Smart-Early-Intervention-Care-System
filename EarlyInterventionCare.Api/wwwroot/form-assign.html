@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="早療智慧動態照護系統指派表單 Demo">
+    <title>指派表單｜早療智慧動態照護系統</title>
+    <link rel="stylesheet" href="css/staff-dashboard.css">
+    <link rel="stylesheet" href="css/form-assign.css">
+</head>
+<body>
+    <!-- 專題展示用前端 Demo；本頁只選擇表單、填答角色與期限，不建立指派、token 或填寫連結。 -->
+    <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M12 21V11M12 15C5 15 3 10 4 4c6 0 8 4 8 11ZM12 17c0-6 3-9 9-9 0 6-3 9-9 9Z"/></symbol>
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11H3ZM9 21v-8h6v8"/></symbol>
+        <symbol id="icon-person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol>
+        <symbol id="icon-clipboard" viewBox="0 0 24 24"><path d="M8 5H4v16h16V5h-4M8 3h8v5H8ZM8 12h8M8 16h6"/></symbol>
+        <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4M12 1v1"/></symbol>
+        <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 16v-5M12 16V7M17 16V4"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m10 3-1 3-3 1-3-1-2 4 3 2-1 3-2 2 3 3 3-2 3 1 1 3h4l1-3 3-1 3 1 2-4-3-2 1-3 2-2-3-3-3 2-3-1-1-3Z" transform="translate(1 -1) scale(.92)"/></symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    </svg>
+
+    <div class="dashboard-shell">
+        <aside class="sidebar" aria-label="主要導覽">
+            <a class="brand" href="staff-dashboard.html" aria-label="早療智慧動態照護系統首頁">
+                <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
+                <span class="brand-copy">
+                    <strong>早療智慧動態照護</strong>
+                    <small>醫療人員工作台</small>
+                </span>
+            </a>
+
+            <nav class="main-nav" aria-label="系統功能">
+                <p class="nav-label">醫療人員工作台</p>
+                <a class="nav-item" href="staff-dashboard.html"><svg aria-hidden="true"><use href="#icon-home"/></svg>總覽</a>
+                <a class="nav-item is-active" href="cases.html" aria-current="page"><svg aria-hidden="true"><use href="#icon-person"/></svg>個案管理</a>
+                <a class="nav-item" href="#assessments"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg>評估與紀錄</a>
+                <a class="nav-item" href="staff-dashboard.html#alerts"><svg aria-hidden="true"><use href="#icon-bell"/></svg>追蹤提醒 <span class="notification-count">3</span></a>
+                <a class="nav-item" href="#reports"><svg aria-hidden="true"><use href="#icon-chart"/></svg>統計報表</a>
+                <p class="nav-label nav-label-secondary">系統</p>
+                <a class="nav-item" href="#settings"><svg aria-hidden="true"><use href="#icon-settings"/></svg>系統設定</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>輔仁大學附設醫院</p>
+                <small>兒童發展聯合評估中心</small>
+            </div>
+        </aside>
+
+        <div class="page-area">
+            <header class="topbar">
+                <div class="hospital-header">
+                    <img class="hospital-header-logo" src="images/hospital-logo.png" alt="天主教輔仁大學附設醫院院徽">
+                    <span class="hospital-header-copy"><strong>天主教輔仁大學附設醫院</strong><small>FU JEN CATHOLIC UNIVERSITY HOSPITAL</small></span>
+                </div>
+                <div class="topbar-spacer"></div>
+                <button class="topbar-action" type="button" aria-label="通知"><svg aria-hidden="true"><use href="#icon-bell"/></svg><i></i></button>
+                <button class="staff-menu" type="button" aria-label="開啟使用者選單">
+                    <span class="staff-avatar">王</span>
+                    <span class="staff-details"><strong>王怡安</strong><small>醫療行政人員</small></span>
+                    <svg class="chevron" aria-hidden="true"><use href="#icon-chevron"/></svg>
+                </button>
+            </header>
+
+            <main id="main-content" class="dashboard-content form-assign-content">
+                <nav class="assign-back-nav" aria-label="返回導覽"><a href="case-detail-empty.html">← 返回個案詳細資料</a></nav>
+                <section class="page-heading" aria-labelledby="form-assign-title">
+                    <div>
+                        <p class="eyebrow">MEDICAL WORKSPACE</p>
+                        <h1 id="form-assign-title">指派表單</h1>
+                        <p>選擇本次需要由家長與幼兒園教師填寫的表單</p>
+                    </div>
+                </section>
+
+                <section class="panel assign-case-summary" aria-labelledby="assign-case-title" data-case-status="pending-contact">
+                    <div class="panel-heading"><h2 id="assign-case-title">個案資訊</h2></div>
+                    <dl class="assign-case-grid">
+                        <div><dt>個案姓名</dt><dd><span class="case-person"><span class="case-avatar" aria-hidden="true">林</span><strong>林○樂</strong></span></dd></div>
+                        <div><dt>個案編號</dt><dd>DEMO-024</dd></div>
+                        <div><dt>目前狀態</dt><dd><span class="status-badge status-pending-contact">待聯繫</span></dd></div>
+                    </dl>
+                    <p class="assign-demo-note">專題展示 Demo，預設替 DEMO-024 林○樂選擇表單，不會建立實際指派紀錄。</p>
+                </section>
+
+                <form id="form-assign-form" class="assign-form" novalidate autocomplete="off">
+                    <section class="panel assign-section">
+                        <fieldset id="assign-forms-group" class="assign-fieldset" aria-describedby="assign-selection-hint assign-forms-error">
+                            <legend class="assign-section-title">選擇表單</legend>
+                            <p id="assign-selection-hint" class="assign-helper">同一份表單可同時勾選家長與幼兒園教師，兩者為不同填答項目。</p>
+                            <div class="assign-list-head">
+                                <span>表單名稱</span><span id="assign-parent-heading">家長</span><span id="assign-teacher-heading">幼兒園教師</span>
+                            </div>
+                            <div class="assign-form-list">
+                                <article class="assign-form-row" data-form-id="conners" aria-labelledby="conners-title">
+                                    <h3 id="conners-title" class="assign-form-name">克氏行為量表</h3>
+                                    <label class="assign-role-option" for="assign-conners-parent">
+                                        <input id="assign-conners-parent" name="assignmentItems" type="checkbox" value="conners:parent" data-form-id="conners" data-respondent-role="parent" aria-labelledby="conners-title assign-parent-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">家長</span>
+                                    </label>
+                                    <label class="assign-role-option" for="assign-conners-teacher">
+                                        <input id="assign-conners-teacher" name="assignmentItems" type="checkbox" value="conners:teacher" data-form-id="conners" data-respondent-role="teacher" aria-labelledby="conners-title assign-teacher-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">幼兒園教師</span>
+                                    </label>
+                                </article>
+                                <article class="assign-form-row" data-form-id="service-satisfaction" aria-labelledby="service-satisfaction-title">
+                                    <h3 id="service-satisfaction-title" class="assign-form-name">輔大醫院早期療育兒童家長對早期療育服務滿意度調查表</h3>
+                                    <label class="assign-role-option" for="assign-service-satisfaction-parent">
+                                        <input id="assign-service-satisfaction-parent" name="assignmentItems" type="checkbox" value="service-satisfaction:parent" data-form-id="service-satisfaction" data-respondent-role="parent" aria-labelledby="service-satisfaction-title assign-parent-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">家長</span>
+                                    </label>
+                                    <label class="assign-role-option" for="assign-service-satisfaction-teacher">
+                                        <input id="assign-service-satisfaction-teacher" name="assignmentItems" type="checkbox" value="service-satisfaction:teacher" data-form-id="service-satisfaction" data-respondent-role="teacher" aria-labelledby="service-satisfaction-title assign-teacher-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">幼兒園教師</span>
+                                    </label>
+                                </article>
+                                <article class="assign-form-row" data-form-id="case-basic-parent" aria-labelledby="case-basic-parent-title">
+                                    <h3 id="case-basic-parent-title" class="assign-form-name">輔仁大學附設醫院 早療評估個案基本資料（家長版）</h3>
+                                    <label class="assign-role-option" for="assign-case-basic-parent-parent">
+                                        <input id="assign-case-basic-parent-parent" name="assignmentItems" type="checkbox" value="case-basic-parent:parent" data-form-id="case-basic-parent" data-respondent-role="parent" aria-labelledby="case-basic-parent-title assign-parent-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">家長</span>
+                                    </label>
+                                    <label class="assign-role-option" for="assign-case-basic-parent-teacher">
+                                        <input id="assign-case-basic-parent-teacher" name="assignmentItems" type="checkbox" value="case-basic-parent:teacher" data-form-id="case-basic-parent" data-respondent-role="teacher" aria-labelledby="case-basic-parent-title assign-teacher-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">幼兒園教師</span>
+                                    </label>
+                                </article>
+                                <article class="assign-form-row" data-form-id="snap" aria-labelledby="snap-title">
+                                    <h3 id="snap-title" class="assign-form-name">SNAP</h3>
+                                    <label class="assign-role-option" for="assign-snap-parent">
+                                        <input id="assign-snap-parent" name="assignmentItems" type="checkbox" value="snap:parent" data-form-id="snap" data-respondent-role="parent" aria-labelledby="snap-title assign-parent-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">家長</span>
+                                    </label>
+                                    <label class="assign-role-option" for="assign-snap-teacher">
+                                        <input id="assign-snap-teacher" name="assignmentItems" type="checkbox" value="snap:teacher" data-form-id="snap" data-respondent-role="teacher" aria-labelledby="snap-title assign-teacher-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">幼兒園教師</span>
+                                    </label>
+                                </article>
+                                <article class="assign-form-row" data-form-id="school-behavior" aria-labelledby="school-behavior-title">
+                                    <h3 id="school-behavior-title" class="assign-form-name">自編學校行為問卷</h3>
+                                    <label class="assign-role-option" for="assign-school-behavior-parent">
+                                        <input id="assign-school-behavior-parent" name="assignmentItems" type="checkbox" value="school-behavior:parent" data-form-id="school-behavior" data-respondent-role="parent" aria-labelledby="school-behavior-title assign-parent-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">家長</span>
+                                    </label>
+                                    <label class="assign-role-option" for="assign-school-behavior-teacher">
+                                        <input id="assign-school-behavior-teacher" name="assignmentItems" type="checkbox" value="school-behavior:teacher" data-form-id="school-behavior" data-respondent-role="teacher" aria-labelledby="school-behavior-title assign-teacher-heading" aria-describedby="assign-forms-error">
+                                        <span class="assign-role-label">幼兒園教師</span>
+                                    </label>
+                                </article>
+                            </div>
+                            <div class="assign-selection-summary" role="status" aria-live="polite" aria-atomic="true">
+                                <p id="assign-selected-count" class="assign-selected-count">已選擇 0 個填答項目</p>
+                                <p class="assign-role-counts"><span id="assign-parent-count">家長：0 份</span><span id="assign-teacher-count">教師：0 份</span></p>
+                            </div>
+                            <p id="assign-forms-error" class="assign-error" role="status" aria-live="polite" hidden></p>
+                        </fieldset>
+                    </section>
+
+                    <section class="panel assign-section" aria-labelledby="assign-deadline-title">
+                        <div class="panel-heading"><h2 id="assign-deadline-title"><label for="assignmentDeadline">填寫期限 <span class="assign-required" aria-hidden="true">*</span><span class="sr-only">（必填）</span></label></h2></div>
+                        <div class="assign-deadline-field">
+                            <input id="assignmentDeadline" name="deadline" class="assign-date-control" type="date" required aria-describedby="assign-deadline-hint assign-deadline-error">
+                            <p id="assign-deadline-hint" class="assign-helper">請設定本次表單填寫期限</p>
+                            <p id="assign-deadline-error" class="assign-error" role="status" aria-live="polite" hidden></p>
+                        </div>
+                    </section>
+
+                    <p id="assign-feedback" class="assign-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+                    <div id="assign-invitation-demo" class="assign-feedback" hidden>
+                        <a href="invitation-success.html">查看填答邀請 Demo →</a>
+                        <p class="assign-helper">此頁為固定展示範例，不會帶入本次選取內容或期限。</p>
+                    </div>
+                    <div class="assign-actions">
+                        <a class="assign-secondary-button" href="case-detail-empty.html">取消</a>
+                        <button id="assign-confirm" class="primary-button" type="submit" disabled>確認指派</button>
+                    </div>
+                    <noscript><p class="assign-helper">請啟用 JavaScript，以使用填答項目統計與前端驗證。</p></noscript>
+                </form>
+            </main>
+        </div>
+    </div>
+    <script src="js/form-assign.js" defer></script>
+</body>
+</html>
