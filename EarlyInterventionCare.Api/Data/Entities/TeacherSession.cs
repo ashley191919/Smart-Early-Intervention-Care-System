@@ -10,4 +10,5 @@ public sealed class TeacherSession
     public DateTime LastSeenAtUtc { get; set; }
     public DateTime SessionExpiresAtUtc { get; set; }
     public DateTime? RevokedAtUtc { get; set; }
+    public DateTime? ReceiptExpiresAtUtc { get; set; }
 }

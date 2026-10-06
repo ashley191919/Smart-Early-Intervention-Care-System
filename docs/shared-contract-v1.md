@@ -1,6 +1,6 @@
 # 共用個案、問卷、任務與教師授權規格 v1.1
 
-狀態：依使用者補充更新的對接基準；九張核心模型與 InitialSharedCore migration 已套用至使用者本機 earlycare_dev，虛構 seed 重跑及跨連線查回通過；教師開發 API 的授權、會話及任務查詢已改接 MySQL；草稿及正式提交尚未實作。更新日期：2026-10-06。檔名沿用 shared-contract-v1.md。實作進度見 database/migration-setup.md。
+狀態：依使用者補充更新的對接基準；九張核心模型與 InitialSharedCore migration 已套用至使用者本機 earlycare_dev，虛構 seed 重跑及跨連線查回通過；教師開發 API 的授權、會話及任務查詢已改接 MySQL；Development SNAP-IV 提交已實作並獨立測試，使用者已確認本機驗收可保存推送；跨次草稿與正式身分整合尚未實作。更新日期：2026-10-06。檔名沿用 shared-contract-v1.md。實作進度見 database/migration-setup.md。
 
 ### 已確認與待確認
 
@@ -186,3 +186,8 @@ Idempotency-Key 為提交請求 UUID，按 grant + key 唯一。相同 key、同
 第十張 audit_logs 經第二份 EF migration 加入；原九張核心表保留。欄位為 event_id、occurred_at_utc、actor_type、actor_id、action、resource_type、resource_id、result、request_correlation_id，不增加自由文字或憑證／答案欄位。不設業務外鍵連帶刪除，也不開放修改／刪除 HTTP API。本次為 Development 教師事件，actor 不代表已確認真實身分。
 
 授權變更 commit 後以獨立 context 記錄，沿用 IAuditLogService best-effort 契約；寫入失敗發固定警告，不撤回已完成業務，尚非保證零遺失的正式稽核。查詢僅限本機 Development；正式醫護權限／院所範圍與可靠交付另待 A/B 整合。細節與使用者本機驗收見 teacher-audit-testing.md。
+
+
+## Development 最小提交實作（2026-10-06）
+
+POST /api/dev/teacher-workspace/tasks/{taskId}/submit 使用上述提交 payload、Idempotency-Key UUID 與 X-Teacher-Submission: 1；同來源、限定已驗證 cookie 與 grant 指定任務。response、SUBMITTED、USED 與會話失效同一交易；相同請求回簡短收據，不讀答案。第三份 migration 增加 teacher_sessions.receipt_expires_at_utc：只限成功提交的會話重試原內容，最多 15 分鐘且不超過原會話到期；登出清除。這不延長授權，也不重新啟用已失效會話的一般接口。開發入口在前輪完成後可建立新虛構 task，不重新開啟舊 response；正式指派／複評未完成。詳見 teacher-submission-testing.md。

@@ -75,3 +75,8 @@ WHERE task_id = '40000000-0000-4000-8000-000000000001';
 ## 2026-10-06 操作紀錄擴充
 
 新增第二份 AddAuditLogs migration，僅建立 audit_logs 與兩個查詢索引，原九張核心表與 InitialSharedCore 保留。目前模型為九張核心表加一張操作紀錄表；套用後 migration 數量為 2。獨立 port 33318 已完成升級及重啟／故障測試，使用者已回報本機套用與驗收成功。沿用 CoreDatabaseHarness --apply，不需要重建資料庫或重新 seed；詳細操作見 [操作紀錄驗收](../teacher-audit-testing.md)。初始空表接續工具仍只接續第一份 migration，完成後再正常套用後續 migration。
+
+
+## 提交收據 migration（2026-10-06）
+
+第三份 AddSubmissionReceiptWindow 僅在 teacher_sessions 新增 nullable datetime(6) receipt_expires_at_utc，保存短期原請求去重收據通道，不新增憑證明碼。獨立 port 33318 已套用 migration=3／pending=0；使用者已確認本機整合驗收可保存推送。既有 response 表已具 task 與 grant+key 唯一鍵、payload_hash，因此不重建答案表。詳見 [一次提交驗收](../teacher-submission-testing.md)。

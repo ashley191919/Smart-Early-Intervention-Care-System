@@ -14,7 +14,10 @@ internal static class InitialMigrationResume
         var pending = (await context.Database.GetPendingMigrationsAsync()).ToArray();
         if (applied.Length != 0 || pending.Length == 0 || !pending[0].EndsWith("_InitialSharedCore", StringComparison.Ordinal) || existing.Contains("audit_logs"))
             throw new InitialMigrationResumeException("Resume only supports the unapplied InitialSharedCore migration.");
-        foreach (var entity in context.Model.GetEntityTypes())
+        // Validate partial initial tables against that migration, not today's expanded model.
+        var migrations = context.GetService<IMigrationsAssembly>();
+        var initialModel = migrations.CreateMigration(migrations.Migrations[pending[0]], context.Database.ProviderName!).TargetModel;
+        foreach (var entity in initialModel.GetEntityTypes())
         {
             var table = entity.GetTableName()!;
             if (!existing.Contains(table)) continue;
@@ -51,7 +54,7 @@ internal static class InitialMigrationResume
                 indexes.Add((reader.GetString(0), reader.GetString(1)), (reader.GetInt32(2) == 0, reader.GetString(3)));
         }
         // Validate existing PK/alternate keys and FKs before skipping a CREATE TABLE.
-        foreach (var entity in context.Model.GetEntityTypes().Where(e => existing.Contains(e.GetTableName()!)))
+        foreach (var entity in initialModel.GetEntityTypes().Where(e => existing.Contains(e.GetTableName()!)))
         {
             var table = entity.GetTableName()!;
             foreach (var key in entity.GetKeys())

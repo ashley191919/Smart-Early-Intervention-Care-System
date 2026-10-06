@@ -24,9 +24,9 @@ public sealed class WorkspaceOperationException(string code, string message, int
 }
 
 // Development-only: only the explicit synthetic seed is eligible. No parental consent is asserted.
-public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogService audit, TimeProvider clock)
+public sealed partial class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogService audit, TimeProvider clock)
 {
-    public const string Notice = "開發測試：虛構個案，未驗證家長同意；授權、會話及指定任務已使用 MySQL。授權不限時；會話 8 小時後需重驗授權碼。草稿與正式答案尚未保存。";
+    public const string Notice = "開發測試：虛構個案，未驗證家長同意；授權、會話、操作紀錄與提交答案使用 MySQL。授權不限時；全部指定問卷提交成功後失效。草稿僅暫存本頁，刷新後清除。";
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
     private static byte[] Hash(string value) => SHA256.HashData(Encoding.ASCII.GetBytes(value));
     private static bool IsToken(string? value, int size) => value is not null && value.Length == size && value.All(Uri.IsHexDigit);
@@ -37,14 +37,31 @@ public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogSe
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var cases = await db.Cases.FromSqlInterpolated($"SELECT * FROM cases WHERE case_id = {CoreDevelopmentSeed.CaseId.ToString()} FOR UPDATE").ToListAsync(ct);
         if (cases.Count != 1 || cases[0].CaseCode != "CASE-DEMO-001") throw Unavailable();
-        var tasks = await db.QuestionnaireTasks.FromSqlInterpolated($"SELECT * FROM case_questionnaires WHERE task_id = {CoreDevelopmentSeed.TaskId.ToString()} FOR UPDATE").ToListAsync(ct);
-        var task = tasks.SingleOrDefault();
+        var candidateId = await db.QuestionnaireTasks.AsNoTracking()
+            .Where(t => t.CaseId == CoreDevelopmentSeed.CaseId && t.QuestionnaireVersionId == CoreDevelopmentSeed.VersionId && t.RespondentRole == "TEACHER" && (t.TaskStatus == "PENDING" || t.TaskStatus == "IN_PROGRESS"))
+            .OrderBy(t => t.AssignmentRound).Select(t => (Guid?)t.TaskId).FirstOrDefaultAsync(ct);
+        QuestionnaireTask? newTask = null;
+        if (candidateId is null)
+        {
+            // Repeated development acceptance creates a new synthetic round; never reopen an answer.
+            var previous = await db.QuestionnaireTasks.AsNoTracking().Where(t => t.CaseId == CoreDevelopmentSeed.CaseId && t.QuestionnaireVersionId == CoreDevelopmentSeed.VersionId && t.RespondentRole == "TEACHER").OrderByDescending(t => t.AssignmentRound).FirstOrDefaultAsync(ct);
+            if (previous?.TaskStatus != "SUBMITTED") throw Unavailable();
+            newTask = new QuestionnaireTask { TaskId = Guid.NewGuid(), CaseId = previous.CaseId, QuestionnaireId = previous.QuestionnaireId,
+                QuestionnaireVersionId = previous.QuestionnaireVersionId, RespondentRole = "TEACHER", AssignmentRound = checked(previous.AssignmentRound + 1),
+                IsRequired = true, TaskStatus = "PENDING", CreatedAtUtc = Now, UpdatedAtUtc = Now };
+            candidateId = newTask.TaskId;
+        }
+        // Match submission's grant -> task lock order; the case lock serializes creation.
+        var activeIds = await (from link in db.TeacherGrantTasks join grant in db.TeacherGrants on link.GrantId equals grant.GrantId where link.TaskId == candidateId.Value && grant.GrantStatus == "ACTIVE" select grant.GrantId).ToListAsync(ct);
+        foreach (var id in activeIds.Order()) await LockGrant(id, ct);
+        var tasks = await db.QuestionnaireTasks.FromSqlInterpolated($"SELECT * FROM case_questionnaires WHERE task_id = {candidateId.Value.ToString()} FOR UPDATE").ToListAsync(ct);
+        var task = newTask ?? tasks.SingleOrDefault();
         if (task is null || task.CaseId != CoreDevelopmentSeed.CaseId || task.RespondentRole != "TEACHER" || task.TaskStatus is not ("PENDING" or "IN_PROGRESS") || task.QuestionnaireVersionId != CoreDevelopmentSeed.VersionId) throw Unavailable();
         var version = await db.QuestionnaireVersions.SingleOrDefaultAsync(v => v.QuestionnaireVersionId == task.QuestionnaireVersionId && v.RespondentRole == "TEACHER", ct);
         if (version is null) throw Unavailable();
         using var definition = JsonDocument.Parse(version.DefinitionSnapshot);
         if (!definition.RootElement.TryGetProperty("isDevelopment", out var development) || development.ValueKind != JsonValueKind.True) throw Unavailable();
-        var activeIds = await (from link in db.TeacherGrantTasks join grant in db.TeacherGrants on link.GrantId equals grant.GrantId where link.TaskId == task.TaskId && grant.GrantStatus == "ACTIVE" select grant.GrantId).ToListAsync(ct);
+        if (newTask is not null) db.QuestionnaireTasks.Add(newTask);
         foreach (var id in activeIds.Order())
         {
             var old = await LockGrant(id, ct);
@@ -132,6 +149,7 @@ public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogSe
         var session = await db.TeacherSessions.SingleOrDefaultAsync(s => s.SessionHash == hash, ct);
         var changed = session is not null && session.SessionStatus == "ACTIVE";
         if (changed) { session!.SessionStatus = "REVOKED"; session.RevokedAtUtc = Now; await db.SaveChangesAsync(ct); }
+        if (session?.ReceiptExpiresAtUtc is not null) { session.ReceiptExpiresAtUtc = null; await db.SaveChangesAsync(ct); }
         await tx.CommitAsync(ct);
         if (changed) Record(id.Value, "TeacherWorkspace.Logout", correlationId ?? Guid.NewGuid().ToString());
     }
@@ -162,7 +180,7 @@ public sealed class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogSe
     }
     private void Record(Guid id, string action, string correlationId)
     {
-        var bearer = action is "TeacherWorkspace.Verify" or "TeacherWorkspace.Logout";
+        var bearer = action is "TeacherWorkspace.Verify" or "TeacherWorkspace.Logout" or "TeacherWorkspace.Submit";
         try { audit.TryWrite(new(bearer ? "TeacherGrantBearer" : "DevelopmentTestOperator", bearer ? id.ToString() : "development-test", action, "TeacherWorkspaceGrant", id.ToString(), "Success", correlationId)); } catch { }
     }
     private void RecordDenied(Guid? id, string correlationId)

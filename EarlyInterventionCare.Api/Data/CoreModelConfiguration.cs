@@ -153,6 +153,7 @@ internal sealed class TeacherSessionConfiguration : IEntityTypeConfiguration<Tea
         entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc").HasColumnType("datetime(6)").IsRequired();
         entity.Property(e => e.LastSeenAtUtc).HasColumnName("last_seen_at_utc").HasColumnType("datetime(6)").IsRequired();
         entity.Property(e => e.SessionExpiresAtUtc).HasColumnName("session_expires_at_utc").HasColumnType("datetime(6)").IsRequired();
+        entity.Property(e => e.ReceiptExpiresAtUtc).HasColumnName("receipt_expires_at_utc").HasColumnType("datetime(6)");
         entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc").HasColumnType("datetime(6)");
         entity.HasKey(e => e.SessionHash);
         entity.HasIndex(e => new { e.GrantId, e.SessionStatus }).HasDatabaseName("ix_sessions_grant_status");

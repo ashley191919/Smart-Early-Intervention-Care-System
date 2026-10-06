@@ -84,4 +84,18 @@ public sealed class DevelopmentTeacherWorkspaceController(IWebHostEnvironment en
         Response.Cookies.Delete(CookieName, Cookie);
         return NoContent();
     }
+
+    [HttpPost("tasks/{taskId:guid}/submit")]
+    [RequestSizeLimit(32768)]
+    public async Task<IActionResult> Submit(Guid taskId, WorkspaceSubmission request, CancellationToken ct)
+    {
+        if (!environment.IsDevelopment()) return NotFound();
+        var origin = Request.Headers.Origin.ToString();
+        if (Request.Headers["X-Teacher-Submission"] != "1" || Request.Headers["Sec-Fetch-Site"] == "cross-site" ||
+            (origin.Length != 0 && origin != $"{Request.Scheme}://{Request.Host}"))
+            return StatusCode(403, new { code = "INVALID_ORIGIN", message = "請由本網站提交問卷。" });
+        if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key) || key == Guid.Empty)
+            return BadRequest(new { code = "INVALID_INPUT", message = "提交請求識別碼無效。" });
+        return Ok(await service.SubmitAsync(Request.Cookies[CookieName], taskId, key, request, HttpContext.TraceIdentifier, ct));
+    }
 }

@@ -42,6 +42,7 @@ public sealed class MySqlAuditLogService(IServiceScopeFactory scopes, TimeProvid
     {
         "TeacherWorkspace.Create", "TeacherWorkspace.Replace", "TeacherWorkspace.Verify",
         "TeacherWorkspace.Revoke", "TeacherWorkspace.Logout", "TeacherWorkspace.VerifyDenied",
+        "TeacherWorkspace.Submit",
         "TeacherGrant.Create", "TeacherGrant.Verify", "TeacherGrant.Revoke", "TeacherResponse.Submit", "TeacherResponse.SubmitDenied"
     };
 

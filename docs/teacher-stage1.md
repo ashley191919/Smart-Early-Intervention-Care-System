@@ -17,9 +17,9 @@
 
 ## 範圍與後續
 
-本階段已完成「後端建立測試授權碼 → 驗證 → 會話 → 取得指定問卷」。不是正式家長同意或教師本人身分驗證。建立與撤銷接口只在 Development 啟用，且僅能操作固定虛構個案。
+本階段已實作「後端建立測試授權碼 → 驗證 → 會話 → 取得指定問卷 → 提交保存 → USED」。不是正式家長同意或教師本人身分驗證。建立與撤銷接口只在 Development 啟用，且僅能操作固定虛構個案。
 
-答案依舊只暫存於本頁記憶體，刷新後清除。authorized 模式停用正式提交，避免將示範完成當成保存成功；尚未消耗授權，也不提供 USED 狀態轉換。共用資料表及授權查詢已完成；下一階段實作草稿保存、正式提交與提交成功後的授權／任務狀態。
+答案依舊只暫存於本頁記憶體，刷新後清除。authorized 模式已接開發提交 API，保存 26 題原始答案並轉 SUBMITTED／USED，同一交易完成。重複去重、失敗回滾與撤銷競爭已測試；本機整合驗收見 [提交驗收](teacher-submission-testing.md)。跨次草稿與正式家長身分尚未整合。
 
 新 SNAP 任務與既有 `/teacher/test-form` 的兩題測試授權完全分開，不將 26 題映射成兩題。
 
@@ -31,13 +31,14 @@
 | POST | `/verify` | JSON `{ "code": "產生的測試碼" }`；有效回傳工作台路徑並設定會話 Cookie |
 | GET | `/task` | 依會話回傳指定幼兒、問卷版本、全部題目及選項 |
 | POST | `/grants/{grantId}/revoke` | 撤銷指定開發授權；已有會話也立即無法讀取任務 |
+| POST | `/tasks/{taskId}/submit` | 同來源、指定版本、26 題完整答案；Idempotency-Key 去重，成功回簡短收據 |
 | POST | `/logout` | 清除開發會話 Cookie 及伺服器會話 |
 
 接口均禁止快取。所有新增 API 在 Production 回傳 404。驗證接口依來源 IP 每分鐘限 20 次，超出回傳 429。此為開發測試限流，正式部署仍需另行確認完整安全規格。
 
 會話 Cookie 為 HttpOnly、SameSite=Strict，路徑限制於上述 API 前綴；HTTPS 使用 Secure。HTTP localhost 僅供本機開發。碼與會話值在伺服器以雜湊索引保存，不寫入瀏覽器持久儲存、URL query、稽核事件或應用日誌；邀請 fragment 暫帶授權碼並在入口清除。不同網址參數不能改變被指派的個案或問卷。
 
-操作紀錄已改接 MySQL audit_logs：TeacherWorkspace.Create／Verify／Revoke／Replace／Logout／VerifyDenied。ResourceType 為 TeacherWorkspaceGrant，不記錄授權碼或答案；未知授權使用 unknown。第二份 migration 的使用者已回報本機驗收成功，詳見 [操作紀錄驗收](teacher-audit-testing.md)。沿用 best-effort 契約，寫入失敗不回滾已完成業務。
+操作紀錄已改接 MySQL audit_logs：TeacherWorkspace.Create／Verify／Revoke／Replace／Logout／VerifyDenied／Submit。ResourceType 為 TeacherWorkspaceGrant，不記錄授權碼或答案；未知授權使用 unknown。第二份 migration 的使用者已回報本機驗收成功，詳見 [操作紀錄驗收](teacher-audit-testing.md)。沿用 best-effort 契約，寫入失敗不回滾已完成業務。
 
 ## 檔案
 
