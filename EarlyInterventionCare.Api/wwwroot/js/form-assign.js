@@ -9,7 +9,7 @@
     // 才能看到醫療人員當初指定的教師填答任務。後端必須分開管理指派與授權狀態。
     // 未來教師授權需由後端建立不可猜測的隨機 token / authorization code，
     // 不直接使用 caseId / parentId / childId；需包含任務對應、期限、授權及失效狀態。
-    // 本頁不產生任何授權資訊，只提供 Checkbox 統計、日期驗證與 Demo 提示。
+    // 本頁不產生任何授權資訊；驗證通過後只導向固定的填答邀請 Demo 頁。
     const form = document.querySelector("#form-assign-form");
     if (!form) return;
 
@@ -102,8 +102,9 @@
 
         feedback.textContent = "Demo：表單指派設定完成，目前尚未建立實際指派紀錄。";
         feedback.hidden = false;
-        // Normal HTML link to a separate fixed Demo, without transferring or saving this selection.
+        // Direct Demo navigation only: no assignment is saved and no selection or deadline is transferred.
         invitationDemo.hidden = false;
+        window.location.assign("invitation-success.html");
     });
 
     updateSelection();

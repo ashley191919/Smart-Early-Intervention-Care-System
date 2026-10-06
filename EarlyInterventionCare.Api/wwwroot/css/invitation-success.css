@@ -1,0 +1,65 @@
+/* Shared staff-dashboard.css owns the shell, content alignment, font, Cards and primary buttons. */
+.invitation-panel { margin-bottom: 20px; }
+.invitation-demo-note { margin: 0 0 20px; color: var(--text-secondary); font-size: 12px; }
+.invitation-info-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; gap: 16px 24px; margin: 0; }
+.invitation-info-grid > div { min-width: 0; }
+.invitation-info-grid dt { color: var(--text-secondary); font-size: 11px; }
+.invitation-info-grid dd { display: flex; align-items: center; min-height: 34px; margin: 5px 0 0; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; }
+.invitation-contact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.invitation-assignments { width: 100%; min-width: 0; table-layout: fixed; }
+.invitation-assignments thead th { padding: 0 16px 12px; font-size: 16px; font-weight: 600; }
+.invitation-assignments th, .invitation-assignments td { white-space: normal; overflow-wrap: anywhere; }
+.invitation-assignments tbody th { padding: 18px 16px 18px 0; color: #4b5563; font-size: 16px; font-weight: 500; }
+.invitation-assignments th:nth-child(2), .invitation-assignments td:nth-child(2) { width: 116px; text-align: center; }
+.invitation-assignments th:nth-child(3), .invitation-assignments td:nth-child(3) { width: 150px; text-align: center; }
+.invitation-assignments tbody td { padding: 18px 16px; font-size: 16px; }
+.invitation-assignments thead th:first-child { padding-left: 0; }
+.invitation-assignments tbody tr:last-child th { border-bottom: 0; }
+.invitation-check { color: var(--brand-teal-dark); font-weight: 600; }
+.invitation-mobile-label { display: none; }
+.invitation-assignment-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 16px; color: var(--brand-teal-dark); font-size: 12px; }
+.invitation-assignment-summary p { margin: 0; }
+.invitation-assignment-summary p:last-child { display: flex; flex-wrap: wrap; gap: 8px 20px; color: #737b86; }
+.invitation-description { margin: 16px 0; color: #737b86; font-size: 13px; }
+.invitation-link-label { margin: 0 0 8px; color: #4b5563; font-size: 13px; font-weight: 500; }
+.invitation-link-row { display: flex; align-items: stretch; gap: 12px; }
+.invitation-url { display: block; flex: 1; min-width: 0; padding: 12px 16px; color: var(--brand-teal-dark); font-size: 13px; line-height: 1.75; background: var(--brand-teal-pale); border: 1px solid #d3e2df; border-radius: 9px; overflow-wrap: anywhere; user-select: all; }
+.invitation-url:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
+.invitation-secondary-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: 44px; padding: 11px 19px; color: var(--brand-teal-dark); font-size: 13px; font-weight: 700; background: #fff; border: 1px solid #d3e2df; border-radius: 9px; }
+.invitation-secondary-button:hover { background: var(--brand-teal-pale); }
+.invitation-secondary-button:disabled { cursor: default; opacity: .65; }
+.invitation-helper { margin: 8px 0 0; color: var(--text-secondary); font-size: 11px; }
+.invitation-sms-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 24px; }
+.invitation-recipient { margin: 0; color: #737b86; font-size: 12px; }
+.invitation-feedback { margin: 12px 0 0; padding: 12px 16px; color: var(--brand-teal-dark); font-size: 13px; background: var(--brand-teal-pale); border: 1px solid #d3e2df; border-radius: 9px; }
+.invitation-feedback.is-error { color: #b36e68; background: #faeeed; border-color: #edd8d5; }
+.invitation-teacher-note { margin-top: 24px; padding: 16px; color: #737b86; background: var(--page-background); border: 1px solid var(--line-color); border-radius: 9px; }
+.invitation-teacher-note h3 { margin: 0 0 6px; color: var(--brand-teal-dark); font-size: 14px; font-weight: 600; }
+.invitation-teacher-note p { margin: 0; font-size: 12px; }
+.invitation-bottom-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px 20px; }
+.invitation-content [hidden] { display: none !important; }
+@media (max-width: 1100px) {
+    .invitation-info-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+    .invitation-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .invitation-assignments, .invitation-assignments tbody { display: block; }
+    .invitation-assignments thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .invitation-assignments tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 16px; border: 1px solid var(--line-color); border-radius: 12px; }
+    .invitation-assignments tbody tr + tr { margin-top: 10px; }
+    .invitation-assignments tbody th { grid-column: 1 / -1; padding: 0; border: 0; }
+    .invitation-assignments tbody td:nth-child(n) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; width: auto; padding: 0; font-size: 13px; text-align: left; border: 0; }
+    .invitation-mobile-label { display: inline; }
+    .invitation-link-row { flex-direction: column; }
+    .invitation-secondary-button { align-self: flex-start; }
+}
+@media (max-width: 520px) {
+    .invitation-info-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .invitation-assignments tbody tr { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+    .invitation-url { padding: 12px; font-size: 12px; }
+    .invitation-sms-actions { flex-direction: column; align-items: stretch; gap: 8px; }
+    .invitation-link-row .invitation-secondary-button { align-self: stretch; }
+    .invitation-secondary-button { padding: 9px 14px; font-size: 12px; }
+    .invitation-bottom-nav { align-items: stretch; flex-direction: column; }
+    .invitation-bottom-nav .invitation-secondary-button { align-self: stretch; }
+}
