@@ -1,8 +1,13 @@
 (() => {
     "use strict";
 
-    // Front-end Demo only: HTML holds static, masked case and form data.
-    // Case status and form status are separate; tabs do not alter either.
+    // Front-end Demo only: HTML holds static, masked case, contact, appointment and form data.
+    // Case, contact, appointment and form statuses are separate; tabs do not alter any of them.
+    // 個案 status 維持 pending-contact / in-progress / completed。
+    // data-contact-status：pending（待聯絡）、contacted（已聯絡）、no-answer（未接）、
+    // needs-follow-up（需再次聯絡）；data-appointment-status：unscheduled / scheduled。
+    // 以上與表單完成份數 / 指派總份數為不同維度，不用聯絡或預約狀態取代個案 status。
+    // 未來 Dashboard 近期追蹤可整合聯絡紀錄、預約資訊及表單進度；目前不串接、不儲存。
     // case-detail.html 與 case-detail-empty.html 是專題展示用的兩種 Demo 狀態。
     // 未來串接 API 後應整合為同一個 case-detail.html，不保留兩個正式詳細頁：
     // forms.length === 0 -> 尚未指派表單 Empty State；> 0 -> 實際表單列表。

@@ -43,6 +43,29 @@
 .detail-form-records:has(.detail-form-record) > .detail-empty,
 .detail-result-records:has(.detail-result-record) > .detail-empty { display: none; }
 .detail-form-records:not(:has(.detail-form-record)) > .detail-table-wrap { display: none; }
+/* Contact, appointment and form progress are separate from the case status. */
+.detail-tracking-summary { margin-bottom: 18px; }
+.detail-tracking-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 16px 24px; margin: 0; }
+.detail-tracking-summary-grid > div { min-width: 0; }
+.detail-tracking-summary-grid dt { color: var(--text-secondary); font-size: 11px; }
+.detail-tracking-summary-grid dd { margin: 6px 0 0; color: #4b5563; font-size: 14px; overflow-wrap: anywhere; }
+.detail-tracking-badge { display: inline-block; padding: 3px 8px; color: var(--brand-teal-dark); font-size: 11px; background: var(--brand-teal-pale); border: 1px solid #d3e2df; border-radius: 6px; }
+.detail-tracking-badge.is-neutral { color: #737b86; background: var(--page-background); border-color: var(--line-color); }
+.detail-tracking-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 18px; }
+.detail-contact-timeline { margin: 0; padding: 0 0 0 5px; list-style: none; }
+.detail-contact-item { position: relative; min-width: 0; padding: 0 0 24px 20px; border-left: 1px solid #d3e2df; }
+.detail-contact-item:last-child { padding-bottom: 0; border-left-color: transparent; }
+.detail-contact-item::before { content: ""; position: absolute; top: 7px; left: -5px; width: 9px; height: 9px; background: var(--brand-teal); border-radius: 50%; box-shadow: 0 0 0 3px #fff; }
+.detail-contact-item h3 { margin: 0 0 10px; color: var(--brand-teal-dark); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.detail-contact-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0; font-size: 12px; }
+.detail-contact-meta > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.detail-contact-meta dt { color: var(--text-secondary); }
+.detail-contact-meta dd { min-width: 0; margin: 0; color: #737b86; overflow-wrap: anywhere; }
+.detail-contact-note { margin: 10px 0 0; color: #737b86; font-size: 13px; overflow-wrap: anywhere; }
+.detail-appointment-empty-status { margin-bottom: 18px; }
+@media (max-width: 1100px) {
+    .detail-tracking-grid { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 850px) {
     .detail-basic-grid { grid-template-columns: minmax(0, 1fr); }
     .detail-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -53,4 +76,7 @@
     .detail-tabs { gap: 4px; }
     .detail-tab { padding: 7px 12px; }
     .detail-result-record { padding: 14px; }
+    .detail-tracking-summary-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .detail-contact-item { padding-left: 16px; }
+    .detail-contact-meta { align-items: flex-start; flex-direction: column; gap: 8px; }
 }

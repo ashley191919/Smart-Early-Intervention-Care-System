@@ -102,6 +102,7 @@
 
                 <div class="detail-tabs" role="tablist" aria-label="個案詳細資料頁籤">
                     <button id="detail-tab-basic" class="detail-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="detail-panel-basic" tabindex="0">基本資料</button>
+                    <button id="detail-tab-tracking" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-tracking" tabindex="-1">追蹤紀錄</button>
                     <button id="detail-tab-forms" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-forms" tabindex="-1">表單紀錄</button>
                     <button id="detail-tab-results" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-results" tabindex="-1">填答結果</button>
                 </div>
@@ -126,6 +127,57 @@
                                 <div><dt>手機號碼</dt><dd>0912***678</dd></div>
                                 <div><dt>電子郵件</dt><dd>w***@example.com</dd></div>
                             </dl>
+                        </section>
+                    </div>
+                </section>
+
+                <section id="detail-panel-tracking" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-tracking" tabindex="0" hidden>
+                    <!-- 聯絡、預約及表單進度為獨立維度，不取代個案 data-case-status。 -->
+                    <section class="panel detail-tracking-summary" aria-labelledby="detail-tracking-summary-title">
+                        <div class="panel-heading"><div><h2 id="detail-tracking-summary-title">追蹤摘要</h2><p>聯絡、預約與表單進度分開呈現，以下皆為 Demo 資料。</p></div></div>
+                        <dl class="detail-tracking-summary-grid">
+                            <div data-contact-status="contacted"><dt>聯絡進度</dt><dd><span class="detail-tracking-badge">已聯絡</span></dd></div>
+                            <div data-appointment-status="scheduled"><dt>預約進度</dt><dd><span class="detail-tracking-badge">已預約</span></dd></div>
+                            <div><dt>表單進度</dt><dd>1 / 2 已完成</dd></div>
+                        </dl>
+                    </section>
+                    <div class="detail-tracking-grid">
+                        <section class="panel" aria-labelledby="detail-contact-records-title">
+                            <div class="panel-heading"><h2 id="detail-contact-records-title">聯絡紀錄</h2></div>
+                            <ol class="detail-contact-timeline" role="list" aria-label="Demo 聯絡紀錄，由新到舊">
+                                <li class="detail-contact-item" data-contact-status="contacted">
+                                    <article aria-labelledby="detail-contact-time-1">
+                                        <h3 id="detail-contact-time-1"><time datetime="2026-10-06T10:30">2026/10/06 10:30</time></h3>
+                                        <dl class="detail-contact-meta">
+                                            <div><dt>聯絡方式</dt><dd>電話</dd></div>
+                                            <div><dt>聯絡對象</dt><dd>主要聯絡人</dd></div>
+                                            <div><dt>聯絡結果</dt><dd><span class="detail-tracking-badge">已聯絡</span></dd></div>
+                                        </dl>
+                                        <p class="detail-contact-note">已與家長確認後續評估安排。</p>
+                                    </article>
+                                </li>
+                                <li class="detail-contact-item" data-contact-status="no-answer">
+                                    <article aria-labelledby="detail-contact-time-2">
+                                        <h3 id="detail-contact-time-2"><time datetime="2026-10-05T15:20">2026/10/05 15:20</time></h3>
+                                        <dl class="detail-contact-meta">
+                                            <div><dt>聯絡方式</dt><dd>電話</dd></div>
+                                            <div><dt>聯絡對象</dt><dd>主要聯絡人</dd></div>
+                                            <div><dt>聯絡結果</dt><dd><span class="detail-tracking-badge is-neutral">未接</span></dd></div>
+                                        </dl>
+                                        <p class="detail-contact-note">第一次電話聯繫未接。</p>
+                                    </article>
+                                </li>
+                            </ol>
+                        </section>
+                        <section class="panel" aria-labelledby="detail-appointment-title" data-appointment-status="scheduled">
+                            <div class="panel-heading"><h2 id="detail-appointment-title">預約資訊</h2></div>
+                            <dl class="detail-data-grid">
+                                <div><dt>預約狀態</dt><dd><span class="detail-tracking-badge">已預約</span></dd></div>
+                                <div><dt>預約日期</dt><dd><time datetime="2026-10-15">2026/10/15</time></dd></div>
+                                <div><dt>預約時間</dt><dd><time datetime="2026-10-15T09:30">09:30</time></dd></div>
+                                <div><dt>預約類型</dt><dd>早療評估</dd></div>
+                            </dl>
+                            <p class="detail-demo-note">僅為 Demo 預約資訊，未串接醫院掛號或 HIS。</p>
                         </section>
                     </div>
                 </section>
@@ -185,7 +237,7 @@
                         </div>
                     </section>
                 </section>
-                <noscript><p class="detail-demo-note">請啟用 JavaScript，以切換表單紀錄與填答結果頁籤。</p></noscript>
+                <noscript><p class="detail-demo-note">請啟用 JavaScript，以切換追蹤紀錄、表單紀錄與填答結果頁籤。</p></noscript>
             </main>
         </div>
     </div>
