@@ -11,6 +11,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using EarlyInterventionCare.Api.Services.Authentication;
+// EF tooling uses the offline factory; do not initialize the runtime host or its secrets.
+if (EF.IsDesignTime)
+{
+    return;
+}
 if (args.Contains("--verify-db-read") && args.Contains("--create-dev-user"))
 {
     Console.WriteLine("Only one database utility mode may be selected.");

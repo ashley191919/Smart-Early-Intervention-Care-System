@@ -1,40 +1,36 @@
+﻿using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using MySqlConnector;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace EarlyInterventionCare.Api.Data;
 
-/// <summary>Scaffolding uses an explicit server version and does not contact a database.</summary>
+/// <summary>Offline model scaffolding only; runtime configuration remains in Program.cs.</summary>
 public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
 {
     public ApplicationDbContext CreateDbContext(string[] args)
     {
-        var offline = args.Contains("--offline", StringComparer.Ordinal);
-        var connection = offline
-            ? "Server=localhost;Database=earlycare_dev;User=offline;Password=offline;"
-            : new ConfigurationBuilder()
-                .AddUserSecrets<ApplicationDbContextFactory>(optional: true)
-                .AddEnvironmentVariables()
-                .Build().GetConnectionString("DefaultConnection");
-        if (string.IsNullOrWhiteSpace(connection))
-        {
-            var exception = new InvalidOperationException("DefaultConnection is missing. Configure local user secrets; do not send passwords in chat.");
-            exception.Data["Code"] = "LOCAL_CONNECTION_MISSING";
-            throw exception;
-        }
-
-        // This initial factory is intentionally limited to the agreed local development database.
-        var settings = new MySqlConnectionStringBuilder(connection);
-        if (settings.Server is not ("localhost" or "127.0.0.1" or "::1") || settings.Database != "earlycare_dev")
-        {
-            var exception = new InvalidOperationException("This migration workflow requires localhost / earlycare_dev.");
-            exception.Data["Code"] = "LOCAL_DATABASE_SCOPE_MISMATCH";
-            throw exception;
-        }
-        settings.DateTimeKind = MySqlDateTimeKind.Utc;
+        // Never load secrets or runtime connection settings for model scaffolding.
+        const string connection = "Server=localhost;Database=earlycare_dev;User=offline;DateTimeKind=Utc;";
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseMySql(settings.ConnectionString, new MySqlServerVersion(new Version(8, 0, 46)))
+            .UseMySql(connection, new MySqlServerVersion(new Version(8, 0, 46)))
+            .AddInterceptors(new OfflineConnectionInterceptor())
             .Options;
         return new ApplicationDbContext(options);
+    }
+
+    private sealed class OfflineConnectionInterceptor : DbConnectionInterceptor
+    {
+        private static InvalidOperationException OfflineOnly() => new(
+            "Design-time database connections are disabled. Use migrations list --no-connect. Apply database changes through a separately reviewed workflow.");
+
+        public override InterceptionResult ConnectionOpening(
+            DbConnection connection, ConnectionEventData eventData, InterceptionResult result)
+            => throw OfflineOnly();
+
+        public override ValueTask<InterceptionResult> ConnectionOpeningAsync(
+            DbConnection connection, ConnectionEventData eventData, InterceptionResult result,
+            CancellationToken cancellationToken = default)
+            => throw OfflineOnly();
     }
 }
