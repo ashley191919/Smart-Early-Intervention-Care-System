@@ -116,6 +116,7 @@
     }
 
     function openContactModal() {
+        if (modal.open) return;
         resetContactForm();
         modal.showModal(); // Native dialog contains keyboard focus and makes the background inert.
         fields[0].focus({ preventScroll: true });
@@ -128,7 +129,10 @@
     // Handles every closing path, including the native Escape/cancel interaction.
     modal.addEventListener("close", () => {
         resetContactForm();
-        openButton.focus({ preventScroll: true });
+        // close is queued by browsers. Do not steal focus from a dialog opened after save.
+        if (!Array.from(document.querySelectorAll("dialog")).some((dialog) => dialog.open)) {
+            openButton.focus({ preventScroll: true });
+        }
     });
     modal.addEventListener("cancel", (event) => {
         event.preventDefault();
@@ -239,13 +243,23 @@
 
     form.addEventListener("submit", (event) => {
         event.preventDefault();
+        if (!modal.open) return; // Ignore repeated submissions after the first save closes it.
         if (!validateContactForm()) return;
-        records.push(createContactRecord());
+        const record = createContactRecord();
+        records.push(record);
         renderContactRecords();
         updateContactSummary();
-        closeContactModal();
         success.textContent = "聯絡紀錄已新增（Demo，重新整理後不保留）";
         success.hidden = false;
+        closeContactModal();
+        // close() removes open synchronously; trigger from the actual saved record, not
+        // the later close event or reset form fields. No two dialogs are open together.
+        if (["no-answer", "needs-follow-up"].includes(record.contactResult)) {
+            document.dispatchEvent(new CustomEvent("case-contact-saved", { detail: {
+                caseId: document.getElementById("case-todo-panel")?.dataset.caseId,
+                contactRecordId: record.id, contactResult: record.contactResult
+            } }));
+        }
     });
 })();
 
@@ -586,6 +600,11 @@
     let confirmation = null;
     let modalOrigin = null;
     let confirmationOrigin = null;
+    const followUpModal = document.getElementById("contact-follow-up-modal");
+    const contactButton = document.getElementById("add-contact-record");
+    const promptedContacts = new Set();
+    let followUpRequest = null;
+    let sourceContactRecordId = null;
 
     function localToday() {
         const now = new Date();
@@ -697,10 +716,11 @@
                 return;
             }
         }
-        addButton.focus({ preventScroll: true });
+        const target = origin?.returnButton || addButton;
+        target.focus({ preventScroll: true });
     }
     function originFor(button) {
-        return { taskId: button.dataset.taskId, action: button.dataset.taskAction };
+        return { taskId: button.dataset.taskId, action: button.dataset.taskAction, returnButton: button };
     }
     function setError(field, message) {
         const error = document.getElementById(field.id + "-error");
@@ -736,9 +756,10 @@
         priorityField.value = "normal";
         fields.forEach((field) => setError(field, ""));
         editingId = null;
+        sourceContactRecordId = null;
         refreshDateLimit();
     }
-    function openTaskModal(id, trigger) {
+    function openTaskModal(id, trigger, contactRecordId = null) {
         const task = id ? pendingTask(id) : null;
         if (id && !task) return;
         resetTaskForm();
@@ -752,6 +773,11 @@
             dateField.value = task.dueDate;
             priorityField.value = task.priority;
             noteField.value = task.note;
+        } else if (contactRecordId !== null) {
+            sourceContactRecordId = contactRecordId;
+            nameField.value = "再次聯絡家長";
+            typeField.value = "contact";
+            // Normal priority is already the default. Date/note remain blank until user input.
         }
         refreshDateLimit();
         // Native showModal makes the rest of the document inert and confines keyboard focus.
@@ -793,6 +819,36 @@
         confirmation = null;
         returnFocus(confirmationOrigin);
     });
+    if (followUpModal) {
+        bindDialog(followUpModal, ["contact-follow-up-close", "contact-follow-up-dismiss"], () => {
+            followUpRequest = null;
+            // The create button opens the existing task form explicitly after close().
+            // A delayed close event must not move focus away from that form.
+            if (!Array.from(document.querySelectorAll("dialog")).some((dialog) => dialog.open)) {
+                contactButton.focus({ preventScroll: true });
+            }
+        });
+        document.addEventListener("case-contact-saved", (event) => {
+            const request = event.detail;
+            if (!request || request.caseId !== caseId || !Number.isInteger(request.contactRecordId) ||
+                !["no-answer", "needs-follow-up"].includes(request.contactResult) ||
+                promptedContacts.has(request.contactRecordId)) return;
+            // Only newly saved records dispatch this event, never seeds, tab changes or reload.
+            if (followUpModal.open || modal.open || confirmModal.open ||
+                document.getElementById("contact-modal").open) return;
+            followUpRequest = { ...request };
+            followUpModal.showModal();
+            promptedContacts.add(request.contactRecordId); // Mark only after actually showing it.
+            document.getElementById("contact-follow-up-dismiss").focus({ preventScroll: true });
+        });
+        document.getElementById("contact-follow-up-create").addEventListener("click", () => {
+            if (!followUpModal.open || !followUpRequest) return;
+            const request = followUpRequest;
+            followUpRequest = null;
+            followUpModal.close();
+            openTaskModal(null, contactButton, request.contactRecordId);
+        });
+    }
     addButton.addEventListener("click", () => openTaskModal(null, addButton));
     dateField.addEventListener("focus", refreshDateLimit);
     fields.forEach((field) => {
@@ -809,6 +865,7 @@
     }
     form.addEventListener("submit", (event) => {
         event.preventDefault();
+        if (!modal.open) return;
         if (editingId && !pendingTask(editingId)) return;
         refreshDateLimit();
         let firstInvalid = null;
@@ -822,6 +879,12 @@
             return;
         }
         const existing = pendingTask(editingId);
+        // At most one task from this contact-save flow; terminal tasks are never reactivated.
+        if (!existing && sourceContactRecordId !== null && tasks.some((task) =>
+            task.sourceContactRecordId === sourceContactRecordId)) {
+            modal.close();
+            return;
+        }
         const values = {
             name: nameField.value.trim(), type: typeField.value, dueDate: dateField.value,
             priority: priorityField.value, note: noteField.value.trim()
@@ -829,7 +892,7 @@
         if (existing) Object.assign(existing, values);
         else {
             const order = nextOrder++;
-            tasks.push({ ...values, id: caseId + "-task-" + order, order, status: "pending" });
+            tasks.push({ ...values, id: caseId + "-task-" + order, order, status: "pending", sourceContactRecordId });
         }
         renderTasks();
         modal.close();
@@ -850,7 +913,9 @@
     });
     // Future Task API must authorize by case and validate changes server-side.
     // Task status/priority are independent of Case, Contact, Appointment and Form progress.
-    // No automatic task creation from a missed contact; reload restores only the above Demo.
+    // Contact saves may offer a task draft, but only explicit task-form submission creates it.
+    // Completing tasks never changes contact progress; contacted records never auto-complete tasks.
+    // Reload restores only the above Demo; no cross-page synchronization or persistence.
     renderTasks();
     document.getElementById("case-todo-save").disabled = false;
 })();

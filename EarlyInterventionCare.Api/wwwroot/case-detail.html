@@ -440,6 +440,18 @@
             </footer>
         </div>
     </dialog>
+    <dialog id="contact-follow-up-modal" class="contact-modal contact-follow-up-modal" role="dialog" aria-modal="true" aria-labelledby="contact-follow-up-title" aria-describedby="contact-follow-up-description">
+        <div class="contact-modal-card">
+            <header class="contact-modal-heading">
+                <div><h2 id="contact-follow-up-title">是否建立再次聯絡待辦？</h2><p id="contact-follow-up-description">本次聯絡尚未完成，是否安排下一次聯絡家長的日期？</p></div>
+                <button id="contact-follow-up-close" class="contact-modal-close" type="button" aria-label="關閉再次聯絡待辦提示">×</button>
+            </header>
+            <footer class="contact-modal-actions">
+                <button id="contact-follow-up-dismiss" class="contact-secondary-button" type="button">暫不建立</button>
+                <button id="contact-follow-up-create" class="primary-button" type="button" aria-haspopup="dialog" aria-controls="case-todo-modal">建立待辦</button>
+            </footer>
+        </div>
+    </dialog>
     <script src="js/case-detail.js" defer></script>
 </body>
 </html>

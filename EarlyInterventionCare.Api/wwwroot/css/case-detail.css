@@ -62,6 +62,13 @@
 .appointment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .appointment-actions button { padding: 8px 12px; font-size: 12px; }
 .appointment-actions button:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
+/* Match only these two add controls; keep appointment edit/cancel buttons compact. */
+.case-detail-content #add-appointment,
+.case-detail-content #case-todo-add { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 10px 19px; font-size: 13px; line-height: 1.5; border: 1px solid var(--brand-teal); border-radius: 9px; }
+.case-detail-content #add-appointment:hover,
+.case-detail-content #case-todo-add:hover { background: var(--brand-teal-dark); }
+.case-detail-content #add-appointment:focus-visible,
+.case-detail-content #case-todo-add:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
 .appointment-cancel-button { color: #b36e68; border-color: #edd8d5; }
 .appointment-cancel-button:hover { background: #faeeed; }
 .appointment-feedback { margin: 0 0 16px; color: var(--brand-teal-dark); font-size: 12px; overflow-wrap: anywhere; }
@@ -76,6 +83,7 @@
 .appointment-history-item time { color: var(--text-secondary); font-size: 11px; }
 .appointment-cancel-summary { margin: 18px 0 0; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; }
 .appointment-cancel-modal { max-width: 480px; }
+.contact-follow-up-modal { max-width: 480px; }
 #appointment-info dd { white-space: pre-wrap; }
 /* Contact-record Demo only; shell, other cards and status badges remain unchanged. */
 .detail-contact-heading { flex-wrap: wrap; gap: 12px; }
@@ -86,9 +94,10 @@
 .contact-modal::backdrop { background: rgb(30 41 59 / 30%); }
 .contact-modal-card { min-width: 0; padding: 26px; }
 .contact-modal-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.contact-modal-heading h2 { margin: 0; font-size: 18px; }
+.contact-modal-heading > div { flex: 1; min-width: 0; }
+.contact-modal-heading h2 { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
 .contact-modal-heading p { margin: 8px 0 0; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
-.contact-modal-close { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; color: #737b86; font-size: 24px; background: transparent; border: 1px solid var(--line-color); border-radius: 9px; }
+.contact-modal-heading > .contact-modal-close { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; margin: 0; padding: 0; color: #737b86; font-size: 24px; line-height: 1; background: transparent; border: 1px solid var(--line-color); border-radius: 9px; }
 .contact-modal-close:hover, .contact-secondary-button:hover { background: var(--brand-teal-pale); }
 .contact-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; margin-top: 20px; }
 .contact-field { min-width: 0; }
@@ -96,6 +105,8 @@
 .contact-field label { display: block; margin-bottom: 7px; color: #4b5563; font-size: 12px; font-weight: 700; }
 .contact-field label span { color: #b36e68; }
 .contact-field input, .contact-field select, .contact-field textarea { display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px; color: #4b5563; font: inherit; font-size: 13px; line-height: 1.75; background: var(--page-background); border: 1px solid #d3e2df; border-radius: 9px; }
+/* One line-style chevron, with room for text; suppress the native arrow. */
+.contact-modal .contact-field select { -webkit-appearance: none; appearance: none; height: 44px; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2387919b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px 16px; }
 .contact-field textarea { resize: vertical; overflow-wrap: anywhere; }
 .contact-field input:focus, .contact-field select:focus, .contact-field textarea:focus { border-color: var(--brand-teal); outline: none; box-shadow: 0 0 0 2px rgb(113 155 150 / 16%); }
 .contact-field [aria-invalid="true"] { border-color: #c98c85; }
