@@ -178,6 +178,16 @@
                             </section>
                         </section>
                     </div>
+                    <section id="case-todo-panel" class="panel case-todo-panel" aria-labelledby="case-todo-title" data-case-id="DEMO-024">
+                        <div class="panel-heading case-todo-heading">
+                            <div><h2 id="case-todo-title">後續待辦</h2><p>記錄接下來需要處理的工作；待辦狀態與個案及其他進度分開管理。</p></div>
+                            <button id="case-todo-add" class="primary-button" type="button"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增待辦</button>
+                        </div>
+                        <p class="detail-demo-note">前端 Demo：操作僅保留於目前頁面，重新整理後恢復原始資料。</p>
+                        <p id="case-todo-feedback" class="case-todo-feedback" role="status" hidden></p>
+                        <ul id="case-todo-list" class="case-todo-list" aria-label="後續待辦紀錄"></ul>
+                        <div id="case-todo-empty" class="detail-empty"><h3>目前尚無後續待辦</h3></div>
+                    </section>
                 </section>
 
                 <section id="detail-panel-forms" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-forms" tabindex="0" hidden>
@@ -320,6 +330,68 @@
             <footer class="contact-modal-actions">
                 <button id="appointment-cancel-dismiss" class="contact-secondary-button" type="button">保留預約</button>
                 <button id="appointment-cancel-confirm" class="contact-secondary-button appointment-cancel-button" type="button">確認取消預約</button>
+            </footer>
+        </div>
+    </dialog>
+    <dialog id="case-todo-modal" class="contact-modal" role="dialog" aria-modal="true" aria-labelledby="case-todo-modal-title" aria-describedby="case-todo-modal-description">
+        <div class="contact-modal-card">
+            <header class="contact-modal-heading">
+                <div><h2 id="case-todo-modal-title">新增待辦</h2><p id="case-todo-modal-description">記錄此個案接下來需要處理的工作</p></div>
+                <button id="case-todo-close" class="contact-modal-close" type="button" aria-label="關閉待辦視窗">×</button>
+            </header>
+            <p class="detail-demo-note">* 為必填。僅為前端 Demo，不會變更個案或其他進度。</p>
+            <form id="case-todo-form" novalidate>
+                <div class="contact-form-grid">
+                    <div class="contact-field contact-field-wide">
+                        <label for="caseTodoName">待辦事項 <span aria-hidden="true">*</span></label>
+                        <input id="caseTodoName" name="taskName" type="text" maxlength="100" placeholder="例如：再次聯絡家長" required aria-describedby="caseTodoName-error">
+                        <p id="caseTodoName-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="caseTodoType">待辦類型 <span aria-hidden="true">*</span></label>
+                        <select id="caseTodoType" name="taskType" required aria-describedby="caseTodoType-error">
+                            <option value="">請選擇待辦類型</option>
+                            <option value="contact">聯絡</option><option value="appointment">預約</option><option value="form">表單</option>
+                        </select>
+                        <p id="caseTodoType-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="caseTodoDueDate">預計完成日期 <span aria-hidden="true">*</span></label>
+                        <input id="caseTodoDueDate" name="dueDate" type="date" required aria-describedby="caseTodoDueDate-help caseTodoDueDate-error">
+                        <p id="caseTodoDueDate-help" class="case-todo-field-help">新增或變更日期時，須選擇今天或之後。</p>
+                        <p id="caseTodoDueDate-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="caseTodoPriority">優先程度 <span aria-hidden="true">*</span></label>
+                        <select id="caseTodoPriority" name="taskPriority" required aria-describedby="caseTodoPriority-error">
+                            <option value="normal" selected>一般</option><option value="high">優先</option>
+                        </select>
+                        <p id="caseTodoPriority-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field contact-field-wide">
+                        <label for="caseTodoNote">備註（選填）</label>
+                        <textarea id="caseTodoNote" name="note" rows="4" maxlength="500" placeholder="請輸入待辦備註" aria-describedby="caseTodoNote-help caseTodoNote-error"></textarea>
+                        <p id="caseTodoNote-help" class="case-todo-field-help">最多 500 字。</p>
+                        <p id="caseTodoNote-error" class="contact-field-error" hidden></p>
+                    </div>
+                </div>
+                <footer class="contact-modal-actions">
+                    <button id="case-todo-dismiss" class="contact-secondary-button" type="button">取消</button>
+                    <button id="case-todo-save" class="primary-button" type="submit" disabled>儲存</button>
+                </footer>
+            </form>
+        </div>
+    </dialog>
+    <dialog id="case-todo-confirm-modal" class="contact-modal" role="dialog" aria-modal="true" aria-labelledby="case-todo-confirm-title" aria-describedby="case-todo-confirm-description case-todo-confirm-summary">
+        <div class="contact-modal-card">
+            <header class="contact-modal-heading">
+                <div><h2 id="case-todo-confirm-title">確認完成待辦</h2><p id="case-todo-confirm-description">操作後會保留待辦紀錄，不會變更個案或其他進度。</p></div>
+                <button id="case-todo-confirm-close" class="contact-modal-close" type="button" aria-label="關閉待辦確認視窗">×</button>
+            </header>
+            <p id="case-todo-confirm-summary" class="case-todo-confirm-summary"></p>
+            <footer class="contact-modal-actions">
+                <button id="case-todo-confirm-dismiss" class="contact-secondary-button" type="button">返回</button>
+                <button id="case-todo-confirm-save" class="primary-button" type="button">確認完成</button>
             </footer>
         </div>
     </dialog>

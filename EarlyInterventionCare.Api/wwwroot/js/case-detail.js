@@ -547,3 +547,310 @@
     // Avoid a native submission if the Demo script has not initialized.
     document.getElementById("appointment-save").disabled = false;
 })();
+
+/* 後續待辦：獨立的前端記憶體 Demo，不更新個案、聯絡、預約或表單狀態。 */
+(() => {
+    "use strict";
+    const panel = document.getElementById("case-todo-panel");
+    if (!panel) return;
+    const list = document.getElementById("case-todo-list");
+    const empty = document.getElementById("case-todo-empty");
+    const feedback = document.getElementById("case-todo-feedback");
+    const addButton = document.getElementById("case-todo-add");
+    const modal = document.getElementById("case-todo-modal");
+    const confirmModal = document.getElementById("case-todo-confirm-modal");
+    const form = document.getElementById("case-todo-form");
+    const nameField = document.getElementById("caseTodoName");
+    const typeField = document.getElementById("caseTodoType");
+    const dateField = document.getElementById("caseTodoDueDate");
+    const priorityField = document.getElementById("caseTodoPriority");
+    const noteField = document.getElementById("caseTodoNote");
+    const fields = [nameField, typeField, dateField, priorityField, noteField];
+    const types = { contact: "聯絡", appointment: "預約", form: "表單" };
+    const statuses = { pending: "待處理", completed: "已完成", cancelled: "已取消" };
+    const caseId = panel.dataset.caseId;
+    const demoByCase = {
+        "DEMO-001": [
+            { name: "確認早療評估安排", type: "appointment", dueDate: "2026-10-12" },
+            { name: "提醒家長完成表單", type: "form", dueDate: "2026-10-14" }
+        ],
+        "DEMO-024": []
+    };
+    // Each document owns its own cloned records. No persistence or cross-page state.
+    const tasks = (demoByCase[caseId] || []).map((task, index) => ({
+        ...task, id: caseId + "-task-" + index, order: index,
+        priority: "normal", status: "pending", note: ""
+    }));
+    let nextOrder = tasks.length;
+    let editingId = null;
+    let confirmation = null;
+    let modalOrigin = null;
+    let confirmationOrigin = null;
+
+    function localToday() {
+        const now = new Date();
+        return now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") +
+            "-" + String(now.getDate()).padStart(2, "0");
+    }
+    function validDate(value) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+        const [year, month, day] = value.split("-").map(Number);
+        const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+        const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        return year > 0 && month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1];
+    }
+    function pendingTask(id) {
+        return tasks.find((task) => task.id === id && task.status === "pending");
+    }
+    function isOverdue(task, today) {
+        return task.status === "pending" && task.dueDate < today;
+    }
+    function sortedTasks(today) {
+        return [...tasks].sort((a, b) => {
+            const pendingDifference = Number(b.status === "pending") - Number(a.status === "pending");
+            if (pendingDifference) return pendingDifference;
+            if (a.status === "pending") {
+                const priorityDifference = Number(b.priority === "high") - Number(a.priority === "high");
+                if (priorityDifference) return priorityDifference;
+                const overdueDifference = Number(isOverdue(b, today)) - Number(isOverdue(a, today));
+                if (overdueDifference) return overdueDifference;
+            }
+            return a.dueDate.localeCompare(b.dueDate) || a.order - b.order;
+        });
+    }
+    function node(tag, className, text) {
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        if (text !== undefined) element.textContent = text;
+        return element;
+    }
+    function renderTasks() {
+        const today = localToday();
+        const fragment = document.createDocumentFragment();
+        sortedTasks(today).forEach((task) => {
+            const item = node("li", "case-todo-item");
+            item.dataset.todoId = task.id;
+            item.dataset.todoStatus = task.status;
+            item.dataset.todoPriority = task.priority;
+            item.dataset.todoType = task.type;
+            item.setAttribute("tabindex", "-1");
+            const content = node("div", "case-todo-content");
+            const heading = node("div", "case-todo-item-heading");
+            heading.append(node("h3", "", task.name));
+            const badge = node("span", "case-todo-status", statuses[task.status]);
+            badge.dataset.todoStatus = task.status;
+            heading.append(badge);
+            if (isOverdue(task, today)) heading.append(node("span", "case-todo-overdue", "已逾期"));
+            content.append(heading);
+            const details = node("dl", "case-todo-meta");
+            [
+                ["待辦類型", types[task.type]],
+                ["預計完成日期", task.dueDate.replaceAll("-", "/")],
+                ["優先程度", task.priority === "high" ? "優先" : "一般"]
+            ].forEach(([label, value], index) => {
+                const group = node("div");
+                const description = node("dd");
+                const text = node(index === 1 ? "time" : "span", index === 2 && task.priority === "high" ? "case-todo-priority" : "", value);
+                if (index === 1) text.setAttribute("datetime", task.dueDate);
+                description.append(text);
+                group.append(node("dt", "", label), description);
+                details.append(group);
+            });
+            content.append(details);
+            if (task.note) content.append(node("p", "case-todo-note", "備註：" + task.note));
+            const actions = node("div", "case-todo-actions");
+            [["complete", "完成"], ["edit", "編輯"], ["cancel", "取消"]].forEach(([action, label]) => {
+                const button = node("button", "contact-secondary-button case-todo-action", label);
+                button.type = "button";
+                button.dataset.taskId = task.id;
+                button.dataset.taskAction = action;
+                button.disabled = task.status !== "pending";
+                button.setAttribute("aria-label", label + "待辦：" + task.name);
+                button.addEventListener("click", () => {
+                    if (!pendingTask(task.id)) return;
+                    if (action === "edit") openTaskModal(task.id, button);
+                    else openConfirmation(task.id, action, button);
+                });
+                actions.append(button);
+            });
+            item.append(content, actions);
+            fragment.append(item);
+        });
+        list.replaceChildren(fragment);
+        empty.hidden = tasks.length > 0;
+        list.hidden = tasks.length === 0;
+    }
+    function returnFocus(origin) {
+        // Rendering replaces action nodes. Resolve the fresh button, not a detached node.
+        if (origin && origin.taskId) {
+            const button = Array.from(list.querySelectorAll("button")).find((candidate) =>
+                candidate.dataset.taskId === origin.taskId && candidate.dataset.taskAction === origin.action);
+            if (button && !button.disabled) {
+                button.focus({ preventScroll: true });
+                return;
+            }
+            // Completed/cancelled actions are disabled; focus their retained record instead.
+            const item = Array.from(list.querySelectorAll(".case-todo-item")).find((candidate) =>
+                candidate.dataset.todoId === origin.taskId);
+            if (item) {
+                item.focus({ preventScroll: true });
+                return;
+            }
+        }
+        addButton.focus({ preventScroll: true });
+    }
+    function originFor(button) {
+        return { taskId: button.dataset.taskId, action: button.dataset.taskAction };
+    }
+    function setError(field, message) {
+        const error = document.getElementById(field.id + "-error");
+        field.setAttribute("aria-invalid", message ? "true" : "false");
+        error.textContent = message;
+        error.hidden = !message;
+    }
+    function refreshDateLimit() {
+        const today = localToday();
+        const original = pendingTask(editingId);
+        // Let the picker retain an overdue original date. Other past dates fail JS validation.
+        dateField.min = original && original.dueDate < today ? original.dueDate : today;
+        document.getElementById("caseTodoDueDate-help").textContent = original && original.dueDate < today ?
+            "可保留原到期日；若變更日期，須選擇今天或之後。" :
+            "新增或變更日期時，須選擇今天或之後。";
+    }
+    function validationMessage(field) {
+        const value = field.value.trim();
+        if (field === nameField) return !value ? "請輸入待辦事項" : value.length > 100 ? "待辦事項最多 100 字" : "";
+        if (field === typeField) return Object.hasOwn(types, value) ? "" : "請選擇待辦類型";
+        if (field === priorityField) return ["normal", "high"].includes(value) ? "" : "請選擇優先程度";
+        if (field === noteField) return value.length > 500 ? "備註最多 500 字" : "";
+        if (!value) return "請選擇預計完成日期";
+        if (!validDate(value)) return "請選擇有效的日期";
+        const original = pendingTask(editingId);
+        if (value < localToday() && (!original || value !== original.dueDate)) {
+            return "新增或變更日期時，請選擇今天或之後";
+        }
+        return "";
+    }
+    function resetTaskForm() {
+        form.reset();
+        priorityField.value = "normal";
+        fields.forEach((field) => setError(field, ""));
+        editingId = null;
+        refreshDateLimit();
+    }
+    function openTaskModal(id, trigger) {
+        const task = id ? pendingTask(id) : null;
+        if (id && !task) return;
+        resetTaskForm();
+        editingId = task ? task.id : null;
+        modalOrigin = originFor(trigger);
+        feedback.hidden = true;
+        document.getElementById("case-todo-modal-title").textContent = task ? "編輯待辦" : "新增待辦";
+        if (task) {
+            nameField.value = task.name;
+            typeField.value = task.type;
+            dateField.value = task.dueDate;
+            priorityField.value = task.priority;
+            noteField.value = task.note;
+        }
+        refreshDateLimit();
+        // Native showModal makes the rest of the document inert and confines keyboard focus.
+        modal.showModal();
+        nameField.focus({ preventScroll: true });
+    }
+    function openConfirmation(id, action, trigger) {
+        const task = pendingTask(id);
+        if (!task) return;
+        confirmation = { id, action };
+        confirmationOrigin = originFor(trigger);
+        const completing = action === "complete";
+        document.getElementById("case-todo-confirm-title").textContent = completing ? "確認完成待辦" : "確認取消待辦";
+        document.getElementById("case-todo-confirm-summary").textContent =
+            "是否" + (completing ? "完成" : "取消") + "「" + task.name + "」？此操作後不可再次編輯或完成。";
+        document.getElementById("case-todo-confirm-save").textContent = completing ? "確認完成" : "確認取消";
+        confirmModal.showModal();
+        document.getElementById("case-todo-confirm-dismiss").focus({ preventScroll: true });
+    }
+    function bindDialog(dialog, dismissIds, onClose) {
+        dismissIds.forEach((id) => document.getElementById(id).addEventListener("click", () => dialog.close()));
+        dialog.addEventListener("cancel", (event) => {
+            event.preventDefault();
+            dialog.close();
+        });
+        dialog.addEventListener("close", onClose);
+        dialog.addEventListener("click", (event) => {
+            if (event.target !== dialog) return;
+            const bounds = dialog.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX > bounds.right ||
+                event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+        });
+    }
+    bindDialog(modal, ["case-todo-close", "case-todo-dismiss"], () => {
+        resetTaskForm();
+        returnFocus(modalOrigin);
+    });
+    bindDialog(confirmModal, ["case-todo-confirm-close", "case-todo-confirm-dismiss"], () => {
+        confirmation = null;
+        returnFocus(confirmationOrigin);
+    });
+    addButton.addEventListener("click", () => openTaskModal(null, addButton));
+    dateField.addEventListener("focus", refreshDateLimit);
+    fields.forEach((field) => {
+        const correct = () => {
+            if (field.getAttribute("aria-invalid") === "true") setError(field, validationMessage(field));
+            feedback.hidden = true;
+        };
+        field.addEventListener("input", correct);
+        field.addEventListener("change", correct);
+    });
+    function showFeedback(message) {
+        feedback.textContent = message + "（Demo，重新整理後不保留）";
+        feedback.hidden = false;
+    }
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (editingId && !pendingTask(editingId)) return;
+        refreshDateLimit();
+        let firstInvalid = null;
+        fields.forEach((field) => {
+            const message = validationMessage(field);
+            setError(field, message);
+            if (message && !firstInvalid) firstInvalid = field;
+        });
+        if (firstInvalid) {
+            firstInvalid.focus({ preventScroll: true });
+            return;
+        }
+        const existing = pendingTask(editingId);
+        const values = {
+            name: nameField.value.trim(), type: typeField.value, dueDate: dateField.value,
+            priority: priorityField.value, note: noteField.value.trim()
+        };
+        if (existing) Object.assign(existing, values);
+        else {
+            const order = nextOrder++;
+            tasks.push({ ...values, id: caseId + "-task-" + order, order, status: "pending" });
+        }
+        renderTasks();
+        modal.close();
+        showFeedback(existing ? "待辦已更新" : "待辦已新增");
+    });
+    document.getElementById("case-todo-confirm-save").addEventListener("click", () => {
+        if (!confirmation) return;
+        const task = pendingTask(confirmation.id);
+        if (!task) {
+            confirmModal.close();
+            return;
+        }
+        task.status = confirmation.action === "complete" ? "completed" : "cancelled";
+        const message = task.status === "completed" ? "待辦已完成，紀錄已保留" : "待辦已取消，紀錄已保留";
+        renderTasks();
+        confirmModal.close();
+        showFeedback(message);
+    });
+    // Future Task API must authorize by case and validate changes server-side.
+    // Task status/priority are independent of Case, Contact, Appointment and Form progress.
+    // No automatic task creation from a missed contact; reload restores only the above Demo.
+    renderTasks();
+    document.getElementById("case-todo-save").disabled = false;
+})();

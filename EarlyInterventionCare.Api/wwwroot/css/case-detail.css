@@ -127,3 +127,42 @@
     .detail-contact-item { padding-left: 16px; }
     .detail-contact-meta { align-items: flex-start; flex-direction: column; gap: 8px; }
 }
+
+/* 個案內後續待辦：沿用卡片、按鈕及 Modal，不影響其他追蹤區塊。 */
+.case-todo-panel { margin-top: 18px; }
+.case-todo-panel [hidden] { display: none !important; }
+.case-todo-heading { align-items: flex-start; gap: 16px; }
+.case-todo-heading .primary-button { flex-shrink: 0; }
+.case-todo-list { list-style: none; margin: 16px 0 0; padding: 0; }
+.case-todo-item { display: flex; align-items: flex-start; gap: 24px; padding: 20px 0; border-top: 1px solid #e5eceb; }
+.case-todo-item:focus { outline: 2px solid rgba(113, 155, 150, .45); outline-offset: 3px; border-radius: 9px; }
+.case-todo-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.case-todo-item-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+.case-todo-item-heading h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.7; }
+.case-todo-status, .case-todo-overdue, .case-todo-priority { display: inline-flex; padding: 3px 8px; border-radius: 6px; font-size: 11px; line-height: 1.7; }
+.case-todo-status { color: #9b7c51; background: #faf3e9; border: 1px solid #eddfca; }
+.case-todo-status[data-todo-status="completed"] { color: #65877a; background: #eff5f0; border-color: #d7e5da; }
+.case-todo-status[data-todo-status="cancelled"] { color: #879193; background: #f3f5f5; border-color: #e0e6e5; }
+.case-todo-overdue, .case-todo-priority { color: #b2736e; background: #faefee; }
+.case-todo-meta { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 12px 0 0; }
+.case-todo-meta dt { font-size: 11px; color: var(--text-secondary, #89949b); margin-bottom: 4px; }
+.case-todo-meta dd { margin: 0; font-size: 13px; line-height: 1.8; }
+.case-todo-note { margin: 12px 0 0; font-size: 12px; line-height: 1.8; color: var(--text-secondary, #89949b); white-space: pre-wrap; }
+.case-todo-actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+.case-todo-action { min-height: 40px; padding: 8px 12px; font-size: 12px; }
+.case-todo-action:disabled { color: #8b9595; background: #f7f9f8; border-color: #e1e7e5; cursor: not-allowed; }
+.case-todo-action:disabled:hover { background: #f7f9f8; }
+.case-todo-feedback { margin: 12px 0; font-size: 12px; color: #65877a; line-height: 1.8; }
+.case-todo-field-help { margin: 5px 0 0; font-size: 11px; color: var(--text-secondary, #89949b); line-height: 1.8; }
+.case-todo-confirm-summary { margin: 20px 0 0; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+    .case-todo-heading, .case-todo-item { flex-direction: column; gap: 14px; }
+    .case-todo-content { width: 100%; }
+    .case-todo-meta { gap: 12px 24px; }
+    .case-todo-actions { width: 100%; }
+    .case-todo-action { flex: 1; min-width: 0; }
+}
+@media (max-width: 520px) {
+    .case-todo-meta { display: grid; grid-template-columns: 1fr; }
+    .case-todo-heading .primary-button { width: 100%; justify-content: center; }
+}
