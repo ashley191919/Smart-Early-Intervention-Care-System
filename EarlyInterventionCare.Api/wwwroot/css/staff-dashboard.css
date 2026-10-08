@@ -188,30 +188,42 @@ tbody tr:last-child td { border-bottom: 0; }
 .case-person strong { color: #4b5563; font-size: 13px; font-weight: 500; }
 .case-person small { margin-top: 2px; color: var(--text-secondary); font-size: 10px; }
 .status-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
-.follow-up-panel .status-pending-contact { color: #b18f58; background: #fbf4e9; border-color: #eee2cd; }
-.follow-up-panel .status-in-progress { color: var(--brand-teal-dark); background: var(--brand-teal-pale); border-color: #d3e2df; }
-.follow-up-panel .status-completed { color: #737b86; background: #f5f6f8; border-color: var(--line-color); }
-.follow-up-panel .priority-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
-.follow-up-panel .priority-high { color: #bd7770; background: #faeeed; border-color: #edd8d5; }
-.follow-up-case[data-status="completed"] .priority-badge { display: none; }
-.follow-up-filters { display: flex; flex-wrap: wrap; gap: 8px; }
-.follow-up-filter {
-    padding: 5px 12px;
-    color: var(--brand-teal-dark);
-    font-size: 12px;
-    line-height: 1.6;
-    background: #fff;
-    border: 1px solid #d3e2df;
-    border-radius: 8px;
+/* Dashboard todos are work items, not a second case table. All rules are scoped. */
+.todo-demo-note { margin: 0 0 16px; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.todo-all-action { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.todo-all-action button { font-size: 12px; }
+.todo-development-note { color: var(--text-secondary); font-size: 11px; }
+.todo-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.todo-filter { padding: 5px 12px; color: var(--brand-teal-dark); font-size: 12px; line-height: 1.6; background: #fff; border: 1px solid #d3e2df; border-radius: 8px; }
+.todo-filter:hover { background: var(--brand-teal-pale); }
+.todo-filter.is-selected { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
+.todo-filter.is-selected:hover { color: var(--brand-teal-dark); background: var(--brand-teal-pale); }
+.todo-filter-info { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin: 9px 0 6px; }
+.todo-filter-hint, .todo-result-count, .todo-date-reference { margin: 0; color: var(--text-secondary); font-size: 11px; }
+.todo-result-count { color: var(--brand-teal-dark); }
+.todo-date-reference { margin-bottom: 12px; }
+.todo-panel [hidden] { display: none !important; }
+.todo-list { margin: 0; padding: 0; list-style: none; }
+/* Fix the action track width across rows: varying Demo hints must not shift the title column. */
+.todo-item { display: grid; grid-template-columns: minmax(135px, .7fr) minmax(0, 1.8fr) 200px; align-items: start; gap: 14px 24px; padding: 18px 0; border-bottom: 1px solid var(--line-color); }
+.todo-item:last-child { border-bottom: 0; }
+.todo-item > div { min-width: 0; }
+.todo-details h3 { margin: 0 0 6px; color: #4b5563; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.todo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 0; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.todo-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.todo-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.todo-status, .todo-priority, .todo-overdue { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid #d3e2df; border-radius: 6px; }
+.todo-status { color: var(--brand-teal-dark); background: var(--brand-teal-pale); }
+.todo-priority { color: #bd7770; background: #faeeed; border-color: #edd8d5; }
+.todo-overdue { color: #b18f58; background: #fbf4e9; border-color: #eee2cd; }
+.todo-panel .text-button:disabled { color: var(--text-secondary); cursor: not-allowed; }
+.todo-demo-hint { color: var(--text-secondary); font-size: 11px; overflow-wrap: anywhere; }
+.todo-empty { margin: 16px 0 0; padding: 20px 12px; color: var(--text-secondary); font-size: 13px; text-align: center; background: var(--page-background); border-radius: 9px; }
+@media (max-width: 850px) {
+    .todo-item { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .todo-actions { align-items: flex-start; }
+    .todo-panel .panel-heading { flex-wrap: wrap; }
 }
-.follow-up-filter:hover { background: var(--brand-teal-pale); }
-.follow-up-filter.is-selected { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
-.follow-up-filter.is-selected:hover { color: var(--brand-teal-dark); background: var(--brand-teal-pale); }
-.follow-up-filter-info { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin: 9px 0 17px; }
-.follow-up-filter-hint, .follow-up-result-count { margin: 0; color: var(--text-secondary); font-size: 11px; }
-.follow-up-result-count { color: var(--brand-teal-dark); }
-.follow-up-panel [hidden] { display: none !important; }
-.follow-up-empty { margin: 16px 0 0; padding: 20px 12px; color: var(--text-secondary); font-size: 13px; text-align: center; background: var(--page-background); border-radius: 9px; }
 .text-button { padding: 6px 2px; background: transparent; border: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 

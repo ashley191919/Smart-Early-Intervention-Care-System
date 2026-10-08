@@ -70,7 +70,6 @@
                         <h1 id="dashboard-title">醫療人員工作台</h1>
                         <p>王怡安，您好。以下是需要您關注的個案與早療照護資訊。</p>
                     </div>
-                    <a class="primary-button" href="case-create.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增個案</a>
                 </section>
 
                 <section class="summary-grid" aria-label="個案摘要">
@@ -81,68 +80,91 @@
                 </section>
 
                 <div class="content-grid">
-                    <section class="panel follow-up-panel" id="alerts" aria-labelledby="follow-up-title">
-                        <div class="panel-heading"><div><h2 id="follow-up-title">近期追蹤</h2><p>掌握個案處理狀態與優先程度</p></div><a href="cases.html">查看全部 →</a></div>
-                        <div class="follow-up-filters" role="group" aria-label="近期追蹤處理狀態篩選">
-                            <button class="follow-up-filter is-selected" type="button" data-filter-field="status" data-filter-value="all" aria-pressed="true" aria-controls="follow-up-list">全部</button>
-                            <button class="follow-up-filter" type="button" data-filter-field="status" data-filter-value="pending-contact" aria-pressed="false" aria-controls="follow-up-list">待聯繫</button>
-                            <button class="follow-up-filter" type="button" data-filter-field="status" data-filter-value="in-progress" aria-pressed="false" aria-controls="follow-up-list">進行中</button>
-                            <button class="follow-up-filter" type="button" data-filter-field="status" data-filter-value="completed" aria-pressed="false" aria-controls="follow-up-list">已完成</button>
+                    <section class="panel todo-panel" id="alerts" aria-labelledby="todo-title">
+                        <div class="panel-heading"><div><h2 id="todo-title">近期待辦</h2><p>掌握需要處理的聯絡、預約與表單追蹤工作</p></div><div class="todo-all-action"><button class="text-button" type="button" disabled aria-describedby="todo-all-hint">查看全部待辦</button><small id="todo-all-hint" class="todo-development-note">開發中</small></div></div>
+                        <p class="todo-demo-note">統計數字與待辦皆為前端 Demo，不是即時後端資料，也不會與其他頁面操作同步。以下到期日僅供展示。</p>
+                        <div class="todo-filters" role="group" aria-label="待辦類型篩選">
+                            <button class="todo-filter is-selected" type="button" data-filter-type="all" aria-pressed="true" aria-controls="todo-list">全部</button>
+                            <button class="todo-filter" type="button" data-filter-type="contact" aria-pressed="false" aria-controls="todo-list">聯絡</button>
+                            <button class="todo-filter" type="button" data-filter-type="appointment" aria-pressed="false" aria-controls="todo-list">預約</button>
+                            <button class="todo-filter" type="button" data-filter-type="form" aria-pressed="false" aria-controls="todo-list">表單</button>
                         </div>
-                        <div class="follow-up-filter-info">
-                            <p class="follow-up-filter-hint">優先個案置前；已完成個案依最近更新時間排序。</p>
-                            <p class="follow-up-result-count" role="status" aria-live="polite" aria-atomic="true">全部：顯示 6 筆個案</p>
+                        <div class="todo-filter-info">
+                            <p class="todo-filter-hint">優先程度 → 逾期未完成 → 到期日由近到遠；同條件維持原順序。</p>
+                            <p class="todo-result-count" role="status" aria-live="polite" aria-atomic="true">全部：顯示 6 筆 Demo 待辦</p>
                         </div>
-                        <div class="table-wrap">
-                            <table>
-                                <thead><tr><th scope="col">個案姓名／編號</th><th scope="col">處理狀態</th><th scope="col">優先程度</th><th scope="col">最近更新</th><th scope="col"><span class="sr-only">操作</span></th></tr></thead>
-                                <tbody id="follow-up-list">
-                                    <tr class="follow-up-case" data-status="pending-contact" data-priority="high" data-updated="2026-10-06">
-                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">王</span><span><strong>王○安</strong><small>DEMO-001</small></span></div></td>
-                                        <td><span class="status-badge status-pending-contact">待聯繫</span></td>
-                                        <td><span class="priority-badge priority-high">優先</span></td>
-                                        <td><time datetime="2026-10-06">2026/10/06</time></td>
-                                        <td><button class="text-button" type="button" aria-label="查看個案：王○安 DEMO-001">查看個案 →</button></td>
-                                    </tr>
-                                    <tr class="follow-up-case" data-status="in-progress" data-priority="normal" data-updated="2026-10-05">
-                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">陳</span><span><strong>陳○恩</strong><small>DEMO-002</small></span></div></td>
-                                        <td><span class="status-badge status-in-progress">進行中</span></td>
-                                        <td><span class="sr-only">一般</span></td>
-                                        <td><time datetime="2026-10-05">2026/10/05</time></td>
-                                        <td><button class="text-button" type="button" aria-label="查看個案：陳○恩 DEMO-002">查看個案 →</button></td>
-                                    </tr>
-                                    <tr class="follow-up-case" data-status="pending-contact" data-priority="normal" data-updated="2026-10-04">
-                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">林</span><span><strong>林○宇</strong><small>DEMO-003</small></span></div></td>
-                                        <td><span class="status-badge status-pending-contact">待聯繫</span></td>
-                                        <td><span class="sr-only">一般</span></td>
-                                        <td><time datetime="2026-10-04">2026/10/04</time></td>
-                                        <td><button class="text-button" type="button" aria-label="查看個案：林○宇 DEMO-003">查看個案 →</button></td>
-                                    </tr>
-                                    <tr class="follow-up-case" data-status="in-progress" data-priority="high" data-updated="2026-10-03">
-                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">張</span><span><strong>張○庭</strong><small>DEMO-004</small></span></div></td>
-                                        <td><span class="status-badge status-in-progress">進行中</span></td>
-                                        <td><span class="priority-badge priority-high">優先</span></td>
-                                        <td><time datetime="2026-10-03">2026/10/03</time></td>
-                                        <td><button class="text-button" type="button" aria-label="查看個案：張○庭 DEMO-004">查看個案 →</button></td>
-                                    </tr>
-                                    <tr class="follow-up-case" data-status="completed" data-priority="normal" data-updated="2026-10-02">
-                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">李</span><span><strong>李○安</strong><small>DEMO-005</small></span></div></td>
-                                        <td><span class="status-badge status-completed">已完成</span></td>
-                                        <td><span class="sr-only">一般</span></td>
-                                        <td><time datetime="2026-10-02">2026/10/02</time></td>
-                                        <td><button class="text-button" type="button" aria-label="查看個案：李○安 DEMO-005">查看個案 →</button></td>
-                                    </tr>
-                                    <tr class="follow-up-case" data-status="in-progress" data-priority="normal" data-updated="2026-10-01">
-                                        <td><div class="case-person"><span class="case-avatar" aria-hidden="true">黃</span><span><strong>黃○恩</strong><small>DEMO-006</small></span></div></td>
-                                        <td><span class="status-badge status-in-progress">進行中</span></td>
-                                        <td><span class="sr-only">一般</span></td>
-                                        <td><time datetime="2026-10-01">2026/10/01</time></td>
-                                        <td><button class="text-button" type="button" aria-label="查看個案：黃○恩 DEMO-006">查看個案 →</button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="follow-up-empty" hidden>目前沒有符合此條件的近期個案。</p>
+                        <p id="todo-date-reference" class="todo-date-reference"></p>
+                        <!-- Todo type/status/priority/due date are independent of case status and case updatedAt. -->
+                        <ul id="todo-list" class="todo-list" aria-label="Demo 近期待辦">
+                            <li class="todo-item" data-todo-id="TODO-001" data-case-id="DEMO-024" data-todo-type="contact" data-todo-status="pending" data-priority="normal" data-due-date="2026-10-07">
+                                <div class="case-person"><span class="case-avatar" aria-hidden="true">林</span><span><strong>林○樂</strong><small>DEMO-024</small></span></div>
+                                <div class="todo-details">
+                                    <h3>首次聯絡家長</h3>
+                                    <p class="todo-meta"><span>聯絡追蹤</span><span>Demo 到期日：<time datetime="2026-10-07">2026/10/07</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                </div>
+                                <div class="todo-actions">
+                                    <div class="todo-badges"><span class="todo-status">待處理</span></div>
+                                    <a class="text-button" href="case-detail-empty.html" aria-label="查看個案：林○樂 DEMO-024">查看個案 →</a>
+                                </div>
+                            </li>
+                            <li class="todo-item" data-todo-id="TODO-002" data-case-id="DEMO-001" data-todo-type="appointment" data-todo-status="pending" data-priority="high" data-due-date="2026-10-14">
+                                <div class="case-person"><span class="case-avatar" aria-hidden="true">王</span><span><strong>王○安</strong><small>DEMO-001</small></span></div>
+                                <div class="todo-details">
+                                    <h3>確認早療評估安排</h3>
+                                    <p class="todo-meta"><span>預約追蹤</span><span>Demo 到期日：<time datetime="2026-10-14">2026/10/14</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                </div>
+                                <div class="todo-actions">
+                                    <div class="todo-badges"><span class="todo-status">待處理</span><span class="todo-priority">優先</span></div>
+                                    <a class="text-button" href="case-detail.html" aria-label="查看個案：王○安 DEMO-001">查看個案 →</a>
+                                </div>
+                            </li>
+                            <li class="todo-item" data-todo-id="TODO-003" data-case-id="DEMO-002" data-todo-type="contact" data-todo-status="pending" data-priority="normal" data-due-date="2026-10-06">
+                                <div class="case-person"><span class="case-avatar" aria-hidden="true">陳</span><span><strong>陳○恩</strong><small>DEMO-002</small></span></div>
+                                <div class="todo-details">
+                                    <h3>再次聯絡家長</h3>
+                                    <p class="todo-meta"><span>聯絡追蹤</span><span>Demo 到期日：<time datetime="2026-10-06">2026/10/06</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                </div>
+                                <div class="todo-actions">
+                                    <div class="todo-badges"><span class="todo-status">待處理</span></div>
+                                    <button class="text-button" type="button" disabled aria-describedby="todo-003-hint">查看個案</button><small id="todo-003-hint" class="todo-demo-hint">Demo：尚未提供此個案詳細頁</small>
+                                </div>
+                            </li>
+                            <li class="todo-item" data-todo-id="TODO-004" data-case-id="DEMO-004" data-todo-type="appointment" data-todo-status="pending" data-priority="high" data-due-date="2026-10-12">
+                                <div class="case-person"><span class="case-avatar" aria-hidden="true">張</span><span><strong>張○庭</strong><small>DEMO-004</small></span></div>
+                                <div class="todo-details">
+                                    <h3>確認後續預約安排</h3>
+                                    <p class="todo-meta"><span>預約追蹤</span><span>Demo 到期日：<time datetime="2026-10-12">2026/10/12</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                </div>
+                                <div class="todo-actions">
+                                    <div class="todo-badges"><span class="todo-status">待處理</span><span class="todo-priority">優先</span></div>
+                                    <button class="text-button" type="button" disabled aria-describedby="todo-004-hint">查看個案</button><small id="todo-004-hint" class="todo-demo-hint">Demo：尚未提供此個案詳細頁</small>
+                                </div>
+                            </li>
+                            <li class="todo-item" data-todo-id="TODO-005" data-case-id="DEMO-001" data-todo-type="form" data-todo-status="pending" data-priority="normal" data-due-date="2026-10-19">
+                                <div class="case-person"><span class="case-avatar" aria-hidden="true">王</span><span><strong>王○安</strong><small>DEMO-001</small></span></div>
+                                <div class="todo-details">
+                                    <h3>提醒家長完成克氏行為量表</h3>
+                                    <p class="todo-meta"><span>表單追蹤</span><span>Demo 到期日：<time datetime="2026-10-19">2026/10/19</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                </div>
+                                <div class="todo-actions">
+                                    <div class="todo-badges"><span class="todo-status">待處理</span></div>
+                                    <a class="text-button" href="case-detail.html" aria-label="查看個案：王○安 DEMO-001">查看個案 →</a>
+                                </div>
+                            </li>
+                            <li class="todo-item" data-todo-id="TODO-006" data-case-id="DEMO-003" data-todo-type="contact" data-todo-status="pending" data-priority="normal" data-due-date="2026-10-08">
+                                <div class="case-person"><span class="case-avatar" aria-hidden="true">林</span><span><strong>林○宇</strong><small>DEMO-003</small></span></div>
+                                <div class="todo-details">
+                                    <h3>首次聯絡家長</h3>
+                                    <p class="todo-meta"><span>聯絡追蹤</span><span>Demo 到期日：<time datetime="2026-10-08">2026/10/08</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                </div>
+                                <div class="todo-actions">
+                                    <div class="todo-badges"><span class="todo-status">待處理</span></div>
+                                    <button class="text-button" type="button" disabled aria-describedby="todo-006-hint">查看個案</button><small id="todo-006-hint" class="todo-demo-hint">Demo：尚未提供此個案詳細頁</small>
+                                </div>
+                            </li>
+                        </ul>
+                        <p class="todo-empty" role="status" hidden>目前沒有符合此類型的 Demo 待辦。</p>
+                        <noscript><p class="todo-demo-note">請啟用 JavaScript，以使用待辦類型篩選及排序。</p></noscript>
                     </section>
 
                 </div>

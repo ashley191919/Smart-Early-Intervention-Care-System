@@ -1,52 +1,68 @@
 (() => {
     "use strict";
 
-    const panel = document.querySelector(".follow-up-panel");
+    const panel = document.querySelector(".todo-panel");
     if (!panel) return;
+    const buttons = Array.from(panel.querySelectorAll(".todo-filter"));
+    const list = panel.querySelector("#todo-list");
+    // Capture original positions once so every filtering/sorting pass has stable tie-breaks.
+    const todos = Array.from(list.querySelectorAll(".todo-item")).map((row, originalIndex) => ({
+        row, originalIndex,
+        type: row.dataset.todoType,
+        status: row.dataset.todoStatus,
+        priority: row.dataset.priority,
+        dueDate: row.dataset.dueDate || ""
+    }));
+    const resultCount = panel.querySelector(".todo-result-count");
+    const emptyMessage = panel.querySelector(".todo-empty");
+    const dateReference = panel.querySelector("#todo-date-reference");
 
-    const buttons = Array.from(panel.querySelectorAll(".follow-up-filter"));
-    const cases = Array.from(panel.querySelectorAll(".follow-up-case"));
-    const caseList = panel.querySelector("#follow-up-list");
-    const resultCount = panel.querySelector(".follow-up-result-count");
-    const emptyMessage = panel.querySelector(".follow-up-empty");
+    // HTML contains six de-identified Demo tasks. No shared state, persistence or API.
+    // Todo type/status/dueDate are NOT case status or case updatedAt.
+    // Future data should reference a case and an independent work item; never infer a due date
+    // from case updatedAt, and never mark a case completed because a task/form is completed.
+    function localToday() {
+        const today = new Date();
+        return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"),
+            String(today.getDate()).padStart(2, "0")].join("-");
+    }
+
+    function isOverdue(todo, today) {
+        return todo.status !== "completed" && Boolean(todo.dueDate) && todo.dueDate < today;
+    }
+
+    function compareTodos(a, b, today) {
+        const priorityOrder = Number(b.priority === "high") - Number(a.priority === "high");
+        if (priorityOrder) return priorityOrder;
+        const overdueOrder = Number(isOverdue(b, today)) - Number(isOverdue(a, today));
+        if (overdueOrder) return overdueOrder;
+        // Local ISO calendar dates: earlier deadlines first; undated items last.
+        const dueOrder = (a.dueDate || "9999-12-31").localeCompare(b.dueDate || "9999-12-31");
+        return dueOrder || a.originalIndex - b.originalIndex;
+    }
+
     function applyFilter(button) {
-        const status = button.dataset.filterValue;
-        // Priority controls sorting only; every filter targets processing status.
-        const sortedCases = [...cases].sort((a, b) => {
-            if (status !== "completed") {
-                const priorityOrder = Number(b.dataset.priority === "high") -
-                    Number(a.dataset.priority === "high");
-                if (priorityOrder !== 0) return priorityOrder;
-            }
-
-            // ISO dates (YYYY-MM-DD) sort chronologically without timezone conversion.
-            return b.dataset.updated.localeCompare(a.dataset.updated);
-        });
+        const today = localToday();
+        const type = button.dataset.filterType;
         let visibleCount = 0;
-
-        sortedCases.forEach((caseRow) => {
-            const matches = status === "all" || caseRow.dataset.status === status;
-            caseRow.hidden = !matches;
-            caseList.appendChild(caseRow);
+        [...todos].sort((a, b) => compareTodos(a, b, today)).forEach((todo) => {
+            const matches = type === "all" || todo.type === type;
+            todo.row.hidden = !matches;
+            todo.row.querySelector(".todo-overdue").hidden = !isOverdue(todo, today);
+            list.appendChild(todo.row);
             if (matches) visibleCount += 1;
         });
-
         buttons.forEach((filterButton) => {
             const selected = filterButton === button;
             filterButton.classList.toggle("is-selected", selected);
             filterButton.setAttribute("aria-pressed", String(selected));
         });
-
-        resultCount.textContent = `${button.textContent.trim()}：顯示 ${visibleCount} 筆個案`;
+        resultCount.textContent = `${button.textContent.trim()}：顯示 ${visibleCount} 筆 Demo 待辦`;
         emptyMessage.hidden = visibleCount > 0;
+        dateReference.textContent = "Demo 日期判斷基準（本機日期）：" + today.replaceAll("-", "/");
     }
 
-    buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-            applyFilter(button);
-        });
-    });
-
-    const allButton = buttons.find((button) => button.dataset.filterValue === "all");
-    applyFilter(allButton);
+    buttons.forEach((button) => button.addEventListener("click", () => applyFilter(button)));
+    const allButton = buttons.find((button) => button.dataset.filterType === "all");
+    if (allButton) applyFilter(allButton);
 })();
