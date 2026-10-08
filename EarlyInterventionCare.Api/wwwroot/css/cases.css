@@ -30,6 +30,8 @@
 .cases-panel .priority-high { color: #bd7770; background: #faeeed; border-color: #edd8d5; }
 .cases-panel .priority-normal { color: #a3aab4; }
 .cases-table tbody tr:hover { background: #fafcfb; }
+.cases-panel .text-button:disabled { color: var(--text-secondary); cursor: not-allowed; }
+.cases-detail-hint { display: block; color: var(--text-secondary); font-size: 11px; }
 .cases-panel .cases-empty { padding: 44px 16px; color: var(--text-secondary); font-size: 13px; text-align: center; }
 .cases-list-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; padding-top: 18px; border-top: 1px solid var(--line-color); }
 .cases-range { margin: 0; color: var(--text-secondary); font-size: 12px; }

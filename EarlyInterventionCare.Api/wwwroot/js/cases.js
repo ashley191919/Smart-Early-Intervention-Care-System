@@ -101,13 +101,26 @@
         updatedCell.append(updated);
 
         const actionCell = createCell();
-        const detailLink = document.createElement("a");
+        // Only these two Demo cases have matching detail pages; do not show another child's data.
+        const detailHref = item.id === "DEMO-001" ? "case-detail.html" :
+            item.id === "DEMO-024" ? "case-detail-empty.html" : null;
+        const detailLink = document.createElement(detailHref ? "a" : "button");
         detailLink.className = "text-button";
         // Presentation-only routes; the future API will use one dynamic case-detail.html.
-        detailLink.href = item.id === "DEMO-024" ? "case-detail-empty.html" : "case-detail.html";
+        if (detailHref) detailLink.href = detailHref;
+        else {
+            detailLink.type = "button";
+            detailLink.disabled = true;
+            const hint = document.createElement("small");
+            hint.className = "cases-detail-hint";
+            hint.id = item.id.toLowerCase() + "-detail-hint";
+            hint.textContent = "Demo：尚未提供此個案詳細頁";
+            detailLink.setAttribute("aria-describedby", hint.id);
+            actionCell.append(hint);
+        }
         detailLink.textContent = "查看個案 →";
         detailLink.setAttribute("aria-label", `查看個案：${item.name} ${item.id}`);
-        actionCell.append(detailLink);
+        actionCell.prepend(detailLink);
 
         row.append(personCell, createCell(item.id), statusCell, priorityCell, createCell(item.contactName), updatedCell, actionCell);
         return row;
