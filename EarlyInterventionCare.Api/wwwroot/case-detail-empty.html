@@ -103,7 +103,6 @@
                     <button id="detail-tab-basic" class="detail-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="detail-panel-basic" tabindex="0">基本資料</button>
                     <button id="detail-tab-tracking" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-tracking" tabindex="-1">追蹤紀錄</button>
                     <button id="detail-tab-forms" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-forms" tabindex="-1">表單紀錄</button>
-                    <button id="detail-tab-results" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="detail-panel-results" tabindex="-1">填答結果</button>
                 </div>
 
                 <section id="detail-panel-basic" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-basic" tabindex="0">
@@ -135,59 +134,195 @@
                     <section class="panel detail-tracking-summary" aria-labelledby="detail-tracking-summary-title">
                         <div class="panel-heading"><div><h2 id="detail-tracking-summary-title">追蹤摘要</h2><p>聯絡、預約與表單進度分開呈現，以下皆為 Demo 資料。</p></div></div>
                         <dl class="detail-tracking-summary-grid">
-                            <div data-contact-status="pending"><dt>聯絡進度</dt><dd><span class="detail-tracking-badge is-neutral">待聯絡</span></dd></div>
+                            <div id="detail-contact-summary" data-contact-status="pending"><dt>聯絡進度</dt><dd><span class="detail-tracking-badge is-neutral">待聯絡</span></dd></div>
                             <div data-appointment-status="unscheduled"><dt>預約進度</dt><dd><span class="detail-tracking-badge is-neutral">尚未預約</span></dd></div>
                             <div><dt>表單進度</dt><dd>0 / 0</dd></div>
                         </dl>
                     </section>
                     <div class="detail-tracking-grid">
-                        <section class="panel" aria-labelledby="detail-contact-records-title" data-contact-status="pending">
-                            <div class="panel-heading"><h2 id="detail-contact-records-title">聯絡紀錄</h2></div>
-                            <div class="detail-empty" aria-labelledby="detail-contact-empty-title">
+                        <section class="panel" aria-labelledby="detail-contact-records-title">
+                            <div class="panel-heading detail-contact-heading">
+                                <h2 id="detail-contact-records-title">聯絡紀錄</h2>
+                                <button id="add-contact-record" class="primary-button" type="button" aria-haspopup="dialog" aria-controls="contact-modal"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增聯絡紀錄</button>
+                            </div>
+                            <p id="contact-success" class="contact-success" role="status" aria-live="polite" hidden></p>
+                            <ol id="detail-contact-timeline" class="detail-contact-timeline" role="list" aria-label="Demo 聯絡紀錄，由新到舊" hidden></ol>
+                            <div id="detail-contact-empty" class="detail-empty" aria-labelledby="detail-contact-empty-title">
                                 <h3 id="detail-contact-empty-title">目前尚無聯絡紀錄</h3>
                                 <p>此個案尚待聯絡主要聯絡人。</p>
                             </div>
                         </section>
-                        <section class="panel" aria-labelledby="detail-appointment-title" data-appointment-status="unscheduled">
-                            <div class="panel-heading"><h2 id="detail-appointment-title">預約資訊</h2></div>
-                            <dl class="detail-data-grid detail-appointment-empty-status">
-                                <div><dt>預約狀態</dt><dd><span class="detail-tracking-badge is-neutral">尚未預約</span></dd></div>
-                            </dl>
-                            <div class="detail-empty" aria-labelledby="detail-appointment-empty-title">
-                                <h3 id="detail-appointment-empty-title">目前尚無預約紀錄</h3>
+                        <section id="detail-appointment-panel" class="panel detail-appointment-panel" aria-labelledby="detail-appointment-title" data-case-id="DEMO-024" data-appointment-status="unscheduled">
+                            <div class="panel-heading appointment-heading">
+                                <h2 id="detail-appointment-title">預約資訊</h2>
+                                <div class="appointment-actions">
+                                    <button id="add-appointment" class="primary-button" type="button" aria-haspopup="dialog" aria-controls="appointment-modal"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增預約</button>
+                                    <button id="edit-appointment" class="contact-secondary-button" type="button" aria-haspopup="dialog" aria-controls="appointment-modal" hidden>編輯預約</button>
+                                    <button id="cancel-appointment" class="contact-secondary-button appointment-cancel-button" type="button" aria-haspopup="dialog" aria-controls="appointment-cancel-modal" hidden>取消預約</button>
+                                </div>
                             </div>
+                            <p id="appointment-feedback" class="appointment-feedback" role="status" aria-live="polite" hidden></p>
+                            <dl id="appointment-info" class="detail-data-grid" hidden>
+
+                            </dl>
+                            <div id="appointment-empty" class="detail-empty" aria-labelledby="detail-appointment-empty-title">
+                                <h3 id="detail-appointment-empty-title">尚未安排預約</h3>
+                                <p>可使用「新增預約」設定評估日期與時間。</p>
+                            </div>
+                            <p id="appointment-inactive-note" class="detail-demo-note" hidden>此預約已取消，目前無有效預約，可新增預約重新安排。</p>
+                            <p class="detail-demo-note">預約與操作歷程皆為前端 Demo，重新整理後恢復原始資料；未串接院內掛號或 HIS。</p>
+                            <section class="appointment-history" aria-labelledby="appointment-history-title">
+                                <h3 id="appointment-history-title">預約歷程（Demo）</h3>
+                                <ol id="appointment-history-list" class="appointment-history-list" aria-label="Demo 預約操作歷程"></ol>
+                                <p id="appointment-history-empty" class="detail-demo-note">目前尚無預約操作紀錄。</p>
+                            </section>
                         </section>
                     </div>
                 </section>
 
                 <section id="detail-panel-forms" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-forms" tabindex="0" hidden>
                     <section class="panel" aria-labelledby="detail-forms-title">
-                        <div class="panel-heading"><div><h2 id="detail-forms-title">表單紀錄</h2><p>表單填寫狀態與個案處理狀態分開顯示。</p></div></div>
+                        <div class="panel-heading detail-forms-heading">
+                            <div><h2 id="detail-forms-title">表單紀錄</h2><p>表單填寫狀態與個案處理狀態分開顯示；已完成表單可查看結果。</p></div>
+                            <a class="primary-button" href="form-assign.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>指派表單</a>
+                        </div>
+                        <!-- 每列代表一份表單與一位填答者的獨立紀錄；家長與教師不共用答案。 -->
                         <div class="detail-form-records">
                             <div class="detail-empty" aria-labelledby="detail-forms-empty-title">
                                 <h3 id="detail-forms-empty-title">目前尚未指派任何表單</h3>
                                 <p>為此個案選擇需要填寫的評估表單。</p>
-                                <a class="primary-button" href="form-assign.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>指派表單</a>
                             </div>
                         </div>
                     </section>
                 </section>
 
-                <section id="detail-panel-results" class="detail-tab-panel" role="tabpanel" aria-labelledby="detail-tab-results" tabindex="0" hidden>
-                    <section class="panel" aria-labelledby="detail-results-title">
-                        <div class="panel-heading"><div><h2 id="detail-results-title">填答結果</h2><p>僅顯示已完成的表單紀錄。</p></div></div>
-                        <div class="detail-result-records">
-                            <div class="detail-empty" aria-labelledby="detail-results-empty-title">
-                                <h3 id="detail-results-empty-title">目前尚無填答結果</h3>
-                                <p>表單完成填寫後，結果將顯示於此。</p>
-                            </div>
-                        </div>
-                    </section>
-                </section>
-                <noscript><p class="detail-demo-note">請啟用 JavaScript，以切換追蹤紀錄、表單紀錄與填答結果頁籤。</p></noscript>
+                <noscript><p class="detail-demo-note">請啟用 JavaScript，以切換基本資料、追蹤紀錄與表單紀錄頁籤，並新增聯絡紀錄。</p></noscript>
             </main>
         </div>
     </div>
+    <dialog id="contact-modal" class="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-modal-title" aria-describedby="contact-modal-description">
+        <div class="contact-modal-card">
+            <header class="contact-modal-heading">
+                <div>
+                    <h2 id="contact-modal-title">新增聯絡紀錄</h2>
+                    <p id="contact-modal-description">記錄本次與個案主要聯絡人的聯繫情形</p>
+                </div>
+                <button id="contact-modal-close" class="contact-modal-close" type="button" aria-label="關閉新增聯絡紀錄">×</button>
+            </header>
+            <p class="detail-demo-note">* 為必填。僅為前端 Demo，重新整理後新增紀錄將消失。</p>
+            <form id="contact-form" novalidate>
+                <div class="contact-form-grid">
+                    <div class="contact-field">
+                        <label for="contactDate">聯絡日期 <span aria-hidden="true">*</span></label>
+                        <input id="contactDate" name="contactDate" type="date" required aria-describedby="contactDate-error">
+                        <p id="contactDate-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="contactTime">聯絡時間 <span aria-hidden="true">*</span></label>
+                        <input id="contactTime" name="contactTime" type="time" required aria-describedby="contactTime-error">
+                        <p id="contactTime-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="contactMethod">聯絡方式 <span aria-hidden="true">*</span></label>
+                        <select id="contactMethod" name="contactMethod" required aria-describedby="contactMethod-error">
+                            <option value="">請選擇聯絡方式</option>
+                            <option value="phone">電話</option>
+                            <option value="sms">簡訊</option>
+                            <option value="other">其他</option>
+                        </select>
+                        <p id="contactMethod-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="contactTarget">聯絡對象 <span aria-hidden="true">*</span></label>
+                        <select id="contactTarget" name="contactTarget" required aria-describedby="contactTarget-error">
+                            <option value="">請選擇聯絡對象</option>
+                            <option value="primary-contact">主要聯絡人</option>
+                            <option value="other-family">其他家屬</option>
+                        </select>
+                        <p id="contactTarget-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="contactResult">聯絡結果 <span aria-hidden="true">*</span></label>
+                        <select id="contactResult" name="contactResult" required aria-describedby="contactResult-error">
+                            <option value="">請選擇聯絡結果</option>
+                            <option value="contacted">已聯絡</option>
+                            <option value="no-answer">未接</option>
+                            <option value="needs-follow-up">需再次聯絡</option>
+                        </select>
+                        <p id="contactResult-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field contact-field-wide">
+                        <label for="contactNote">聯絡紀錄 <span aria-hidden="true">*</span></label>
+                        <textarea id="contactNote" name="note" rows="4" maxlength="500" placeholder="請輸入本次聯絡內容" required aria-describedby="contactNote-count contactNote-error"></textarea>
+                        <p id="contactNote-count" class="contact-note-count">0 / 500</p>
+                        <p id="contactNote-error" class="contact-field-error" hidden></p>
+                    </div>
+                </div>
+                <footer class="contact-modal-actions">
+                    <button id="contact-modal-cancel" class="contact-secondary-button" type="button">取消</button>
+                    <button class="primary-button" type="submit">儲存紀錄</button>
+                </footer>
+            </form>
+        </div>
+    </dialog>
+    <dialog id="appointment-modal" class="contact-modal appointment-modal" role="dialog" aria-modal="true" aria-labelledby="appointment-modal-title" aria-describedby="appointment-modal-description">
+        <div class="contact-modal-card">
+            <header class="contact-modal-heading">
+                <div><h2 id="appointment-modal-title">新增預約</h2><p id="appointment-modal-description">設定本次早療評估的日期、時間與類型</p></div>
+                <button id="appointment-modal-close" class="contact-modal-close" type="button" aria-label="關閉預約視窗">×</button>
+            </header>
+            <p class="detail-demo-note">* 為必填。僅為前端 Demo，重新整理後恢復原始資料。</p>
+            <form id="appointment-form" novalidate>
+                <div class="contact-form-grid">
+                    <div class="contact-field">
+                        <label for="assessmentDate">評估日期 <span aria-hidden="true">*</span></label>
+                        <input id="assessmentDate" name="assessmentDate" type="date" required aria-describedby="assessmentDate-help assessmentDate-error">
+                        <p id="assessmentDate-help" class="appointment-field-help">歷史預約可查看；儲存時日期須為今天或之後。</p>
+                        <p id="assessmentDate-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="assessmentTime">評估時間 <span aria-hidden="true">*</span></label>
+                        <input id="assessmentTime" name="assessmentTime" type="time" required aria-describedby="assessmentTime-error">
+                        <p id="assessmentTime-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field">
+                        <label for="assessmentType">評估類型 <span aria-hidden="true">*</span></label>
+                        <select id="assessmentType" name="assessmentType" required aria-describedby="assessmentType-error">
+                            <option value="">請選擇評估類型</option>
+                            <option value="initial">初次評估</option>
+                            <option value="follow-up">追蹤評估</option>
+                            <option value="other">其他</option>
+                            <option value="early-intervention">早療評估</option>
+                        </select>
+                        <p id="assessmentType-error" class="contact-field-error" hidden></p>
+                    </div>
+                    <div class="contact-field contact-field-wide">
+                        <label for="appointmentNote">備註（選填）</label>
+                        <textarea id="appointmentNote" name="note" rows="4" maxlength="500" placeholder="請輸入預約備註" aria-describedby="appointmentNote-help appointmentNote-error"></textarea>
+                        <p id="appointmentNote-help" class="appointment-field-help">最多 500 字。</p>
+                        <p id="appointmentNote-error" class="contact-field-error" hidden></p>
+                    </div>
+                </div>
+                <footer class="contact-modal-actions">
+                    <button id="appointment-modal-dismiss" class="contact-secondary-button" type="button">取消</button>
+                    <button id="appointment-save" class="primary-button" type="submit" disabled>儲存預約</button>
+                </footer>
+            </form>
+        </div>
+    </dialog>
+    <dialog id="appointment-cancel-modal" class="contact-modal appointment-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="appointment-cancel-title" aria-describedby="appointment-cancel-description">
+        <div class="contact-modal-card">
+            <header class="contact-modal-heading">
+                <div><h2 id="appointment-cancel-title">取消預約確認</h2><p id="appointment-cancel-description">確認取消此預約？取消後將保留 Demo 紀錄，不再視為有效預約。</p></div>
+                <button id="appointment-cancel-close" class="contact-modal-close" type="button" aria-label="關閉取消確認">×</button>
+            </header>
+            <p id="appointment-cancel-summary" class="appointment-cancel-summary"></p>
+            <footer class="contact-modal-actions">
+                <button id="appointment-cancel-dismiss" class="contact-secondary-button" type="button">保留預約</button>
+                <button id="appointment-cancel-confirm" class="contact-secondary-button appointment-cancel-button" type="button">確認取消預約</button>
+            </footer>
+        </div>
+    </dialog>
     <script src="js/case-detail.js" defer></script>
 </body>
 </html>
