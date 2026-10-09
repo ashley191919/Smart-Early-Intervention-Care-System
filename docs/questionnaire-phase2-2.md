@@ -104,6 +104,21 @@ submit a full payload; inspect the receipt; confirm Draft writes are denied and 
 the identical submit key/payload returns the same responseId. These calls write business
 data, so they were not automatically executed by this implementation task.
 
-The existing teacher page still uses its explicitly labelled page-local draft. Connecting
-that UI to these backend APIs is a separate next step; no screen is relabelled as DB-saved
-before it actually uses the new endpoints.
+The existing teacher page in `mode=authorized` now loads and saves through the Draft
+endpoints with its browser-managed teacher session cookie. A successful PUT updates
+the revision and saved timestamp; a 409 preserves current input and requires explicitly
+reloading the latest draft. The unauthenticated preview remains page-local and labelled
+as a preview. Submit payload and receipt retry behavior are unchanged.
+
+Offline UI checks (Node.js; browser smoke additionally requires Microsoft Edge on Windows,
+or `TEACHER_TEST_BROWSER` pointing to a compatible Chromium browser):
+
+```powershell
+node --test tests/TeacherDraftClient.test.cjs
+node tests/TeacherDraftBrowserSmoke.cjs
+```
+
+The browser test serves the actual UI with a synthetic loopback HTTP fixture, including
+a synthetic HttpOnly session cookie. It checks partial save, refresh restoration,
+conflict/reload, failed save, unchanged submission payload and the 1440 x 900 viewport.
+It does not start ASP.NET Core or access MySQL, and does not prove actual DB persistence.
