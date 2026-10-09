@@ -56,6 +56,14 @@
         birthDate.max = `${today.getFullYear()}-${month}-${day}`;
     }
 
+    function isFutureBirthDate(value) {
+        // Compare ISO calendar strings directly so the validation does not depend only on
+        // a browser's rangeOverflow implementation for date inputs.
+        const today = new Date();
+        const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        return /^\d{4}-\d{2}-\d{2}$/.test(value) && value > localToday;
+    }
+
     updateBirthDateLimit();
     birthDate.addEventListener("focus", updateBirthDateLimit);
 
@@ -65,7 +73,7 @@
         let message = "";
         if (field.required && field.value.trim() === "") {
             message = "此欄位為必填";
-        } else if (field === birthDate && field.validity.rangeOverflow) {
+        } else if (field === birthDate && (field.validity.rangeOverflow || isFutureBirthDate(field.value))) {
             message = "出生日期不可選擇未來日期";
         } else if (field.type === "email" && field.value.trim() !== "" && field.validity.typeMismatch) {
             message = "請輸入有效的電子郵件地址";
