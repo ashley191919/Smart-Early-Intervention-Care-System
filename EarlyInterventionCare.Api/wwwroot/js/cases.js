@@ -23,7 +23,7 @@
         { id: "DEMO-018", name: "劉○宸", status: "in-progress", priority: "normal", contactName: "劉○敏", updatedAt: "2026-09-19" },
         { id: "DEMO-019", name: "蔡○綺", status: "completed", priority: "normal", contactName: "蔡○靜", updatedAt: "2026-09-18" },
         { id: "DEMO-020", name: "楊○哲", status: "completed", priority: "normal", contactName: "楊○怡", updatedAt: "2026-09-17" },
-        { id: "DEMO-021", name: "王○寧", status: "in-progress", priority: "normal", contactName: "王○琪", updatedAt: "2026-09-16" },
+        { id: "DEMO-021", name: "王○寧", status: "completed", priority: "normal", contactName: "王○琪", updatedAt: "2026-09-16" },
         { id: "DEMO-022", name: "陳○霖", status: "completed", priority: "normal", contactName: "陳○瑄", updatedAt: "2026-09-15" },
         { id: "DEMO-023", name: "林○柔", status: "completed", priority: "normal", contactName: "林○菁", updatedAt: "2026-09-14" },
         { id: "DEMO-024", name: "林○樂", status: "pending-contact", priority: "normal", contactName: "林○婷", updatedAt: "2026-10-06" }
