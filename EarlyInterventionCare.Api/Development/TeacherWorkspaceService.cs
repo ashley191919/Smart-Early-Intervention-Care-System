@@ -5,6 +5,7 @@ using EarlyInterventionCare.Api.Data;
 using EarlyInterventionCare.Api.Data.Entities;
 using EarlyInterventionCare.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using EarlyInterventionCare.Api.Services.Questionnaires;
 
 namespace EarlyInterventionCare.Api.Development;
 
@@ -17,14 +18,11 @@ public sealed record WorkspaceTask(Guid GrantId, string TaskId, string GrantStat
     WorkspacePatient Patient, WorkspaceQuestionnaire[] Questionnaires, string Notice);
 public sealed record WorkspaceGrant(Guid GrantId, string AuthorizationCode,
     string TaskId, string QuestionnaireVersionId, string Notice);
-public sealed class WorkspaceOperationException(string code, string message, int status) : Exception(message)
-{
-    public string Code { get; } = code;
-    public int Status { get; } = status;
-}
+public sealed class WorkspaceOperationException(string code, string message, int status) : QuestionnaireWorkflowException(code, message, status);
 
 // Development-only: only the explicit synthetic seed is eligible. No parental consent is asserted.
-public sealed partial class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogService audit, TimeProvider clock)
+public sealed partial class TeacherWorkspaceService(ApplicationDbContext db, IAuditLogService audit, TimeProvider clock,
+    TeacherQuestionnaireWorkflowService workflow)
 {
     public const string Notice = "開發測試：虛構個案，未驗證家長同意；授權、會話、操作紀錄與提交答案使用 MySQL。授權不限時；全部指定問卷提交成功後失效。草稿僅暫存本頁，刷新後清除。";
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
@@ -112,9 +110,11 @@ public sealed partial class TeacherWorkspaceService(ApplicationDbContext db, IAu
         var session = await db.TeacherSessions.SingleOrDefaultAsync(s => s.SessionHash == hash, ct);
         if (!Eligible(grant) || session is null || session.SessionStatus != "ACTIVE" || session.SessionExpiresAtUtc <= Now) return null;
         var assigned = await (from link in db.TeacherGrantTasks join task in db.QuestionnaireTasks on link.TaskId equals task.TaskId join version in db.QuestionnaireVersions on task.QuestionnaireVersionId equals version.QuestionnaireVersionId join form in db.Questionnaires on task.QuestionnaireId equals form.QuestionnaireId where link.GrantId == grant!.GrantId select new { link.CaseId, task, version, form.QuestionnaireCode }).ToListAsync(ct);
-        if (assigned.Count == 0 || assigned.Any(x => x.CaseId != grant!.CaseId || x.task.CaseId != grant.CaseId || x.task.RespondentRole != "TEACHER" || x.version.RespondentRole != "TEACHER" || x.task.TaskStatus is not ("PENDING" or "IN_PROGRESS"))) return null;
+        if (assigned.Count == 0 || assigned.Any(x => x.CaseId != grant!.CaseId || x.task.CaseId != grant.CaseId || x.task.RespondentRole != "TEACHER" || x.version.RespondentRole != "TEACHER" || x.task.TaskStatus is not ("PENDING" or "IN_PROGRESS" or "SUBMITTED"))) return null;
         var patient = await db.Cases.AsNoTracking().SingleAsync(c => c.CaseId == grant!.CaseId, ct);
-        var forms = assigned.OrderBy(x => x.task.TaskId).Select(x => Map(x.task, x.version, x.QuestionnaireCode)).ToArray();
+        // Completed tasks must not prevent continuing the remaining tasks in the same grant.
+        var forms = assigned.Where(x => x.task.TaskStatus != "SUBMITTED").OrderBy(x => x.task.TaskId).Select(x => Map(x.task, x.version, x.QuestionnaireCode)).ToArray();
+        if (forms.Length == 0) return null;
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(Now, TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time")));
         var age = today.Year - patient.BirthDate.Year;
         if (patient.BirthDate.AddYears(age) > today) age--;
@@ -164,7 +164,8 @@ public sealed partial class TeacherWorkspaceService(ApplicationDbContext db, IAu
     private async Task<bool> HasAvailableTasks(TeacherGrant grant, CancellationToken ct)
     {
         var tasks = await (from link in db.TeacherGrantTasks join task in db.QuestionnaireTasks on link.TaskId equals task.TaskId where link.GrantId == grant.GrantId select task).ToListAsync(ct);
-        return tasks.Count > 0 && tasks.All(t => t.CaseId == grant.CaseId && t.RespondentRole == "TEACHER" && t.TaskStatus is "PENDING" or "IN_PROGRESS");
+        return tasks.Count > 0 && tasks.All(t => t.CaseId == grant.CaseId && t.RespondentRole == "TEACHER" && t.TaskStatus is "PENDING" or "IN_PROGRESS" or "SUBMITTED")
+            && tasks.Any(t => t.TaskStatus is "PENDING" or "IN_PROGRESS");
     }
     private static WorkspaceQuestionnaire Map(QuestionnaireTask task, QuestionnaireVersion version, string code)
     {

@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using EarlyInterventionCare.Api.DTOs.Questionnaires;
+using EarlyInterventionCare.Api.Services.Questionnaires;
 
 namespace EarlyInterventionCare.Api.Controllers;
 
@@ -16,7 +18,7 @@ public sealed class WorkspaceErrorsAttribute : ExceptionFilterAttribute
 {
     public override void OnException(ExceptionContext context)
     {
-        if (context.Exception is WorkspaceOperationException operation)
+        if (context.Exception is QuestionnaireWorkflowException operation)
             context.Result = new ObjectResult(new { code = operation.Code, message = operation.Message, traceId = context.HttpContext.TraceIdentifier }) { StatusCode = operation.Status };
         else if (context.Exception is DbException or DbUpdateException or JsonException || context.Exception is InvalidOperationException)
             context.Result = new ObjectResult(new { code = "SAVE_UNAVAILABLE", message = "暫時無法讀寫開發資料庫，請確認 MySQL、連線設定及 migration。", traceId = context.HttpContext.TraceIdentifier }) { StatusCode = 503 };
@@ -90,12 +92,42 @@ public sealed class DevelopmentTeacherWorkspaceController(IWebHostEnvironment en
     public async Task<IActionResult> Submit(Guid taskId, WorkspaceSubmission request, CancellationToken ct)
     {
         if (!environment.IsDevelopment()) return NotFound();
-        var origin = Request.Headers.Origin.ToString();
-        if (Request.Headers["X-Teacher-Submission"] != "1" || Request.Headers["Sec-Fetch-Site"] == "cross-site" ||
-            (origin.Length != 0 && origin != $"{Request.Scheme}://{Request.Host}"))
+        if (!IsSameOriginWrite("X-Teacher-Submission"))
             return StatusCode(403, new { code = "INVALID_ORIGIN", message = "請由本網站提交問卷。" });
         if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key) || key == Guid.Empty)
             return BadRequest(new { code = "INVALID_INPUT", message = "提交請求識別碼無效。" });
         return Ok(await service.SubmitAsync(Request.Cookies[CookieName], taskId, key, request, HttpContext.TraceIdentifier, ct));
+    }
+
+    [HttpGet("tasks/{taskId:guid}/draft")]
+    public async Task<IActionResult> GetDraft(Guid taskId, CancellationToken ct)
+    {
+        if (!environment.IsDevelopment()) return NotFound();
+        return Ok(await service.GetDraftAsync(Request.Cookies[CookieName], taskId, ct));
+    }
+
+    [HttpPut("tasks/{taskId:guid}/draft")]
+    [RequestSizeLimit(32768)]
+    public async Task<IActionResult> SaveDraft(Guid taskId, SaveQuestionnaireDraftRequest request, CancellationToken ct)
+    {
+        if (!environment.IsDevelopment()) return NotFound();
+        if (!IsSameOriginWrite("X-Teacher-Draft"))
+            return StatusCode(403, new { code = "INVALID_ORIGIN", message = "請由本網站保存草稿。" });
+        return Ok(await service.SaveDraftAsync(Request.Cookies[CookieName], taskId, request, HttpContext.TraceIdentifier, ct));
+    }
+
+    [HttpGet("tasks/{taskId:guid}/receipt")]
+    public async Task<IActionResult> Receipt(Guid taskId, CancellationToken ct)
+    {
+        if (!environment.IsDevelopment()) return NotFound();
+        // TODO(11): formal response viewing needs Guardian/Case scope. This returns no answers.
+        return Ok(await service.GetReceiptAsync(Request.Cookies[CookieName], taskId, ct));
+    }
+
+    private bool IsSameOriginWrite(string header)
+    {
+        var origin = Request.Headers.Origin.ToString();
+        return Request.Headers[header] == "1" && Request.Headers["Sec-Fetch-Site"] != "cross-site" &&
+            (origin.Length == 0 || origin == $"{Request.Scheme}://{Request.Host}");
     }
 }
