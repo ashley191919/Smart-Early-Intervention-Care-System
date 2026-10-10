@@ -36,11 +36,10 @@
                 <p class="nav-label">醫療人員工作台</p>
                 <a class="nav-item" href="staff-dashboard.html"><svg aria-hidden="true"><use href="#icon-home"/></svg>總覽</a>
                 <a class="nav-item is-active" href="cases.html" aria-current="page"><svg aria-hidden="true"><use href="#icon-person"/></svg>個案管理</a>
-                <a class="nav-item" href="#assessments"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg>評估與紀錄</a>
-                <a class="nav-item" href="staff-dashboard.html#alerts"><svg aria-hidden="true"><use href="#icon-bell"/></svg>追蹤提醒 <span class="notification-count">3</span></a>
-                <a class="nav-item" href="#reports"><svg aria-hidden="true"><use href="#icon-chart"/></svg>統計報表</a>
+                <a class="nav-item" href="case-create.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增個案</a>
                 <p class="nav-label nav-label-secondary">系統</p>
-                <a class="nav-item" href="#settings"><svg aria-hidden="true"><use href="#icon-settings"/></svg>系統設定</a>
+                <!-- 前端目前沒有正式登出流程；僅返回既有登入頁，不撤銷登入憑證。 -->
+                <a class="nav-item" href="staff-login.html" title="Demo：返回登入頁，尚未串接正式登出" aria-label="登出（Demo：返回登入頁）"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 4H4v16h6M14 8l4 4-4 4M8 12h10"/></svg>登出</a>
             </nav>
 
             <div class="sidebar-footer">
@@ -71,7 +70,6 @@
                         <h1 id="cases-title">早療個案管理</h1>
                         <p>查看與管理早療個案資料及目前處理進度</p>
                     </div>
-                    <a class="primary-button" href="case-create.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增個案</a>
                 </section>
 
                 <section class="panel cases-panel" aria-label="早療個案列表">

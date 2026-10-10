@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="早療智慧動態照護系統新增早療個案">
-    <title>新增早療個案｜早療智慧動態照護系統</title>
+    <title>新增個案｜早療智慧動態照護系統</title>
     <link rel="stylesheet" href="css/staff-dashboard.css">
     <link rel="stylesheet" href="css/case-create.css">
 </head>
@@ -35,12 +35,11 @@
             <nav class="main-nav" aria-label="系統功能">
                 <p class="nav-label">醫療人員工作台</p>
                 <a class="nav-item" href="staff-dashboard.html"><svg aria-hidden="true"><use href="#icon-home"/></svg>總覽</a>
-                <a class="nav-item is-active" href="cases.html" aria-current="page"><svg aria-hidden="true"><use href="#icon-person"/></svg>個案管理</a>
-                <a class="nav-item" href="#assessments"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg>評估與紀錄</a>
-                <a class="nav-item" href="staff-dashboard.html#alerts"><svg aria-hidden="true"><use href="#icon-bell"/></svg>追蹤提醒 <span class="notification-count">3</span></a>
-                <a class="nav-item" href="#reports"><svg aria-hidden="true"><use href="#icon-chart"/></svg>統計報表</a>
+                <a class="nav-item" href="cases.html"><svg aria-hidden="true"><use href="#icon-person"/></svg>個案管理</a>
+                <a class="nav-item is-active" href="case-create.html" aria-current="page"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增個案</a>
                 <p class="nav-label nav-label-secondary">系統</p>
-                <a class="nav-item" href="#settings"><svg aria-hidden="true"><use href="#icon-settings"/></svg>系統設定</a>
+                <!-- 前端目前沒有正式登出流程；僅返回既有登入頁，不撤銷登入憑證。 -->
+                <a class="nav-item" href="staff-login.html" title="Demo：返回登入頁，尚未串接正式登出" aria-label="登出（Demo：返回登入頁）"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 4H4v16h6M14 8l4 4-4 4M8 12h10"/></svg>登出</a>
             </nav>
 
             <div class="sidebar-footer">
@@ -65,11 +64,10 @@
             </header>
 
             <main id="main-content" class="dashboard-content case-create-content">
-                <nav class="create-back-nav" aria-label="返回導覽"><a href="cases.html">← 返回個案管理</a></nav>
                 <section class="page-heading" aria-labelledby="case-create-title">
                     <div>
                         <p class="eyebrow">MEDICAL WORKSPACE</p>
-                        <h1 id="case-create-title">新增早療個案</h1>
+                        <h1 id="case-create-title">新增個案</h1>
                         <p>建立兒童與主要聯絡人基本資料</p>
                     </div>
                 </section>
