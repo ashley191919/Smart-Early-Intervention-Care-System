@@ -24,6 +24,13 @@
 .detail-data-wide { grid-column: 1 / -1; }
 .detail-data-grid dt { color: var(--text-secondary); font-size: 11px; }
 .detail-data-grid dd { margin: 5px 0 0; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; }
+.detail-sensitive-field { display: flex; align-items: center; gap: 6px; }
+.detail-sensitive-value { min-width: 0; overflow-wrap: anywhere; }
+.detail-sensitive-toggle { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 24px; width: 24px; height: 22px; margin: 0; padding: 0; color: var(--brand-teal-dark); background: transparent; border: 0; border-radius: 5px; }
+.detail-sensitive-toggle svg { width: 17px; height: 17px; }
+.detail-sensitive-toggle:hover { background: var(--brand-teal-pale); }
+.detail-sensitive-toggle:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 2px; }
+.detail-sensitive-toggle:disabled { opacity: .5; cursor: default; }
 .detail-forms-table { min-width: 780px; }
 .detail-forms-heading { flex-wrap: wrap; }
 .detail-forms-heading > .primary-button { color: #fff; }

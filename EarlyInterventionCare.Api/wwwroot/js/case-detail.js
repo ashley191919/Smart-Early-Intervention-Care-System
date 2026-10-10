@@ -20,7 +20,36 @@
     const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
     const panels = Array.from(document.querySelectorAll(".detail-tab-panel"));
 
+    // Explicitly fictional complete values are supplied by this document's HTML only.
+    // This visual toggle is not authorization. Production must authorize the case/field
+    // on the backend before returning full personal data; never rely on a front-end mask.
+    const sensitiveFields = Array.from(document.querySelectorAll("#detail-panel-basic .detail-sensitive-field"))
+        .map((field) => {
+            const value = field.querySelector(".detail-sensitive-value");
+            const button = field.querySelector(".detail-sensitive-toggle");
+            return { value, button, masked: value.textContent, full: field.dataset.demoFull,
+                label: button.getAttribute("aria-label").replace(/^顯示/, "") };
+        });
+
+    function setSensitiveVisibility(field, visible) {
+        field.value.textContent = visible ? field.full : field.masked;
+        field.button.setAttribute("aria-pressed", String(visible));
+        field.button.setAttribute("aria-label", (visible ? "隱藏" : "顯示") + field.label);
+        field.button.querySelector("use").setAttribute("href", visible ? "#icon-eye-off" : "#icon-eye");
+    }
+
+    sensitiveFields.forEach((field) => {
+        setSensitiveVisibility(field, false);
+        field.button.disabled = false;
+        field.button.addEventListener("click", () => {
+            setSensitiveVisibility(field, field.button.getAttribute("aria-pressed") !== "true");
+        });
+    });
+
     function activateTab(target, moveFocus = false) {
+        if (target.getAttribute("aria-controls") !== "detail-panel-basic") {
+            sensitiveFields.forEach((field) => setSensitiveVisibility(field, false));
+        }
         tabs.forEach((tab) => {
             const selected = tab === target;
             tab.classList.toggle("is-active", selected);

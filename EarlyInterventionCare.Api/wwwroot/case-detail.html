@@ -21,6 +21,8 @@
         <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
         <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
         <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+        <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+        <symbol id="icon-eye-off" viewBox="0 0 24 24"><path d="m3 3 18 18M10.6 5.1 12 5c6.5 0 10 7 10 7a20 20 0 0 1-3 4M6 6.5A20 20 0 0 0 2 12s3.5 7 10 7a12 12 0 0 0 5-1M10 10a3 3 0 0 0 4 4"/></symbol>
     </svg>
 
     <div class="dashboard-shell">
@@ -79,7 +81,7 @@
                             <span class="status-badge status-in-progress">進行中</span>
                             <span class="priority-badge priority-high">優先</span>
                         </div>
-                        <p class="detail-demo-note">目前為專題展示 Demo B：已指派 2 份表單，其中 1 份已完成。</p>
+                        <p class="detail-demo-note">目前為專題展示 Demo B：已指派 2 份表單，其中 1 份已完成。基本資料及可顯示的完整個資皆為虛構測試資料。</p>
                     </div>
                     <a class="primary-button" href="form-assign.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>指派表單</a>
                 </section>
@@ -114,8 +116,8 @@
                                 <div><dt>姓名</dt><dd>王○安</dd></div>
                                 <div><dt>性別</dt><dd>男</dd></div>
                                 <div><dt>出生日期</dt><dd><time datetime="2021-05-12">2021/05/12</time></dd></div>
-                                <div><dt>身分證字號</dt><dd>A12*******</dd></div>
-                                <div class="detail-data-wide"><dt>聯絡地址</dt><dd>新北市○○區○○路</dd></div>
+                                <div><dt>身分證字號</dt><dd class="detail-sensitive-field" data-demo-full="A123456789"><span id="detail-national-id" class="detail-sensitive-value">A12*******</span><button class="detail-sensitive-toggle" type="button" aria-label="顯示兒童身分證字號" aria-pressed="false" aria-controls="detail-national-id" disabled><svg aria-hidden="true"><use href="#icon-eye"/></svg></button></dd></div>
+                                <div class="detail-data-wide"><dt>聯絡地址</dt><dd class="detail-sensitive-field" data-demo-full="新北市測試區示範路1號"><span id="detail-address" class="detail-sensitive-value">新北市○○區○○路</span><button class="detail-sensitive-toggle" type="button" aria-label="顯示聯絡地址" aria-pressed="false" aria-controls="detail-address" disabled><svg aria-hidden="true"><use href="#icon-eye"/></svg></button></dd></div>
                             </dl>
                         </section>
                         <section class="panel" aria-labelledby="detail-contact-title">
@@ -123,8 +125,8 @@
                             <dl class="detail-data-grid">
                                 <div><dt>聯絡人姓名</dt><dd>王○美</dd></div>
                                 <div><dt>與兒童關係</dt><dd>母親</dd></div>
-                                <div><dt>手機號碼</dt><dd>0912***678</dd></div>
-                                <div><dt>電子郵件</dt><dd>w***@example.com</dd></div>
+                                <div><dt>手機號碼</dt><dd class="detail-sensitive-field" data-demo-full="0912000678"><span id="detail-phone" class="detail-sensitive-value">0912***678</span><button class="detail-sensitive-toggle" type="button" aria-label="顯示主要聯絡人手機號碼" aria-pressed="false" aria-controls="detail-phone" disabled><svg aria-hidden="true"><use href="#icon-eye"/></svg></button></dd></div>
+                                <div><dt>電子郵件</dt><dd class="detail-sensitive-field" data-demo-full="wabc@example.com"><span id="detail-email" class="detail-sensitive-value">w***@example.com</span><button class="detail-sensitive-toggle" type="button" aria-label="顯示主要聯絡人電子郵件" aria-pressed="false" aria-controls="detail-email" disabled><svg aria-hidden="true"><use href="#icon-eye"/></svg></button></dd></div>
                             </dl>
                         </section>
                     </div>
