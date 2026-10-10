@@ -6,6 +6,7 @@
     <meta name="description" content="早療智慧動態照護系統醫療人員後台">
     <title>醫療人員後台｜早療智慧動態照護系統</title>
     <link rel="stylesheet" href="css/staff-dashboard.css">
+    <link rel="stylesheet" href="css/staff-header.css">
 </head>
 <body>
     <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -36,9 +37,6 @@
                 <a class="nav-item is-active" href="staff-dashboard.html" aria-current="page"><svg aria-hidden="true"><use href="#icon-home"/></svg>總覽</a>
                 <a class="nav-item" href="cases.html"><svg aria-hidden="true"><use href="#icon-person"/></svg>個案管理</a>
                 <a class="nav-item" href="case-create.html"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增個案</a>
-                <p class="nav-label nav-label-secondary">系統</p>
-                <!-- 前端目前沒有正式登出流程；僅返回既有登入頁，不撤銷登入憑證。 -->
-                <a class="nav-item" href="staff-login.html" title="Demo：返回登入頁，尚未串接正式登出" aria-label="登出（Demo：返回登入頁）"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 4H4v16h6M14 8l4 4-4 4M8 12h10"/></svg>登出</a>
             </nav>
 
             <div class="sidebar-footer">
@@ -48,18 +46,30 @@
         </aside>
 
         <div class="page-area">
-            <header class="topbar">
+            <header class="topbar" data-staff-header>
                 <div class="hospital-header">
                     <img class="hospital-header-logo" src="images/hospital-logo.png" alt="天主教輔仁大學附設醫院院徽">
                     <span class="hospital-header-copy"><strong>天主教輔仁大學附設醫院</strong><small>FU JEN CATHOLIC UNIVERSITY HOSPITAL</small></span>
                 </div>
                 <div class="topbar-spacer"></div>
-                <button class="topbar-action" type="button" aria-label="通知"><svg aria-hidden="true"><use href="#icon-bell"/></svg><i></i></button>
-                <button class="staff-menu" type="button" aria-label="開啟使用者選單">
-                    <span class="staff-avatar">王</span>
-                    <span class="staff-details"><strong>王怡安</strong><small>醫療行政人員</small></span>
-                    <svg class="chevron" aria-hidden="true"><use href="#icon-chevron"/></svg>
-                </button>
+                <div class="header-actions">
+                    <button id="staff-notification-toggle" class="topbar-action" type="button" aria-label="開啟提醒清單" aria-expanded="false" aria-controls="staff-notification-panel"><svg aria-hidden="true"><use href="#icon-bell"/></svg><span id="staff-notification-count" class="header-reminder-count" aria-hidden="true" hidden>0</span></button>
+                    <button id="staff-user-toggle" class="staff-menu" type="button" aria-label="開啟使用者選單：醫療人員，個案管理師" aria-expanded="false" aria-controls="staff-user-panel">
+                        <span class="staff-avatar"><svg aria-hidden="true"><use href="#icon-person"/></svg></span>
+                        <span class="staff-details"><strong>醫療人員</strong><small>個案管理師</small></span>
+                        <svg class="chevron" aria-hidden="true"><use href="#icon-chevron"/></svg>
+                    </button>
+                    <section id="staff-notification-panel" class="header-popup header-notification-popup" aria-labelledby="staff-notification-title" tabindex="-1" hidden>
+                        <div class="header-reminder-heading"><h2 id="staff-notification-title">待辦提醒</h2><span id="staff-overdue-count" class="header-overdue-count"></span></div>
+                        <p class="header-demo-note">前端 Demo：依本機日期顯示逾期、今日及未來 3 天到期待辦；最多列出 5 項。</p>
+                        <ul id="staff-notification-list" class="header-reminders"></ul>
+                        <p id="staff-notification-empty" class="header-demo-note" hidden>目前沒有待處理提醒</p>
+                    </section>
+                    <section id="staff-user-panel" class="header-popup header-user-popup" aria-label="使用者選單" tabindex="-1" hidden>
+                        <button id="staff-header-logout" class="header-logout" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 4H4v16h6M14 8l4 4-4 4M8 12h10"/></svg><span>登出</span></button>
+                        <p id="staff-header-logout-feedback" class="header-demo-note" role="status" aria-live="polite" hidden></p>
+                    </section>
+                </div>
             </header>
 
             <main id="main-content" class="dashboard-content">
@@ -111,11 +121,11 @@
                                     <a class="text-button" href="case-detail-empty.html" aria-label="查看個案：林○樂 DEMO-024">查看個案 →</a>
                                 </div>
                             </li>
-                            <li class="todo-item" data-todo-id="TODO-002" data-case-id="DEMO-001" data-todo-type="appointment" data-todo-status="pending" data-priority="high" data-due-date="2026-10-14">
+                            <li class="todo-item" data-todo-id="TODO-002" data-case-id="DEMO-001" data-todo-type="appointment" data-todo-status="pending" data-priority="high" data-due-date="2026-10-12">
                                 <div class="case-person"><span class="case-avatar" aria-hidden="true">王</span><span><strong>王○安</strong><small>DEMO-001</small></span></div>
                                 <div class="todo-details">
                                     <h3>確認早療評估安排</h3>
-                                    <p class="todo-meta"><span>預約追蹤</span><span>Demo 到期日：<time datetime="2026-10-14">2026/10/14</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                    <p class="todo-meta"><span>預約追蹤</span><span>Demo 到期日：<time datetime="2026-10-12">2026/10/12</time></span><span class="todo-overdue" hidden>已逾期</span></p>
                                 </div>
                                 <div class="todo-actions">
                                     <div class="todo-badges"><span class="todo-status">待處理</span><span class="todo-priority">優先</span></div>
@@ -144,11 +154,11 @@
                                     <button class="text-button" type="button" disabled aria-describedby="todo-004-hint">查看個案</button><small id="todo-004-hint" class="todo-demo-hint">Demo：尚未提供此個案詳細頁</small>
                                 </div>
                             </li>
-                            <li class="todo-item" data-todo-id="TODO-005" data-case-id="DEMO-001" data-todo-type="form" data-todo-status="pending" data-priority="normal" data-due-date="2026-10-19">
+                            <li class="todo-item" data-todo-id="TODO-005" data-case-id="DEMO-001" data-todo-type="form" data-todo-status="pending" data-priority="normal" data-due-date="2026-10-14">
                                 <div class="case-person"><span class="case-avatar" aria-hidden="true">王</span><span><strong>王○安</strong><small>DEMO-001</small></span></div>
                                 <div class="todo-details">
-                                    <h3>提醒家長完成克氏行為量表</h3>
-                                    <p class="todo-meta"><span>表單追蹤</span><span>Demo 到期日：<time datetime="2026-10-19">2026/10/19</time></span><span class="todo-overdue" hidden>已逾期</span></p>
+                                    <h3>提醒家長完成表單</h3>
+                                    <p class="todo-meta"><span>表單追蹤</span><span>Demo 到期日：<time datetime="2026-10-14">2026/10/14</time></span><span class="todo-overdue" hidden>已逾期</span></p>
                                 </div>
                                 <div class="todo-actions">
                                     <div class="todo-badges"><span class="todo-status">待處理</span></div>
@@ -176,5 +186,6 @@
         </div>
     </div>
     <script src="js/staff-dashboard.js" defer></script>
+    <script src="js/staff-header.js" defer></script>
 </body>
 </html>
