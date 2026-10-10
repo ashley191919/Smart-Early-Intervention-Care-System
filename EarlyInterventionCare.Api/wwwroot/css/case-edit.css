@@ -1,0 +1,4 @@
+/* Reuse case-create.css for form controls, cards, actions and responsive layout. */
+.case-edit-content .create-field-control[readonly] { color: var(--text-secondary); background: var(--brand-teal-pale); }
+.case-edit-content .create-field-control { min-width: 0; }
+.case-edit-content > [hidden] { display: none !important; }

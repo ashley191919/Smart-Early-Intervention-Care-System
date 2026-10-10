@@ -19,6 +19,7 @@
 .detail-tab:focus-visible, .detail-tab-panel:focus-visible, .detail-table-wrap:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
 .detail-tab-panel[hidden] { display: none !important; }
 .detail-basic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.detail-basic-actions { display: flex; justify-content: flex-end; margin-bottom: 14px; }
 .detail-data-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; margin: 0; }
 .detail-data-grid > div { min-width: 0; }
 .detail-data-wide { grid-column: 1 / -1; }
