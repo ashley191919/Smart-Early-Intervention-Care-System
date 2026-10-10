@@ -197,7 +197,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .todo-filter { padding: 5px 12px; color: var(--brand-teal-dark); font-size: 12px; line-height: 1.6; background: #fff; border: 1px solid #d3e2df; border-radius: 8px; }
 .todo-filter:hover { background: var(--brand-teal-pale); }
 .todo-filter.is-selected { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
-.todo-filter.is-selected:hover { color: var(--brand-teal-dark); background: var(--brand-teal-pale); }
+.todo-filter.is-selected:hover { color: #fff; background: var(--brand-teal-dark); border-color: var(--brand-teal-dark); }
 .todo-filter-info { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin: 9px 0 6px; }
 .todo-filter-hint, .todo-result-count, .todo-date-reference { margin: 0; color: var(--text-secondary); font-size: 11px; }
 .todo-result-count { color: var(--brand-teal-dark); }
@@ -283,4 +283,17 @@ tbody tr:last-child td { border-bottom: 0; }
     .panel-heading h2 { font-size: 16px; }
     .panel-heading p { font-size: 11px; }
     table { min-width: 620px; }
+}
+
+/* Dashboard overview uses normal wrapping layout; other pages keep their shared shell. */
+.dashboard-overview { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 18px 24px; margin-bottom: 22px; }
+.dashboard-overview > .dashboard-title-heading { flex: 1 1 440px; min-width: 0; margin-bottom: 0; }
+.dashboard-stats { flex: 0 1 270px; width: 270px; max-width: 100%; padding: 12px 14px; background: var(--panel-background); border: 1px solid var(--line-color); border-radius: 16px; box-shadow: var(--panel-shadow); }
+.dashboard-stats h2 { margin: 0 0 8px; color: #4b5563; font-size: 14px; line-height: 1.4; }
+.dashboard-stats-list { display: grid; gap: 8px; margin: 0; }
+.dashboard-stat-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.dashboard-stat-item dt { min-width: 0; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+.dashboard-stat-value { margin: 0; color: var(--brand-teal); font-size: 22px; font-weight: 700; line-height: 1; }
+@media (max-width: 520px) {
+    .dashboard-overview { margin-bottom: 16px; }
 }

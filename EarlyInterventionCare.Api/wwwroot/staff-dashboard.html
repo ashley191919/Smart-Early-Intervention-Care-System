@@ -64,7 +64,8 @@
             </header>
 
             <main id="main-content" class="dashboard-content">
-                <section class="page-heading" id="dashboard" aria-labelledby="dashboard-title">
+                <div class="dashboard-overview">
+                <section class="page-heading dashboard-title-heading" id="dashboard" aria-labelledby="dashboard-title">
                     <div>
                         <p class="eyebrow">MEDICAL WORKSPACE</p>
                         <h1 id="dashboard-title">醫療人員工作台</h1>
@@ -72,12 +73,16 @@
                     </div>
                 </section>
 
-                <section class="summary-grid" aria-label="個案摘要">
-                    <article class="summary-card"><div class="summary-icon icon-teal"><svg aria-hidden="true"><use href="#icon-person"/></svg></div><div><p>個案總數</p><strong>24</strong><small class="positive">所有追蹤個案</small></div></article>
-                    <article class="summary-card"><div class="summary-icon icon-amber"><svg aria-hidden="true"><use href="#icon-clock"/></svg></div><div><p>待聯繫</p><strong>5</strong><small>尚待聯繫個案</small></div></article>
-                    <article class="summary-card"><div class="summary-icon icon-coral"><svg aria-hidden="true"><use href="#icon-alert"/></svg></div><div><p>進行中</p><strong>8</strong><small class="attention">持續追蹤中</small></div></article>
-                    <article class="summary-card"><div class="summary-icon icon-blue"><svg aria-hidden="true"><use href="#icon-clipboard"/></svg></div><div><p>已完成</p><strong>11</strong><small class="positive">已完成照護追蹤</small></div></article>
+                <section class="dashboard-stats" aria-labelledby="dashboard-stats-title">
+                    <h2 id="dashboard-stats-title">個案狀態統計</h2>
+                    <dl class="dashboard-stats-list">
+                        <div class="dashboard-stat-item"><dt>個案總數</dt><dd class="dashboard-stat-value">24</dd></div>
+                        <div class="dashboard-stat-item"><dt>待聯繫</dt><dd class="dashboard-stat-value">5</dd></div>
+                        <div class="dashboard-stat-item"><dt>進行中</dt><dd class="dashboard-stat-value">8</dd></div>
+                        <div class="dashboard-stat-item"><dt>已完成</dt><dd class="dashboard-stat-value">11</dd></div>
+                    </dl>
                 </section>
+                </div>
 
                 <div class="content-grid">
                     <section class="panel todo-panel" id="alerts" aria-labelledby="todo-title">
