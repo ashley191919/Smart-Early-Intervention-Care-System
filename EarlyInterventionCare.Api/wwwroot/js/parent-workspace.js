@@ -16,11 +16,11 @@
   ]}]]);
   let selected=children[0].id, page='home', filter='all', taskScope='current', toastTimer;
   let previewState='normal';
-  const teacherPreviewUrl='http://localhost:5177/teacher-workspace.html?preview=1';
+  const teacherPreviewUrl=new URL('/teacher-workspace.html?preview=1',location.origin).href;
   function showShare(){
     const grant=state().grant;
     if(!grant||grant.status!=='active'){toast('這組示範授權已無法分享，請查看目前狀態。');return;}
-    dialog('分享教師填答入口（示範）',`<p class="modal-copy">${esc(current().name)} · ${esc(state().roundLabel)}<br>授權問卷：${grantTasks(grant).map(t=>esc(t.name)).join('、')}。<br>正式版只分享指定任務的授權入口。</p><div class="share-layout"><img class="share-qr" src="/images/teacher-preview-qr.svg" alt="教師工作台本機預覽網址的 QR Code"><div><span class="pill">QR Code 僅連到畫面預覽</span><p class="privacy-note">此碼不含正式授權，無法用於實際填答。localhost 只適用目前這台電腦，其他手機不能直接連線。</p><a class="btn ghost" href="${teacherPreviewUrl}" target="_blank" rel="noopener">開啟教師畫面預覽</a></div></div><label class="modal-field">示範授權碼<input readonly value="${grant.code}" aria-label="示範授權碼"></label><div class="actions"><button class="btn" data-action="copy-code">複製示範碼</button><button class="btn ghost" data-action="copy-link">複製預覽連結</button></div><p class="error" id="copy-error" role="alert" hidden></p><p class="privacy-note">正式授權連結與 QR Code 待後端串接；不要把此示範碼提供給實際個案老師。</p>`);
+    dialog('分享教師填答入口（示範）',`<p class="modal-copy">${esc(current().name)} · ${esc(state().roundLabel)}<br>授權問卷：${grantTasks(grant).map(t=>esc(t.name)).join('、')}。<br>正式版只分享指定任務的授權入口。</p><div class="share-layout">${location.origin==='http://localhost:5177'?'<img class="share-qr" src="/images/teacher-preview-qr.svg" alt="教師工作台本機預覽網址的 QR Code">':'<p class="privacy-note">此整合預覽使用不同網址，請使用右側連結；靜態 QR Code 不適用此入口。</p>'}<div><span class="pill">QR Code 僅連到畫面預覽</span><p class="privacy-note">此碼不含正式授權，無法用於實際填答。localhost 只適用目前這台電腦，其他手機不能直接連線。</p><a class="btn ghost" href="${teacherPreviewUrl}" target="_blank" rel="noopener">開啟教師畫面預覽</a></div></div><label class="modal-field">示範授權碼<input readonly value="${grant.code}" aria-label="示範授權碼"></label><div class="actions"><button class="btn" data-action="copy-code">複製示範碼</button><button class="btn ghost" data-action="copy-link">複製預覽連結</button></div><p class="error" id="copy-error" role="alert" hidden></p><p class="privacy-note">正式授權連結與 QR Code 待後端串接；不要把此示範碼提供給實際個案老師。</p>`);
   }
   async function copyShare(kind){
     const grant=state().grant;if(!grant||grant.status!=='active')return;
