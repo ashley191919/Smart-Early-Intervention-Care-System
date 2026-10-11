@@ -1,48 +1,47 @@
-# 前端整合候選版（2026-10-11）
+# 共用前端整合（2026-10-11）
 
-分支：integration/frontend；基底 origin/integration/phase1 @ b922a40。尚未合入 main。
+目前分支：integration/frontend。既有 7、11、16 的頁面已置於同一 ASP.NET Core 專案，入口為 `/`，原 frontend-preview.html 轉向共用登入。
 
-| 座號 | 來源分支 | 本次納入提交 |
-| --- | --- | --- |
-| 11 | feature/teacher-authorization | 25cb35f |
-| 7 | feature/authorization | f40a788c |
-| 16 | feature/questionnaire-phase2-1 | 0608f09（待本人確認最新交付） |
+## 已接通的示範流程
 
-## 整合方式
+同一瀏覽器、同一 origin（localhost:5180）中：
 
-使用 Git merge 保留三人歷史及必要後端依賴，不將 16 的教師草稿前端單獨搬離 API。以 11 已確認的 hospital-logo.png 解決圖片衝突；教師頁同時保留共用 workspace-theme.css 與 16 的 teacher-draft.js、最新版教師 JS/CSS。沒有新增、套用或修改 migration，仍由 16 統整。
+1. 醫療登入：單位 DEMO、帳號 demo、密碼 demo。
+2. 儀表板 → 指派問卷，替 DEMO-001 王○安指派 SNAP-IV 或克氏，分家長／教師。重複指派不覆蓋任務與答案。
+3. 家長手機 OTP 使用頁面顯示的示範碼，不寄送簡訊。家長首頁取得共用任務。
+4. 家長問卷使用與教師相同的排版與驗證，保存草稿、重新開啟、完整填答後確認提交；提交後不能修改。
+5. 家長建立教師示範授權；到教師入口輸入 DEMO- 開頭示範碼。只取得授權任務。
+6. 第一份提交仍有效，全部授權任務提交後失效。撤銷阻止保存與提交，已提交答案保留；重新授權僅含未完成任務。
+7. 家長只顯示教師是否完成；醫療端儀表板／個案詳細的表單紀錄可以查看共用原始答案。
+8. 共用示範導覽可切換角色；「重設示範」需確認，僅重設本瀏覽器示範資料。
 
-補上醫療登入與家長／教師入口互相連結，新增 frontend-preview.html 驗收入口。醫療登入保留 7 的既有示範驗證流程，另外提供明確標示的儀表板預覽，沒有將示範視為正式登入。
+草稿、任務、答案與授權僅保存到 `earlycare.frontend.v1` 的 localStorage。教師示範會話用 sessionStorage；它們不是可信身分、正式權限、MySQL 紀錄或正式知情同意。只用虛構資料。不同瀏覽器／裝置不共享；5177 與 5180 也不共享。
 
-## 本機啟動與驗收
+原教師 MySQL Development 路徑 mode=authorized、16 號 DB 草稿客戶端保留；DEMO- 碼走獨立前端 fixture 路徑。未修改後端、資料庫或 migration。
 
-在此整合 checkout 的 EarlyInterventionCare.Api 專案啟動；另指定 5180 避免與原 5177 功能分支混淆：
+## 尚未整合
+
+- 正式醫療 JWT 登入與 Organization Code，以及家長 OTP 服務。
+- Case CRUD、家長綁定、個案 workflow 與 Dashboard 的正式共用資料；現有其他個案／提醒／統計仍為固定展示。
+- 基本資料、滿意度、自編學校問卷尚未接入共用題目／填答；指派頁暫時停用這些選項。
+- 正式多輪複評、更多個案、跨裝置共享、同意查核與 API 權限。
+- 表單共用 API／MySQL 串接； schema 需變更时由 16 號統一產 migration。
+- 16 號確認 0608f09 是否為最新版本、三人驗收、PR 合入 main。
+
+目前共用流程固定 DEMO-001、第 2 輪、demo-1 示範版本；指派日期只用來展示提醒，不讓教師授權到期。
+
+## 驗證
+
+- dotnet build：0 警告、0 錯誤。
+- Node：3 項共用流程狀態測試 + 原 8 項教師草稿客戶端測試通過。
+- 瀏覽器：醫療指派三份任務、家長 OTP／SNAP 提交、教師克氏提交、SNAP 草稿重載、撤銷阻擋、僅剩任務重新授權、教師全部提交、家長完成狀態、醫療結果查閱。
+
+## 本機啟動
+
+在此整合工作目錄執行：
 
 ```powershell
 dotnet run --project EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj --launch-profile http --urls http://localhost:5180
 ```
 
-打開 http://localhost:5180/frontend-preview.html。原本 5177 不代表整合版。
-
-驗收家長手機 → 示範碼 → 家長工作台；教師授權入口 → 教師預覽 → 填答／示範草稿；醫療登入畫面 → 儀表板預覽 → 個案列表／詳細／指派。以 1440×900 確認主要操作及無橫向溢出，另檢查窄螢幕。正式資料庫流程另驗收，未自動變更 MySQL。
-
-## 合入 main 前
-
-1. 16 確認 0608f09 或補推新版本，再 merge 新提交與重驗。
-2. 三人共同核對頁面、登入導覽、問卷 UI 主責及剩餘示範。
-3. 7 的問卷指派／結果畫面接 16 的 API；家長畫面正式接任務、綁定及授權仍是後續工作。
-4. 確認既有 integration/phase1 的後端基底也獲團隊同意納入 main，不能將本分支宣稱只有前端修改。
-5. 確認後再開 integration/frontend → main PR，review 後合併；目前不合 main。
-
-原本 feature/teacher-authorization checkout 保留未追蹤部署檔，未納入此整合。
-
-## 已執行檢查
-
-- dotnet build：0 warning / 0 error。
-- QuestionnairePhase21Harness：離線指派規則通過。
-- QuestionnairePhase22Harness：76 項離線檢查通過。
-- TeacherDraftClient.test.cjs：8 項通過；所有 wwwroot/js 語法檢查通過。
-- 本地 HTML 靜態資源與連結檔案檢查通過。
-- 瀏覽器：家長 OTP 示範至儀表板、醫療工作台至列表／個案詳細／指派頁、醫療入口返回家長登入、教師題目及本頁示範草稿均可操作；整合入口與已檢查工作台在 1440×900 無橫向溢出，整合入口 390×844 無橫向溢出。
-- 未執行正式 DB 提交或 migration；此處離線檢查與畫面測試不取代正式資料庫驗收。
-- 家長分享預覽連結使用目前 origin，5180 不會誤開原 5177；非 5177 不顯示不適用的靜態 QR。
+需保留既有本機 User Secrets（JWT 與 ConnectionString）；沒有執行 migration。

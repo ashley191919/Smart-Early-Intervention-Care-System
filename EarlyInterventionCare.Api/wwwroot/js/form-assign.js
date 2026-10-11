@@ -1,15 +1,9 @@
 (() => {
     "use strict";
 
-    // 專題展示用設定：不送出、不儲存，也不建立實際指派紀錄。
-    // 每個 { formId, respondentRole } 是獨立填答任務；同一表單的 parent / teacher
-    // 未來必須有不同的任務與填答結果，不能共用答案。
-    // 醫療人員決定收集哪些表單及由哪些角色填寫；勾選 teacher 不等於教師已獲授權。
-    // 家長負責教師填答授權；教師取得家長提供的授權碼並通過驗證後，
-    // 才能看到醫療人員當初指定的教師填答任務。後端必須分開管理指派與授權狀態。
-    // 未來教師授權需由後端建立不可猜測的隨機 token / authorization code，
-    // 不直接使用 caseId / parentId / childId；需包含任務對應、期限、授權及失效狀態。
-    // 本頁不產生任何授權資訊；驗證通過後只導向固定的填答邀請 Demo 頁。
+    // Frontend integration fixtures: role-specific tasks in browser storage.
+    // Assignment is separate from parent-issued teacher grants; no API or MySQL write.
+    // Only SNAP-IV and Clancy currently have integrated questionnaire definitions.
     const form = document.querySelector("#form-assign-form");
     if (!form) return;
 
@@ -28,7 +22,7 @@
 
     function getSelectedItems() {
         return checkboxes.filter((checkbox) => checkbox.checked).map((checkbox) => ({
-            formId: checkbox.dataset.formId,
+            formId: checkbox.dataset.formId==='conners'?'clancy':checkbox.dataset.formId,
             respondentRole: checkbox.dataset.respondentRole
         }));
     }
@@ -64,7 +58,7 @@
 
     checkboxes.forEach((checkbox) => {
         // First-load Demo choices are deliberately empty, including browser-restored checkbox state.
-        checkbox.checked = false;
+        checkbox.checked = false;if(!['snap','conners'].includes(checkbox.dataset.formId)){checkbox.disabled=true;checkbox.closest('article').title='題目與填答流程尚未整合';}
         checkbox.addEventListener("change", () => {
             feedback.hidden = true;
             invitationDemo.hidden = true;
@@ -100,11 +94,12 @@
             return;
         }
 
-        feedback.textContent = "Demo：表單指派設定完成，目前尚未建立實際指派紀錄。";
+        try { const added=SharedDemo.assign(getSelectedItems(),deadline.value); feedback.textContent=`已新增 ${added} 份共用示範任務，可在家長與教師端接續。`; }
+        catch(error){feedback.textContent=error.message;feedback.hidden=false;return;}
         feedback.hidden = false;
-        // Direct Demo navigation only: no assignment is saved and no selection or deadline is transferred.
+        // Open the shared task records after fixture assignment.
         invitationDemo.hidden = false;
-        window.location.assign("invitation-success.html");
+        window.location.assign("case-detail.html#shared-tasks");
     });
 
     updateSelection();

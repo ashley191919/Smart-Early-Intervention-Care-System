@@ -85,6 +85,10 @@ teacherCode.addEventListener("input", () => teacherCode.setCustomValidity(""));
 document.querySelector("#teacher-form").addEventListener("submit", async event => {
   event.preventDefault();
   const code=teacherCode.value.trim();
+  if(code.toUpperCase().startsWith('DEMO-')){
+    if(SharedDemo.verify(code.toUpperCase())){sessionStorage.setItem('earlycare.demo.teacher',code.toUpperCase());location.assign('/teacher-workspace.html?mode=demo');}
+    else showTeacherView('failure');return;
+  }
   if(!code){teacherCode.setCustomValidity("請輸入測試授權碼。");teacherCode.reportValidity();return;}
   cancelTeacherRequest();
   const attempt=teacherAttempt;

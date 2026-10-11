@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+<script src="/js/shared-demo.js" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="早療智慧動態照護系統指派表單 Demo">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="css/staff-dashboard.css">
     <link rel="stylesheet" href="css/form-assign.css">
     <link rel="stylesheet" href="css/staff-header.css">
+<link rel="stylesheet" href="/css/system-demo.css"><script src="/js/system-demo-ui.js" defer></script>
 </head>
 <body>
     <!-- 專題展示用前端 Demo；本頁只選擇表單、填答角色與期限，不建立指派、token 或填寫連結。 -->
@@ -75,7 +77,7 @@
             </header>
 
             <main id="main-content" class="dashboard-content form-assign-content">
-                <nav class="assign-back-nav" aria-label="返回導覽"><a href="case-detail-empty.html">← 返回個案詳細資料</a></nav>
+                <nav class="assign-back-nav" aria-label="返回導覽"><a href="case-detail.html">← 返回個案詳細資料</a></nav>
                 <section class="page-heading" aria-labelledby="form-assign-title">
                     <div>
                         <p class="eyebrow">MEDICAL WORKSPACE</p>
@@ -87,18 +89,18 @@
                 <section class="panel assign-case-summary" aria-labelledby="assign-case-title" data-case-status="pending-contact">
                     <div class="panel-heading"><h2 id="assign-case-title">個案資訊</h2></div>
                     <dl class="assign-case-grid">
-                        <div><dt>個案姓名</dt><dd><span class="case-person"><span class="case-avatar" aria-hidden="true">林</span><strong>林○樂</strong></span></dd></div>
-                        <div><dt>個案編號</dt><dd>DEMO-024</dd></div>
+                        <div><dt>個案姓名</dt><dd><span class="case-person"><span class="case-avatar" aria-hidden="true">林</span><strong>王○安</strong></span></dd></div>
+                        <div><dt>個案編號</dt><dd>DEMO-001</dd></div>
                         <div><dt>目前狀態</dt><dd><span class="status-badge status-pending-contact">待聯繫</span></dd></div>
                     </dl>
-                    <p class="assign-demo-note">專題展示 Demo，預設替 DEMO-024 林○樂選擇表單，不會建立實際指派紀錄。</p>
+                    <p class="assign-demo-note">專題展示 Demo，本輪替 DEMO-001 王○安建立共用示範任務，家長與教師端將看到相同任務進度。</p>
                 </section>
 
                 <form id="form-assign-form" class="assign-form" novalidate autocomplete="off">
                     <section class="panel assign-section">
                         <fieldset id="assign-forms-group" class="assign-fieldset" aria-describedby="assign-selection-hint assign-forms-error">
                             <legend class="assign-section-title">選擇表單</legend>
-                            <p id="assign-selection-hint" class="assign-helper">同一份表單可同時勾選家長與幼兒園教師，兩者為不同填答項目。</p>
+                            <p id="assign-selection-hint" class="assign-helper">同一份表單可同時勾選家長與幼兒園教師，兩者為不同填答項目。目前可操作 SNAP-IV 與克氏量表；其他表單題目待整合。</p>
                             <div class="assign-list-head">
                                 <span>表單名稱</span><span id="assign-parent-heading">家長</span><span id="assign-teacher-heading">幼兒園教師</span>
                             </div>
@@ -137,7 +139,7 @@
                                     </label>
                                 </article>
                                 <article class="assign-form-row" data-form-id="snap" aria-labelledby="snap-title">
-                                    <h3 id="snap-title" class="assign-form-name">SNAP</h3>
+                                    <h3 id="snap-title" class="assign-form-name">SNAP-IV 評量表</h3>
                                     <label class="assign-role-option" for="assign-snap-parent">
                                         <input id="assign-snap-parent" name="assignmentItems" type="checkbox" value="snap:parent" data-form-id="snap" data-respondent-role="parent" aria-labelledby="snap-title assign-parent-heading" aria-describedby="assign-forms-error">
                                         <span class="assign-role-label">家長</span>
@@ -171,7 +173,7 @@
                         <div class="panel-heading"><h2 id="assign-deadline-title"><label for="assignmentDeadline">填寫期限 <span class="assign-required" aria-hidden="true">*</span><span class="sr-only">（必填）</span></label></h2></div>
                         <div class="assign-deadline-field">
                             <input id="assignmentDeadline" name="deadline" class="assign-date-control" type="date" required aria-describedby="assign-deadline-hint assign-deadline-error">
-                            <p id="assign-deadline-hint" class="assign-helper">請設定本次表單填寫期限</p>
+                            <p id="assign-deadline-hint" class="assign-helper">請設定提醒日期；教師授權不限時，不因這個日期失效。</p>
                             <p id="assign-deadline-error" class="assign-error" role="status" aria-live="polite" hidden></p>
                         </div>
                     </section>
@@ -182,7 +184,7 @@
                         <p class="assign-helper">此頁為固定展示範例，不會帶入本次選取內容或期限。</p>
                     </div>
                     <div class="assign-actions">
-                        <a class="assign-secondary-button" href="case-detail-empty.html">取消</a>
+                        <a class="assign-secondary-button" href="case-detail.html">取消</a>
                         <button id="assign-confirm" class="primary-button" type="submit" disabled>確認指派</button>
                     </div>
                     <noscript><p class="assign-helper">請啟用 JavaScript，以使用填答項目統計與前端驗證。</p></noscript>

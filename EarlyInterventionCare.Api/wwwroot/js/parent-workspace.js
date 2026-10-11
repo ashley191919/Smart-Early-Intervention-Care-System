@@ -1,5 +1,5 @@
 'use strict';
-// Frontend fixtures only. No API, authentication, consent, database or persistent storage.
+// Shared browser fixtures for DEMO-001 tasks; other binding/contact scenarios remain page-local. No real authentication or API.
 (() => {
   const children = [{id:'DEMO-001',name:'王○安',age:'4 歲',sex:'男',relation:'主要照顧者',contact:'示範家長',phone:'0900-***-000'}];
   const makeTasks = () => [
@@ -16,20 +16,20 @@
   ]}]]);
   let selected=children[0].id, page='home', filter='all', taskScope='current', toastTimer;
   let previewState='normal';
-  const teacherPreviewUrl=new URL('/teacher-workspace.html?preview=1',location.origin).href;
+  const teacherPreviewUrl=new URL('/?role=teacher',location.origin).href;
   function showShare(){
     const grant=state().grant;
     if(!grant||grant.status!=='active'){toast('這組示範授權已無法分享，請查看目前狀態。');return;}
-    dialog('分享教師填答入口（示範）',`<p class="modal-copy">${esc(current().name)} · ${esc(state().roundLabel)}<br>授權問卷：${grantTasks(grant).map(t=>esc(t.name)).join('、')}。<br>正式版只分享指定任務的授權入口。</p><div class="share-layout">${location.origin==='http://localhost:5177'?'<img class="share-qr" src="/images/teacher-preview-qr.svg" alt="教師工作台本機預覽網址的 QR Code">':'<p class="privacy-note">此整合預覽使用不同網址，請使用右側連結；靜態 QR Code 不適用此入口。</p>'}<div><span class="pill">QR Code 僅連到畫面預覽</span><p class="privacy-note">此碼不含正式授權，無法用於實際填答。localhost 只適用目前這台電腦，其他手機不能直接連線。</p><a class="btn ghost" href="${teacherPreviewUrl}" target="_blank" rel="noopener">開啟教師畫面預覽</a></div></div><label class="modal-field">示範授權碼<input readonly value="${grant.code}" aria-label="示範授權碼"></label><div class="actions"><button class="btn" data-action="copy-code">複製示範碼</button><button class="btn ghost" data-action="copy-link">複製預覽連結</button></div><p class="error" id="copy-error" role="alert" hidden></p><p class="privacy-note">正式授權連結與 QR Code 待後端串接；不要把此示範碼提供給實際個案老師。</p>`);
+    dialog('分享教師填答入口（示範）',`<p class="modal-copy">${esc(current().name)} · ${esc(state().roundLabel)}<br>授權問卷：${grantTasks(grant).map(t=>esc(t.name)).join('、')}。<br>正式版只分享指定任務的授權入口。</p><div class="share-layout"><p class="privacy-note">請使用同一瀏覽器的示範登入入口。跨裝置 QR Code 待正式後端串接。</p><div><span class="pill">QR Code 僅連到畫面預覽</span><p class="privacy-note">此碼不含正式授權，無法用於實際填答。localhost 只適用目前這台電腦，其他手機不能直接連線。</p><a class="btn ghost" href="${teacherPreviewUrl}" target="_blank" rel="noopener">開啟教師畫面預覽</a></div></div><label class="modal-field">示範授權碼<input readonly value="${grant.code}" aria-label="示範授權碼"></label><div class="actions"><button class="btn" data-action="copy-code">複製示範碼</button><button class="btn ghost" data-action="copy-link">複製預覽連結</button></div><p class="error" id="copy-error" role="alert" hidden></p><p class="privacy-note">請複製示範碼，到同一瀏覽器的教師登入頁輸入；這不是正式授權。</p>`);
   }
   async function copyShare(kind){
     const grant=state().grant;if(!grant||grant.status!=='active')return;
-    try{await navigator.clipboard.writeText(kind==='code'?grant.code:teacherPreviewUrl);toast(kind==='code'?'示範碼已複製，不能用於正式登入。':'本機教師預覽連結已複製。');}
+    try{await navigator.clipboard.writeText(kind==='code'?grant.code:teacherPreviewUrl);toast(kind==='code'?'示範碼已複製，可在教師入口體驗共用流程。':'本機教師預覽連結已複製。');}
     catch{const error=document.querySelector('#copy-error');error.textContent='瀏覽器未允許複製，請手動選取上方示範碼；預覽連結可由「開啟教師畫面預覽」取得。';error.hidden=false;}
   }
   function grantActions(grant){
     if(!teacherTasks().length)return '<p class="privacy-note">醫護尚未指派教師問卷，暫時無法建立授權。請向醫護確認。</p>';
-    if(!pendingTeacherTasks().length||grant?.status==='used')return '<p class="privacy-note">全部指定問卷已完成，授權已結束，無需再分享或重新建立。</p>';
+    if(!pendingTeacherTasks().length)return '<p class="privacy-note">全部指定問卷已完成，授權已結束，無需再分享或重新建立。</p>';
     if(grant?.status==='active')return '<button class="btn" data-action="share">分享示範入口</button><button class="btn danger" data-action="revoke">撤銷示範授權</button>';
     return '<button class="btn" data-action="grant">建立示範授權</button>';
   }
@@ -90,7 +90,14 @@
     if(!tasks.length)return '<p class="privacy-note">本輪尚未指派教師問卷。</p>';
     return tasks.map(t=>`<div class="teacher-task"><div class="teacher-status"><span>${esc(t.name)}</span><span class="pill ${t.isCompleted?'done':'pending'}">${t.isCompleted?'已完成':'尚未完成'}</span></div>${simulate&&!t.isCompleted?`<button class="btn ghost" data-teacher-task="${t.taskId}" ${grant?.status==='active'&&grant.taskIds.includes(t.taskId)?'':'disabled'}>示範這份已提交</button>`:''}</div>`).join('');
   }
-  function render(){
+  function syncShared(){
+    const s=states.get('DEMO-001');
+    s.tasks=s.tasks.filter(t=>t.round!==2).concat(SharedDemo.tasks('parent').map(t=>({id:t.id,name:t.name,kind:'家長版',status:t.status,round:2,meta:'第 2 輪複評 · 示範版本 demo-1',submittedAt:t.draft?.submittedAt?new Date(t.draft.submittedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}):null})));
+    s.teacherTasks=SharedDemo.tasks('teacher').map(t=>({taskId:t.id,name:t.name+'教師版',round:2,isCompleted:t.status==='done'}));
+    s.grant=SharedDemo.read().grant;
+  }
+  window.addEventListener('storage',()=>render());window.addEventListener('focus',()=>render());
+  function render(){syncShared();
     document.querySelector('.child-switch').hidden=previewState!=='normal';
     document.querySelector('#crumb').textContent=page==='home'?'我的首頁':titles[page][0];document.querySelector('#page-title').textContent=titles[page][0];document.querySelector('#page-subtitle').textContent=titles[page][1];
     document.querySelectorAll('[data-page]').forEach(b=>{const active=b.dataset.page===page;b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
@@ -109,12 +116,12 @@
     } else if(page==='tasks'){
       const scoped=state().tasks.filter(t=>taskScope==='current'?t.round===state().currentRound:t.round!==state().currentRound);
       const tasks=scoped.filter(t=>filter==='all'||t.status===filter);
-      content.innerHTML=`<div class="filterbar" role="group" aria-label="問卷輪次範圍">${[['current','本輪指定問卷'],['history','過往提交紀錄']].map(([key,label])=>`<button data-scope="${key}" class="${taskScope===key?'active':''}" aria-pressed="${taskScope===key}">${label}</button>`).join('')}</div>${taskScope==='current'?`<div class="filterbar" role="group" aria-label="問卷狀態篩選">${[['all','全部'],['pending','待填寫'],['draft','草稿'],['done','已提交']].map(([key,label])=>`<button data-filter="${key}" class="${filter===key?'active':''}" aria-pressed="${filter===key}">${label}</button>`).join('')}</div>`:''}<section class="panel"><div class="section-title"><h2>${esc(current().name)} · ${taskScope==='current'?esc(state().roundLabel):'過往提交紀錄'}</h2><small>全部 ${scoped.length} 份</small></div>${tasks.length?taskRows(tasks):'<p class="modal-copy">目前沒有此範圍或狀態的問卷。</p>'}</section><p class="privacy-note">${taskScope==='history'?'過往提交紀錄保留原輪次與版本，不能重開修改；服務後滿意度調查不計入本輪評估待辦。':'本輪由醫護指定問卷與版本，複評建立新任務，不覆蓋初評紀錄。'} 此為虛構清單，正式填答及收據將串接 16 號的共用表單模組。</p>`;
+      content.innerHTML=`<div class="filterbar" role="group" aria-label="問卷輪次範圍">${[['current','本輪指定問卷'],['history','過往提交紀錄']].map(([key,label])=>`<button data-scope="${key}" class="${taskScope===key?'active':''}" aria-pressed="${taskScope===key}">${label}</button>`).join('')}</div>${taskScope==='current'?`<div class="filterbar" role="group" aria-label="問卷狀態篩選">${[['all','全部'],['pending','待填寫'],['draft','草稿'],['done','已提交']].map(([key,label])=>`<button data-filter="${key}" class="${filter===key?'active':''}" aria-pressed="${filter===key}">${label}</button>`).join('')}</div>`:''}<section class="panel"><div class="section-title"><h2>${esc(current().name)} · ${taskScope==='current'?esc(state().roundLabel):'過往提交紀錄'}</h2><small>全部 ${scoped.length} 份</small></div>${tasks.length?taskRows(tasks):'<p class="modal-copy">目前沒有此範圍或狀態的問卷。</p>'}</section><p class="privacy-note">${taskScope==='history'?'過往提交紀錄保留原輪次與版本，不能重開修改；服務後滿意度調查不計入本輪評估待辦。':'本輪由醫護指定問卷與版本，複評建立新任務，不覆蓋初評紀錄。'} 此為虛構清單，SNAP-IV 與克氏已接上共用前端填答；正式 API 仍待串接。</p>`;
     } else if(page==='children'){
       content.innerHTML=`<div class="split"><section class="panel"><div class="section-title"><h2>孩子基本資料</h2><span class="pill done">已綁定情境示範</span></div><dl class="detail-list"><dt>孩子姓名</dt><dd>${esc(current().name)}</dd><dt>個案代碼</dt><dd>${current().id}</dd><dt>性別／年齡</dt><dd>${current().sex} ／ ${current().age}</dd><dt>照顧者關係</dt><dd>${current().relation}</dd><dt>主要聯絡人</dt><dd>${esc(current().contact)}</dd><dt>手機號碼</dt><dd>${current().phone}</dd></dl><button class="btn ghost" data-action="contact">更新聯絡人（示範）</button><p class="privacy-note">孩子身分資料如需更正，請聯絡醫護核對。</p></section><section class="panel article"><h2>新增另一位孩子</h2><p>醫護建立個案並確認家長關係後，提供指定個案及手機的一次性邀請碼。</p><ol><li>先完成手機 OTP 登入。</li><li>輸入醫護提供的邀請碼。</li><li>核對個案後建立綁定關係。</li></ol><button class="btn" data-action="bind">輸入邀請碼（示範）</button><p class="privacy-note">後续登入即可看到已綁定孩子，不用重複輸入邀請碼。</p></section></div>`;
     } else if(page==='teacher'){
       const grant=state().grant;
-      content.innerHTML=`<div class="split"><section class="panel article"><div class="section-title"><h2>本輪教師填答授權</h2><span class="pill ${grant?.status==='active'?'done':'pending'}">${grant?grant.status==='active'?'示範有效':grant.status==='used'?'示範已完成':'示範已撤銷':'尚未建立'}</span></div><p>填答對象：${esc(current().name)} · ${current().id}</p><p>${esc(state().roundLabel)} · 指定問卷：${teacherTasks().length?teacherTasks().map(t=>esc(t.name)).join('、'):'尚未指派'}。</p>${grant?`<div class="grant-code">${grant.code}</div>`:''}<p>教師授權不限時；全部指定問卷提交或家長撤銷後失效。撤銷不會刪除已提交的答案。</p><div class="actions">${grantActions(grant)}</div><p class="privacy-note">示範碼不能用於教師正式入口，未建立實際授權；分享中的 QR Code 僅提供本機畫面預覽。</p></section><section class="panel"><h2>指定問卷完成進度</h2>${teacherRows(true)}<p class="privacy-note">僅查看是否完成，家長無法取得教師答案、分數、判讀摘要或草稿。</p><p class="privacy-note">測試方式：建立示範授權後，逐份按「示範這份已提交」。第一份完成時仍有效，全部完成才結束。此操作不會同步教師頁或資料庫。</p><div class="article"><h3>提供授權前請先確認</h3><p>正式流程需核對家長與孩子的有效綁定，以及知情同意紀錄。本次僅示範操作。</p><button class="text-button" data-page="consent">查看同意與資料使用 →</button></div></section></div>`;
+      content.innerHTML=`<div class="split"><section class="panel article"><div class="section-title"><h2>本輪教師填答授權</h2><span class="pill ${grant?.status==='active'?'done':'pending'}">${grant?grant.status==='active'?'示範有效':grant.status==='used'?'示範已完成':'示範已撤銷':'尚未建立'}</span></div><p>填答對象：${esc(current().name)} · ${current().id}</p><p>${esc(state().roundLabel)} · 指定問卷：${teacherTasks().length?teacherTasks().map(t=>esc(t.name)).join('、'):'尚未指派'}。</p>${grant?`<div class="grant-code">${grant.code}</div>`:''}<p>教師授權不限時；全部指定問卷提交或家長撤銷後失效。撤銷不會刪除已提交的答案。</p><div class="actions">${grantActions(grant)}</div><p class="privacy-note">此示範碼可在共用教師入口使用，僅適用同一瀏覽器的示範資料。</p></section><section class="panel"><h2>指定問卷完成進度</h2>${teacherRows(false)}<p class="privacy-note">僅查看是否完成，家長無法取得教師答案、分數、判讀摘要或草稿。</p><p class="privacy-note">測試方式：建立示範授權後，到教師登入頁輸入示範碼。第一份完成時仍有效，全部完成才結束；完成狀態會同步到本頁，不寫入資料庫。</p><div class="article"><h3>提供授權前請先確認</h3><p>正式流程需核對家長與孩子的有效綁定，以及知情同意紀錄。本次僅示範操作。</p><button class="text-button" data-page="consent">查看同意與資料使用 →</button></div></section></div>`;
     } else if(page==='consent'){
       content.innerHTML=`<div class="split"><section class="panel article"><h2>資料用途與可見範圍</h2><p>家長與教師提供的資料，供獲授權的醫療團隊作為評估參考。</p><ul><li>家長僅查看已綁定孩子的指定問卷與教師完成狀態。</li><li>教師僅填寫本次授權的指定問卷。</li><li>家長與教師提交後不能修改原始答案。</li><li>醫護若修改匯出的 Excel，不會覆蓋系統原始答案。</li></ul></section><section class="panel article"><h2>知情同意紀錄</h2><p>目前沒有正式同意紀錄可查詢。正式同意書內容、版本與取得方式，需要與團隊及院方確認。</p><span class="pill pending">尚未串接</span><p>本頁閱讀說明、勾選或建立示範授權，都不代表已完成正式知情同意。</p><button class="btn ghost" data-page="teacher">返回教師授權</button></section></div>`;
     } else {
@@ -134,7 +141,7 @@
       render();toast(grant.status==='used'?'全部授權問卷已示範完成，這組授權已結束。':'此份已示範完成；其他指定問卷未完成，授權仍有效。');return;
     }
     const f=event.target.closest('[data-filter]');if(f){filter=f.dataset.filter;render();return;}
-    const task=event.target.closest('[data-task]');if(task){const t=state().tasks.find(x=>x.id===task.dataset.task);dialog(t.status==='done'?'示範提交紀錄':t.name,`<p class="modal-copy">${t.status==='done'?'此問卷顯示為已提交，家長不可修改。這是虛構狀態，並非正式提交收據。':'此處將接上 16 號的家長版共用問卷填答模組，包含暫存草稿、確認提交及提交紀錄。'}<br><br>${t.kind} · ${esc(current().name)} · ${labels[t.status]}<br>${esc(t.meta)}${t.submittedAt?`<br>示範提交：${esc(t.submittedAt)}（臺灣時間）`:""}<br>目前未載入正式題目或傳送答案。</p><button class="btn" data-action="close">我知道了</button>`);return;}
+    const task=event.target.closest('[data-task]');if(task&&SharedDemo.tasks('parent').some(t=>t.id===task.dataset.task)){location.assign('/parent-questionnaire.html?mode=demo&task='+encodeURIComponent(task.dataset.task));return;}if(task){const t=state().tasks.find(x=>x.id===task.dataset.task);dialog(t.status==='done'?'示範提交紀錄':t.name,`<p class="modal-copy">${t.status==='done'?'此問卷顯示為已提交，家長不可修改。這是虛構狀態，並非正式提交收據。':'此處將接上 16 號的家長版共用問卷填答模組，包含暫存草稿、確認提交及提交紀錄。'}<br><br>${t.kind} · ${esc(current().name)} · ${labels[t.status]}<br>${esc(t.meta)}${t.submittedAt?`<br>示範提交：${esc(t.submittedAt)}（臺灣時間）`:""}<br>目前未載入正式題目或傳送答案。</p><button class="btn" data-action="close">我知道了</button>`);return;}
     const action=event.target.closest('[data-action]')?.dataset.action;if(!action)return;
     if(action==='close')modal.close();
     if(action==='share')showShare();
@@ -152,11 +159,11 @@
     }
     if(action==='confirm-grant'&&document.querySelector('#grant-check')?.checked){
       if(!pendingTeacherTasks().length||state().grant?.status==='active')return;
-      state().grant={code:'DEMO-TEACHER-'+String(crypto.getRandomValues(new Uint32Array(1))[0]%10000).padStart(4,'0'),status:'active',taskIds:pendingTeacherTasks().map(t=>t.taskId)};
-      modal.close();render();toast('已建立本頁示範碼，不能用於正式教師入口。');
+      state().grant=SharedDemo.grant();
+      modal.close();render();toast('已建立共用示範碼，請到教師入口輸入此碼。');
     }
     if(action==='revoke')dialog('撤銷教師授權（前端示範）',`<p class="modal-copy">正式撤銷後，老師將無法繼續使用這組授權。已提交答案會保留。本次僅切換本頁的示範狀態。</p><button class="btn danger" data-action="confirm-revoke">確認撤銷示範授權</button>`);
-    if(action==='confirm-revoke'){if(state().grant?.status!=='active')return;state().grant.status='revoked';modal.close();render();toast('示範授權已撤銷，未變更任何資料庫紀錄。');}
+    if(action==='confirm-revoke'){if(state().grant?.status!=='active')return;SharedDemo.revoke();modal.close();render();toast('示範授權已撤銷，未變更任何資料庫紀錄。');}
   });
   document.addEventListener('change',event=>{if(event.target.id==='grant-check')document.querySelector('#confirm-grant').disabled=!event.target.checked;});
   document.addEventListener('change',event=>{if(event.target.id==='binding-check')document.querySelector('#confirm-binding').disabled=!event.target.checked;});

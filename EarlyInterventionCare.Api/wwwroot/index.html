@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
+<script src="/js/shared-demo.js" defer></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
@@ -11,6 +12,7 @@
   <link rel="stylesheet" href="/css/parent-login.css?v=20261011-shared-style">
   <script src="/js/parent-login.js?v=20261010-otp" defer></script>
   <script src="/js/teacher-access.js?v=20261006-invitation" defer></script>
+<link rel="stylesheet" href="/css/system-demo.css"><script src="/js/system-demo-ui.js" defer></script>
 </head>
 <body>
   <main class="login-page">
@@ -70,9 +72,7 @@
       </section>
 
       <section id="panel-medical" class="role-panel" role="tabpanel" aria-labelledby="tab-medical" hidden>
-        <p class="teacher-intro">醫療端畫面已整合，請從醫療人員專用入口繼續。</p>
-        <a class="secondary-button" href="/staff-login.html" style="text-decoration:none;margin-bottom:16px">開啟醫療人員登入頁</a>
-        <a class="secondary-button" href="/staff-dashboard.html" style="text-decoration:none;margin-bottom:16px">預覽醫療儀表板（虛構資料）</a>
+        <p class="teacher-intro">醫療人員您好，請登入後管理個案與指派問卷。</p>
         <form id="medical-form">
           <div class="field"><label for="unit-code">單位代碼</label><input id="unit-code" name="unitCode" placeholder="請輸入單位代碼" autocomplete="off" maxlength="40" required></div>
           <div class="field"><label for="staff-account">醫護人員帳號</label><input id="staff-account" name="account" placeholder="請輸入醫護人員帳號" autocomplete="username" maxlength="80" required></div>
@@ -125,7 +125,7 @@
       <p>天主教輔仁大學附設醫院</p>
       <p>登入即表示您已閱讀本系統之 <button class="footer-link" data-info="privacy" type="button">隱私權政策</button> 與 <button class="footer-link" data-info="security" type="button">資料保護安全聲明</button></p>
       <p class="copyright" lang="en">© 2026 Fu Jen Catholic University Hospital. All rights reserved.</p>
-      <p class="prototype-note">開發試做版：教師測試授權已啟用；家長與醫療登入尚未串接。</p>
+      <p class="prototype-note">開發試做版：教師測試授權已啟用；家長 OTP 與醫療登入為前端示範；共用問卷流程不寫入 MySQL。</p>
       <details id="teacher-preview-controls" class="teacher-preview-controls" hidden>
         <summary>試做畫面預覽與測試授權</summary><button id="create-test-code" class="secondary-button" type="button">產生測試授權碼並填入</button><button id="show-teacher-invitation" class="secondary-button" type="button" hidden>查看邀請連結與 QR Code</button><p id="test-code-status" class="prototype-note" role="status" hidden></p>
         <nav aria-label="教師畫面預覽">
