@@ -74,6 +74,39 @@ Check((await service.ListTasksAsync(store.CaseId)).Count == 3, "round/role separ
 Check(store.Case.CaseStatus == "WAITING_FORM", "case status unchanged");
 Console.WriteLine("PASS: offline Phase 2-1 assignment validation, PENDING/UTC, duplicate/version/round/role rules, concurrent-duplicate result, listing and unchanged Case Status.");
 
+// Completion is read-only and uses the existing task source, including all rounds.
+async Task Completion(string name, (bool Required, string Status)[] inputs,
+    int required, int submitted, int pending, int inProgress, bool complete)
+{
+    store.Tasks.Clear();
+    foreach (var input in inputs)
+        store.Tasks.Add(new QuestionnaireTask { TaskId = Guid.NewGuid(), CaseId = store.CaseId,
+            IsRequired = input.Required, TaskStatus = input.Status });
+    // An unfinished required task belonging to another case must not affect this case.
+    store.Tasks.Add(new QuestionnaireTask { TaskId = Guid.NewGuid(), CaseId = Guid.NewGuid(),
+        IsRequired = true, TaskStatus = "PENDING" });
+    var before = store.Tasks.Select(t => (t.TaskId, t.TaskStatus, t.IsRequired)).ToArray();
+    var result = await service.CompletionAsync(store.CaseId);
+    Check(result == new CaseTasksCompletionResponse(store.CaseId, inputs.Length, required,
+        submitted, pending, inProgress, complete), "completion " + name);
+    Check(before.SequenceEqual(store.Tasks.Select(t => (t.TaskId, t.TaskStatus, t.IsRequired))) &&
+        store.Case.CaseStatus == "WAITING_FORM", "completion never writes " + name);
+}
+await Completion("A", new[] { (true, "SUBMITTED"), (true, "SUBMITTED"), (true, "IN_PROGRESS") }, 3, 2, 0, 1, false);
+await Completion("B", new[] { (true, "SUBMITTED"), (true, "SUBMITTED"), (true, "SUBMITTED") }, 3, 3, 0, 0, true);
+await Completion("C empty", Array.Empty<(bool, string)>(), 0, 0, 0, 0, false);
+await Completion("C optional only", new[] { (false, "SUBMITTED") }, 0, 0, 0, 0, false);
+await Completion("D", new[] { (true, "SUBMITTED"), (false, "PENDING"), (false, "IN_PROGRESS"), (false, "CANCELLED") }, 1, 1, 0, 0, true);
+await Completion("E", new[] { (true, "SUBMITTED"), (true, "CANCELLED") }, 2, 1, 0, 0, false);
+await Completion("pending", new[] { (true, "PENDING"), (true, "IN_PROGRESS") }, 2, 0, 1, 1, false);
+await Completion("unknown fails closed", new[] { (true, "UNKNOWN") }, 1, 0, 0, 0, false);
+await Error(async () => { await service.CompletionAsync(Guid.Empty); }, "INVALID_INPUT", 400);
+await Error(async () => { await service.CompletionAsync(Guid.NewGuid()); }, "CASE_NOT_FOUND", 404);
+var route = typeof(QuestionnairesController).GetMethod(nameof(QuestionnairesController.Completion))!
+    .GetCustomAttribute<Microsoft.AspNetCore.Mvc.HttpGetAttribute>();
+Check(route?.Template == "api/cases/{caseId:guid}/tasks/completion", "completion GET route");
+Console.WriteLine("PASS: completion A-E, empty/optional, pending, unknown status, case isolation, read-only and invalid/missing case checks.");
+
 sealed class FixedClock : TimeProvider
 {
     public static readonly DateTimeOffset Now = new(2026, 10, 9, 0, 0, 0, TimeSpan.Zero);

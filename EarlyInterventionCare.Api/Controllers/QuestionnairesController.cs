@@ -46,6 +46,15 @@ public sealed class QuestionnairesController(QuestionnaireService service, Appli
         return Ok(await service.ListTasksAsync(caseId, ct));
     }
 
+    [HttpGet("api/cases/{caseId:guid}/tasks/completion")]
+    public async Task<IActionResult> Completion(Guid caseId, CancellationToken ct)
+    {
+        var denied = await CheckUser(ct);
+        if (denied is not null) return denied;
+        if (!CaseAllowed(caseId)) return StatusCode(403, new { code = "CASE_ACCESS_NOT_INTEGRATED", message = "目前僅支援 Development 虛構個案；正式個案權限尚未接入。" });
+        return Ok(await service.CompletionAsync(caseId, ct));
+    }
+
     [HttpPost("api/cases/{caseId:guid}/tasks")]
     public async Task<IActionResult> Assign(Guid caseId, AssignQuestionnaireRequest request, CancellationToken ct)
     {
