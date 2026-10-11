@@ -10,13 +10,18 @@
     const unit=host.querySelector('#unit-code,#organization-code'),account=host.querySelector('#staff-account'),password=host.querySelector('#staff-password');
     let status=host.querySelector('.form-status');if(!status){status=document.createElement('p');status.className='form-status';host.append(status);}
     if(!unit.value.trim()||!account.value.trim()||!password.value){status.textContent='請填寫單位代碼、帳號與密碼。示範登入請使用 DEMO／demo／demo。';status.hidden=false;return;}
-    if(unit.value!=='DEMO'||account.value!=='demo'||password.value!=='demo'){password.value='';status.textContent='共用前端示範請使用單位 DEMO、帳號 demo、密碼 demo；正式帳號登入待 API 串接。';status.hidden=false;return;}
+    if(unit.value.trim().toUpperCase()!=='DEMO'||account.value.trim()!=='demo'||password.value!=='demo'){password.value='';status.textContent='共用前端示範請使用單位 DEMO、帳號 demo、密碼 demo；正式帳號登入待 API 串接。';status.hidden=false;return;}
     password.value='';location.assign('/staff-dashboard.html');
   }
   document.addEventListener('submit',e=>{if(e.target.id==='medical-form')medicalLogin(e);},true);
   document.addEventListener('click',e=>{if(e.target.closest('.login-button'))medicalLogin(e);},true);
   const medical=document.querySelector('#medical-form')||document.querySelector('.login-form');
-  if(medical){const hint=document.createElement('p');hint.textContent='共用示範登入：單位 DEMO／帳號 demo／密碼 demo（不驗證正式身分）';hint.className='teacher-intro';medical.prepend(hint);}
+  if(medical){
+    const area=document.createElement('section');area.className='demo-preview-area';area.setAttribute('aria-label','醫療前端示範');
+    const preview=document.createElement('a');preview.href='/staff-dashboard.html';preview.className='demo-preview-link';preview.textContent='進入醫療端示範（不需帳密）';
+    const hint=document.createElement('p');hint.textContent='僅體驗前端流程，不驗證正式帳號。';
+    area.append(preview,hint);medical.after(area);
+  }
   const main=document.querySelector('#main-content');
   if(main&&['/case-detail.html','/staff-dashboard.html'].includes(location.pathname)){
     const panel=document.createElement('section');panel.id='shared-tasks';panel.className='system-demo-panel';

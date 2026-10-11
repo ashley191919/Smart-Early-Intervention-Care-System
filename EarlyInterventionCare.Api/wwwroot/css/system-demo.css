@@ -8,3 +8,39 @@
 @media(min-width:851px){.system-demo-bar~.dashboard-shell{height:calc(100svh - 44px);min-height:0;overflow:hidden}.dashboard-shell .page-area{height:100%;min-height:0;display:flex;flex-direction:column}.dashboard-shell .dashboard-content{min-height:0;overflow:auto;flex:1}}
 
 .system-demo-panel{padding:20px;margin:16px 0}.system-demo-panel h2{font-size:20px;margin:0 0 10px}.system-demo-panel p{margin:8px 0}.system-demo-panel th,.system-demo-panel td{padding:9px 12px}dialog:has([data-demo-result]),dialog:has(h2){max-width:min(760px,90vw);max-height:85svh;overflow:auto}
+
+/* Shared login spacing; the demo entry stays separate from credential submission. */
+.demo-preview-area{margin-top:16px;padding-top:16px;border-top:1px solid #e9ebee;text-align:center}
+.demo-preview-link{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:10px 14px;border:1px solid #719b96;border-radius:9px;color:#567f7a;background:white;text-decoration:none;font:600 14px/1.5 "Noto Sans TC","Microsoft JhengHei",sans-serif}
+.demo-preview-area p{margin:8px 0 0;color:#9299a3;font-size:12px;line-height:1.5}
+.system-demo-bar~.login-page .teacher-intro{font-size:14px;line-height:1.6;margin-bottom:18px;padding:12px 14px}
+@media(min-width:851px){
+.system-demo-bar~.login-page{min-height:calc(100svh - 44px);padding-top:24px;padding-bottom:16px}
+.system-demo-bar~.login-page .brand{padding-top:26px}
+.system-demo-bar~.login-page h1{margin-top:14px;font-size:22px}
+.system-demo-bar~.login-page .role-tabs{margin-top:16px}
+.system-demo-bar~.login-page .role-panel{padding-top:18px}
+.system-demo-bar~.login-page .field{margin-bottom:12px}
+.system-demo-bar~.login-page .field label{margin-bottom:6px}
+.system-demo-bar~.login-page .field input{min-height:44px;padding-top:10px;padding-bottom:10px}
+.system-demo-bar~.login-page .faq-section{margin-top:16px;padding-top:12px}
+.system-demo-bar~.login-page .login-card{padding-bottom:20px}
+.system-demo-bar~.login-page .page-footer{margin-top:14px;font-size:11px}
+.system-demo-bar~.login-page .page-footer p{margin:4px 0;line-height:1.6}
+}
+
+@media(min-width:851px){
+.system-demo-bar~.login-page .brand{padding-top:20px}
+.system-demo-bar~.login-page .role-tab{padding-top:10px;padding-bottom:10px}
+.system-demo-bar~.login-page .teacher-intro{margin-bottom:12px;padding-top:10px;padding-bottom:10px}
+.system-demo-bar~.login-page .field{margin-bottom:10px}
+.system-demo-bar~.login-page .primary-button{min-height:48px}
+.system-demo-bar~.login-page .login-card{padding-bottom:16px}
+.system-demo-bar~.login-page .page-footer{padding-top:0;max-width:540px}
+}
+
+@media(min-width:851px){.system-demo-bar~.login-page{padding-top:12px;padding-bottom:8px}}
+
+@media(min-width:851px){.system-demo-bar~.login-page .divider{margin:16px 0}}
+
+@media(min-width:851px){.system-demo-bar~.login-page .teacher-notice{margin-top:16px;padding-top:16px}.system-demo-bar~.login-page .teacher-workspace-preview{margin-top:12px;padding-top:12px}}
