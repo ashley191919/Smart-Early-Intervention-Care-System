@@ -20,11 +20,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #476f6b; outline-
 .login-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 8px; background: var(--green); }
 .brand { padding-top: 40px; text-align: center; }
 .hospital-brand { display: flex; align-items: center; justify-content: center; gap: 12px; text-align: left; }
-.hospital-mark { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 1.8px solid var(--green); border-radius: 50%; flex: 0 0 auto; }
-.hospital-mark span { width: 26px; height: 26px; position: relative; }
-.hospital-mark span::before, .hospital-mark span::after { content: ""; position: absolute; background: #d99b91; border-radius: 1px; }
-.hospital-mark span::before { width: 2px; height: 26px; left: 12px; top: 0; }
-.hospital-mark span::after { width: 26px; height: 2px; left: 0; top: 12px; }
+.hospital-mark { display: block; width: 40px; height: 40px; object-fit: contain; flex: 0 0 auto; }
 .hospital-name { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: #333; }
 .hospital-english { margin: 0; font-size: 9px; letter-spacing: .1px; color: #9ca3af; }
 h1 { margin: 20px 0 4px; font-size: 24px; line-height: 1.5; font-weight: 700; color: var(--green); }
