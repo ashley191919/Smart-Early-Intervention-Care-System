@@ -51,3 +51,8 @@ a.btn{text-decoration:none}
 }
 
 @media (min-width:1101px){#home-page:has(.completion-banner:not([hidden])) .welcome{display:none}.completion-banner{padding:12px 19px;margin-bottom:16px}}
+.draft-actions { display:flex; flex-wrap:wrap; gap:9px; justify-content:flex-end; }
+.form-actions { flex-wrap:wrap; gap:12px; }
+.save-state[data-state="error"], .save-state[data-state="conflict"] { color:#a43d34; }
+.save-state[data-state="saving"] { color:#725b34; }
+.draft-actions button:disabled { opacity:.65; cursor:wait; }
