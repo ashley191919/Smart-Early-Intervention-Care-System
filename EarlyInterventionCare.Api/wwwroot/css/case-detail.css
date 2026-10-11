@@ -1,0 +1,187 @@
+/* Shared Dashboard CSS owns the shell, content alignment, Avatar and Card geometry. */
+.detail-back-nav { margin-bottom: 12px; font-size: 12px; }
+.detail-back-nav a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.detail-heading { align-items: flex-start; flex-wrap: wrap; }
+.detail-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; }
+.detail-demo-note { margin: 10px 0 0; color: var(--text-secondary); font-size: 12px; }
+/* Match Cases case-status and priority badges exactly; form badges remain separate. */
+.case-detail-content .status-pending-contact { color: #b18f58; background: #fbf4e9; border-color: #eee2cd; }
+.case-detail-content .status-in-progress { color: var(--brand-teal-dark); background: var(--brand-teal-pale); border-color: #d3e2df; }
+.case-detail-content .status-completed { color: #6e8c79; background: #f0f5f1; border-color: #dce6df; }
+.case-detail-content .priority-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
+.case-detail-content .priority-high { color: #bd7770; background: #faeeed; border-color: #edd8d5; }
+.detail-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.detail-summary-card strong { font-size: 16px; line-height: 1.5; }
+.detail-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--line-color); }
+.detail-tab { padding: 7px 15px; color: #737b86; font-size: 12px; background: transparent; border: 1px solid transparent; border-radius: 8px; }
+.detail-tab:hover { background: var(--brand-teal-pale); }
+.detail-tab.is-active { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
+.detail-tab:focus-visible, .detail-tab-panel:focus-visible, .detail-table-wrap:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
+.detail-tab-panel[hidden] { display: none !important; }
+.detail-basic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.detail-basic-actions { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+.detail-data-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; margin: 0; }
+.detail-data-grid > div { min-width: 0; }
+.detail-data-wide { grid-column: 1 / -1; }
+.detail-data-grid dt { color: var(--text-secondary); font-size: 11px; }
+.detail-data-grid dd { margin: 5px 0 0; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; }
+.detail-sensitive-field { display: flex; align-items: center; gap: 6px; }
+.detail-sensitive-value { min-width: 0; overflow-wrap: anywhere; }
+.detail-sensitive-toggle { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 24px; width: 24px; height: 22px; margin: 0; padding: 0; color: var(--brand-teal-dark); background: transparent; border: 0; border-radius: 5px; }
+.detail-sensitive-toggle svg { width: 17px; height: 17px; }
+.detail-sensitive-toggle:hover { background: var(--brand-teal-pale); }
+.detail-sensitive-toggle:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 2px; }
+.detail-sensitive-toggle:disabled { opacity: .5; cursor: default; }
+.detail-forms-table { min-width: 780px; }
+.detail-forms-heading { flex-wrap: wrap; }
+.detail-forms-heading > .primary-button { color: #fff; }
+.detail-forms-heading > .primary-button:hover { text-decoration: none; }
+.detail-form-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid transparent; border-radius: 6px; }
+.detail-form-pending { color: #b18f58; background: #fbf4e9; border-color: #eee2cd; }
+.detail-form-completed { color: #6e8c79; background: #f0f5f1; border-color: #dce6df; }
+.detail-empty { margin: 0; padding: 30px 14px; color: var(--text-secondary); font-size: 13px; text-align: center; background: var(--page-background); border-radius: 9px; }
+.detail-empty h3 { margin: 0 0 6px; color: #737b86; font-size: 14px; font-weight: 500; }
+.detail-empty p { margin: 0; }
+/* Removing all form rows reveals the empty state; result links live only in completed rows. */
+.detail-form-records:has(.detail-form-record) > .detail-empty { display: none; }
+.detail-form-records:not(:has(.detail-form-record)) > .detail-table-wrap { display: none; }
+/* Contact, appointment and form progress are separate from the case status. */
+.detail-tracking-summary { margin-bottom: 18px; }
+.detail-tracking-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 16px 24px; margin: 0; }
+.detail-tracking-summary-grid > div { min-width: 0; }
+.detail-tracking-summary-grid dt { color: var(--text-secondary); font-size: 11px; }
+.detail-tracking-summary-grid dd { margin: 6px 0 0; color: #4b5563; font-size: 14px; overflow-wrap: anywhere; }
+.detail-tracking-badge { display: inline-block; padding: 3px 8px; color: var(--brand-teal-dark); font-size: 11px; background: var(--brand-teal-pale); border: 1px solid #d3e2df; border-radius: 6px; }
+.detail-tracking-badge.is-neutral { color: #737b86; background: var(--page-background); border-color: var(--line-color); }
+.detail-tracking-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 18px; }
+.detail-contact-timeline { margin: 0; padding: 0 0 0 5px; list-style: none; }
+.detail-contact-item { position: relative; min-width: 0; padding: 0 0 24px 20px; border-left: 1px solid #d3e2df; }
+.detail-contact-item:last-child { padding-bottom: 0; border-left-color: transparent; }
+.detail-contact-item::before { content: ""; position: absolute; top: 7px; left: -5px; width: 9px; height: 9px; background: var(--brand-teal); border-radius: 50%; box-shadow: 0 0 0 3px #fff; }
+.detail-contact-item h3 { margin: 0 0 10px; color: var(--brand-teal-dark); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.detail-contact-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0; font-size: 12px; }
+.detail-contact-meta > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.detail-contact-meta dt { color: var(--text-secondary); }
+.detail-contact-meta dd { min-width: 0; margin: 0; color: #737b86; overflow-wrap: anywhere; }
+.detail-contact-note { margin: 10px 0 0; color: #737b86; font-size: 13px; overflow-wrap: anywhere; }
+/* Appointment management reuses the existing modal/input/button visual classes. */
+.detail-appointment-panel [hidden] { display: none !important; }
+.appointment-heading { align-items: flex-start; flex-wrap: wrap; }
+.appointment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.appointment-actions button { padding: 8px 12px; font-size: 12px; }
+.appointment-actions button:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
+/* Match only these two add controls; keep appointment edit/cancel buttons compact. */
+.case-detail-content #add-appointment,
+.case-detail-content #case-todo-add { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 10px 19px; font-size: 13px; line-height: 1.5; border: 1px solid var(--brand-teal); border-radius: 9px; }
+.case-detail-content #add-appointment:hover,
+.case-detail-content #case-todo-add:hover { background: var(--brand-teal-dark); }
+.case-detail-content #add-appointment:focus-visible,
+.case-detail-content #case-todo-add:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
+.appointment-cancel-button { color: #b36e68; border-color: #edd8d5; }
+.appointment-cancel-button:hover { background: #faeeed; }
+.appointment-feedback { margin: 0 0 16px; color: var(--brand-teal-dark); font-size: 12px; overflow-wrap: anywhere; }
+.appointment-field-help { margin: 5px 0 0; color: var(--text-secondary); font-size: 11px; }
+.appointment-history { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line-color); }
+.appointment-history h3 { margin: 0 0 12px; color: #4b5563; font-size: 14px; font-weight: 500; }
+.appointment-history-list { margin: 0; padding: 0; list-style: none; }
+.appointment-history-item { padding: 12px 0; border-bottom: 1px solid var(--line-color); overflow-wrap: anywhere; }
+.appointment-history-item:last-child { border-bottom: 0; }
+.appointment-history-item h4 { margin: 0; color: var(--brand-teal-dark); font-size: 12px; font-weight: 500; }
+.appointment-history-item p { margin: 5px 0 0; color: #737b86; font-size: 12px; white-space: pre-wrap; }
+.appointment-history-item time { color: var(--text-secondary); font-size: 11px; }
+.appointment-cancel-summary { margin: 18px 0 0; color: #4b5563; font-size: 13px; overflow-wrap: anywhere; }
+.appointment-cancel-modal { max-width: 480px; }
+.contact-follow-up-modal { max-width: 480px; }
+#appointment-info dd { white-space: pre-wrap; }
+/* Contact-record Demo only; shell, other cards and status badges remain unchanged. */
+.detail-contact-heading { flex-wrap: wrap; gap: 12px; }
+.detail-contact-timeline[hidden], #detail-contact-empty[hidden], .contact-success[hidden], .contact-field-error[hidden] { display: none !important; }
+.detail-contact-note { white-space: pre-wrap; }
+.contact-success { margin: 0 0 16px; color: var(--brand-teal-dark); font-size: 12px; overflow-wrap: anywhere; }
+.contact-modal { width: calc(100% - 32px); max-width: 620px; max-height: calc(100dvh - 32px); margin: auto; padding: 0; color: #4b5563; font-family: inherit; background: #fff; border: 1px solid var(--line-color); border-radius: 20px; box-shadow: 0 16px 48px #33415526; overflow-y: auto; overscroll-behavior: contain; }
+.contact-modal::backdrop { background: rgb(30 41 59 / 30%); }
+.contact-modal-card { min-width: 0; padding: 26px; }
+.contact-modal-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.contact-modal-heading > div { flex: 1; min-width: 0; }
+.contact-modal-heading h2 { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
+.contact-modal-heading p { margin: 8px 0 0; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.contact-modal-heading > .contact-modal-close { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; margin: 0; padding: 0; color: #737b86; font-size: 24px; line-height: 1; background: transparent; border: 1px solid var(--line-color); border-radius: 9px; }
+.contact-modal-close:hover, .contact-secondary-button:hover { background: var(--brand-teal-pale); }
+.contact-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; margin-top: 20px; }
+.contact-field { min-width: 0; }
+.contact-field-wide { grid-column: 1 / -1; }
+.contact-field label { display: block; margin-bottom: 7px; color: #4b5563; font-size: 12px; font-weight: 700; }
+.contact-field label span { color: #b36e68; }
+.contact-field input, .contact-field select, .contact-field textarea { display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px; color: #4b5563; font: inherit; font-size: 13px; line-height: 1.75; background: var(--page-background); border: 1px solid #d3e2df; border-radius: 9px; }
+/* One line-style chevron, with room for text; suppress the native arrow. */
+.contact-modal .contact-field select { -webkit-appearance: none; appearance: none; height: 44px; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2387919b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px 16px; }
+.contact-field textarea { resize: vertical; overflow-wrap: anywhere; }
+.contact-field input:focus, .contact-field select:focus, .contact-field textarea:focus { border-color: var(--brand-teal); outline: none; box-shadow: 0 0 0 2px rgb(113 155 150 / 16%); }
+.contact-field [aria-invalid="true"] { border-color: #c98c85; }
+.contact-field-error { margin: 5px 0 0; color: #b36e68; font-size: 11px; }
+.contact-note-count { margin: 5px 0 0; color: var(--text-secondary); font-size: 11px; text-align: right; }
+.contact-modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line-color); }
+.contact-secondary-button { padding: 11px 19px; color: var(--brand-teal-dark); font-size: 13px; font-weight: 700; background: #fff; border: 1px solid #d3e2df; border-radius: 9px; }
+.contact-modal button:focus-visible, #add-contact-record:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 3px; }
+@media (max-width: 520px) {
+    .contact-modal { width: calc(100% - 24px); max-height: calc(100dvh - 24px); border-radius: 16px; }
+    .contact-modal-card { padding: 20px 16px; }
+    .contact-form-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .contact-modal-actions { flex-direction: column-reverse; }
+    .contact-modal-actions button { width: 100%; }
+}
+@media (max-width: 1100px) {
+    .detail-tracking-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 850px) {
+    .detail-basic-grid { grid-template-columns: minmax(0, 1fr); }
+    .detail-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+    .detail-summary-grid { grid-template-columns: minmax(0, 1fr); }
+    .detail-data-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .detail-tabs { gap: 4px; }
+    .detail-tab { padding: 7px 12px; }
+    .detail-tracking-summary-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .detail-contact-item { padding-left: 16px; }
+    .detail-contact-meta { align-items: flex-start; flex-direction: column; gap: 8px; }
+}
+
+/* 個案內後續待辦：沿用卡片、按鈕及 Modal，不影響其他追蹤區塊。 */
+.case-todo-panel { margin-top: 18px; }
+.case-todo-panel [hidden] { display: none !important; }
+.case-todo-heading { align-items: flex-start; gap: 16px; }
+.case-todo-heading .primary-button { flex-shrink: 0; }
+.case-todo-list { list-style: none; margin: 16px 0 0; padding: 0; }
+.case-todo-item { display: flex; align-items: flex-start; gap: 24px; padding: 20px 0; border-top: 1px solid #e5eceb; }
+.case-todo-item:focus { outline: 2px solid rgba(113, 155, 150, .45); outline-offset: 3px; border-radius: 9px; }
+.case-todo-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.case-todo-item-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+.case-todo-item-heading h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.7; }
+.case-todo-status, .case-todo-overdue, .case-todo-priority { display: inline-flex; padding: 3px 8px; border-radius: 6px; font-size: 11px; line-height: 1.7; }
+.case-todo-status { color: #9b7c51; background: #faf3e9; border: 1px solid #eddfca; }
+.case-todo-status[data-todo-status="completed"] { color: #65877a; background: #eff5f0; border-color: #d7e5da; }
+.case-todo-status[data-todo-status="cancelled"] { color: #879193; background: #f3f5f5; border-color: #e0e6e5; }
+.case-todo-overdue, .case-todo-priority { color: #b2736e; background: #faefee; }
+.case-todo-meta { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 12px 0 0; }
+.case-todo-meta dt { font-size: 11px; color: var(--text-secondary, #89949b); margin-bottom: 4px; }
+.case-todo-meta dd { margin: 0; font-size: 13px; line-height: 1.8; }
+.case-todo-note { margin: 12px 0 0; font-size: 12px; line-height: 1.8; color: var(--text-secondary, #89949b); white-space: pre-wrap; }
+.case-todo-actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+.case-todo-action { min-height: 40px; padding: 8px 12px; font-size: 12px; }
+.case-todo-action:disabled { color: #8b9595; background: #f7f9f8; border-color: #e1e7e5; cursor: not-allowed; }
+.case-todo-action:disabled:hover { background: #f7f9f8; }
+.case-todo-feedback { margin: 12px 0; font-size: 12px; color: #65877a; line-height: 1.8; }
+.case-todo-field-help { margin: 5px 0 0; font-size: 11px; color: var(--text-secondary, #89949b); line-height: 1.8; }
+.case-todo-confirm-summary { margin: 20px 0 0; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+    .case-todo-heading, .case-todo-item { flex-direction: column; gap: 14px; }
+    .case-todo-content { width: 100%; }
+    .case-todo-meta { gap: 12px 24px; }
+    .case-todo-actions { width: 100%; }
+    .case-todo-action { flex: 1; min-width: 0; }
+}
+@media (max-width: 520px) {
+    .case-todo-meta { display: grid; grid-template-columns: 1fr; }
+    .case-todo-heading .primary-button { width: 100%; justify-content: center; }
+}

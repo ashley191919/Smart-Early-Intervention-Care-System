@@ -1,0 +1,39 @@
+/* Header disclosures only: preserve existing Header dimensions and page layout. */
+.topbar[data-staff-header] { position: relative; z-index: 40; }
+.header-actions { position: relative; display: flex; align-items: center; gap: 15px; flex: 0 0 auto; }
+.header-actions .topbar-action, .header-actions .staff-menu { border-radius: 8px; }
+.header-actions .topbar-action:hover, .header-actions .staff-menu:hover { background: #eff6f5; }
+.header-actions button:focus-visible, .header-popup a:focus-visible { outline: 2px solid #719B96; outline-offset: 3px; }
+.header-actions .staff-avatar svg { width: 19px; height: 19px; }
+.header-popup { position: absolute; top: calc(100% + 16px); right: 0; z-index: 50; width: min(340px, calc(100vw - 34px)); max-height: min(420px, calc(100dvh - 120px)); overflow: auto; padding: 16px; box-sizing: border-box; background: #fff; border: 1px solid #dce7e5; border-radius: 14px; box-shadow: 0 8px 26px rgb(40 66 62 / 12%); overflow-wrap: anywhere; }
+.header-popup[hidden], .header-popup [hidden], .header-reminder-count[hidden] { display: none; }
+.header-reminder-count { position: absolute; top: -3px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; box-sizing: border-box; display: grid; place-items: center; border-radius: 9px; background: #719B96; color: #fff; font-size: 10px; line-height: 1; }
+.header-reminder-state { flex-shrink: 0; align-self: flex-start; padding: 1px 7px; border-radius: 5px; background: #eff6f5; color: #587f7b; font-size: 11px; white-space: nowrap; }
+.header-notification-popup { width: min(440px, calc(100vw - 34px)); }
+.header-reminder-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.header-popup .header-reminder-heading h2 { margin: 0; }
+.header-overdue-count { flex-shrink: 0; padding: 2px 8px; border-radius: 6px; background: #fbefee; color: #b56e68; font-size: 11px; }
+.header-reminder-copy { flex: 1; min-width: 0; }
+.header-reminder-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.header-reminder-top strong { min-width: 0; overflow-wrap: anywhere; }
+.header-reminder-icon { width: 20px; height: 20px; margin-top: 3px; color: #719B96; }
+.header-reminder-meta { display: flex; flex-wrap: wrap; font-size: 11px; color: #81908f; }
+.header-reminder-overdue .header-reminder-icon { color: #b56e68; }
+.header-reminder-overdue .header-reminder-state { color: #b56e68; background: #fbefee; }
+.header-popup h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.header-demo-note { margin: 8px 0; font-size: 11px; color: #81908f; }
+.header-reminders { margin: 0; padding: 0; list-style: none; }
+.header-reminders li + li { border-top: 1px solid #edf1f0; }
+.header-reminder { display: flex; align-items: flex-start; gap: 10px; padding: 12px 4px; color: inherit; text-decoration: none; border-radius: 6px; }
+a.header-reminder:hover { background: #eff6f5; }
+.header-reminder strong { font-size: 13px; font-weight: 500; }
+.header-reminder small, .header-reminder time { font-size: 11px; color: #81908f; }
+.header-user-popup { width: min(200px, calc(100vw - 34px)); padding: 8px; }
+.header-logout { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; text-align: left; color: #719B96; border: 0; border-radius: 8px; background: #fff; }
+.header-logout svg { width: 18px; height: 18px; }
+.header-logout:hover { background: #eff6f5; }
+@media (max-width: 850px) { .header-actions { gap: 10px; } }
+@media (max-width: 520px) {
+    .header-actions { gap: 6px; }
+    .topbar .header-actions .staff-avatar { display: grid; }
+}
