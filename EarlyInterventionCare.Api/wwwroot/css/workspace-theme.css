@@ -1,0 +1,147 @@
+/* Shared visual rules from teacher-workspace.css for both system workspaces. */
+:root {
+  --ink:#374151;
+  --muted:#9299a3;
+  --green:#719b96;
+  --dark:#567f7a;
+  --pale:#f0f6f5;
+  --line:#e9ebee;
+  --paper:#f8fafc;
+  --white:#fff;
+  --shadow:0 8px 24px #33415508;
+}
+body {
+  font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",Arial,sans-serif;
+  font-size:14px;
+  line-height:1.75;
+  color:var(--ink);
+  background:radial-gradient(ellipse at 50% 28%,#eff5f4 0,transparent 50%),var(--paper);
+}
+button,input,textarea,select { font:inherit; }
+.sidebar { border-top:8px solid var(--green); }
+.brand { gap:11px; }
+.brand-icon,.brandmark {
+  width:36px;height:36px;border-radius:10px;
+  background:var(--pale);color:var(--green);
+}
+.brand strong { display:block;font-size:15px;color:var(--dark); }
+.brand small { font-size:10px;color:var(--muted); }
+.panel { border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow); }
+.btn {
+  border-radius:9px;font-size:13px;font-weight:700;
+  background:var(--green);color:white;
+  padding:11px 19px;border:1px solid var(--green);
+  box-shadow:0 3px 6px #3341550a;
+}
+.btn:hover { background:var(--dark); }
+.avatar { width:34px;height:34px;background:var(--pale);color:var(--green); }
+dialog { border-radius:20px; }
+
+/* Parent-specific layout uses the teacher workspace's typography and components. */
+.parent-workspace .sidebar { width:232px;padding:25px 20px; }
+.parent-workspace .brand small { margin-top:0; }
+.parent-workspace .nav-label { margin:28px 13px 13px;color:var(--muted); }
+.parent-workspace nav button { gap:11px;padding:13px;border-radius:9px;color:#87919b; }
+.parent-workspace nav button.active { background:var(--pale);color:var(--dark); }
+.parent-workspace nav button:hover { background:#f8fafc; }
+.parent-workspace .nav-count { border-radius:5px;padding:0 7px;font-size:12px;background:#e5eeec; }
+.parent-workspace .side-note {
+  border:1px solid #d3e2df;background:var(--pale);border-radius:9px;
+  color:#7e8e8b;font-size:12px;
+}
+.parent-workspace .side-note p { margin:0; }
+.parent-workspace .side-note a { display:block;margin-top:12px; }
+.parent-workspace .topbar { height:80px;min-height:80px;flex:0 0 80px;padding:14px 32px; }
+.parent-workspace .hospital-brand { gap:12px; }
+.parent-workspace .hospital-brand strong { font-size:16px;font-weight:700; }
+.parent-workspace .hospital-brand small { font-size:9px;letter-spacing:.1px; }
+.parent-workspace .breadcrumb { display:none; }
+.parent-workspace .demo-badge { border:1px solid #dce4e3;background:#f8fafc;color:#7e8e8b;padding:2px 7px; }
+.parent-workspace .identity { color:var(--muted); }
+.parent-workspace .identity::before { content:"";width:7px;height:7px;border-radius:50%;background:var(--green); }
+.parent-workspace .content { background:transparent;padding:20px 32px 16px; }
+.parent-workspace .eyebrow { font-size:11px;letter-spacing:.08em;color:#9ca3af; }
+.parent-workspace h1 { font-size:25px;color:var(--green);margin:0 0 6px;line-height:1.4; }
+.parent-workspace .heading { margin:16px 0; }
+.parent-workspace .heading p { font-size:13px;line-height:1.6; }
+.parent-workspace .preview-note { background:#eff6ff;border-color:#d6dfeb;color:#7891b5;border-radius:9px; }
+.parent-workspace .welcome { background:#eff6ff;border:1px solid #d6dfeb;border-radius:9px;padding:14px 19px;margin-bottom:16px; }
+.parent-workspace .welcome h2 { font-size:16px;color:#7891b5;margin:0 0 3px;line-height:1.6; }
+.parent-workspace .welcome p { color:#7891b5;font-size:13px;line-height:1.6; }
+.parent-workspace .welcome-tag,.parent-workspace .welcome>.welcome-symbol { display:none; }
+.parent-workspace .stat { border-radius:20px;box-shadow:var(--shadow); }
+.parent-workspace .stat-icon { border-radius:10px;background:var(--pale);color:var(--green); }
+.parent-workspace .stat strong { color:var(--green); }
+.parent-workspace .panel h2,.parent-workspace .section-title h2 { font-size:18px;color:#4b5563; }
+.parent-workspace .task-name { font-size:16px; }
+.parent-workspace .task-meta { font-size:12px;color:var(--muted);margin-top:4px;line-height:1.6; }
+.parent-workspace .home-grid>.panel { position:relative;overflow:hidden; }
+.parent-workspace .home-grid>.panel::before { content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--green); }
+.parent-workspace .pill { background:#f8fafc;border:1px solid var(--line);border-radius:6px;color:var(--muted);padding:3px 8px; }
+.parent-workspace .pill.pending { background:#f8fafc;color:var(--muted);border-color:var(--line); }
+.parent-workspace .pill.draft { background:#eff6ff;color:#7891b5;border-color:#d6dfeb; }
+.parent-workspace .pill.done { background:var(--pale);color:var(--dark);border-color:#d3e2df; }
+.parent-workspace .btn.ghost { background:white;color:var(--green);border:1px solid var(--green);box-shadow:none; }
+.parent-workspace .btn.ghost:hover { background:var(--pale); }
+.parent-workspace .btn.danger { background:white;color:#a56660;border-color:#e5d2cf;box-shadow:none; }
+.parent-workspace .footer { border-top:1px solid var(--line);padding-top:12px;color:#a3aab4;line-height:1.6; }
+@media(max-width:1100px) and (min-width:801px) {
+  .parent-workspace .sidebar { width:200px;padding:25px 14px; }
+  .parent-workspace .brand strong { font-size:13px; }
+  .parent-workspace .content { padding:24px; }
+  .parent-workspace .topbar { padding:14px 24px; }
+  .parent-workspace .task-end { gap:8px; }
+  .parent-workspace .task-end .btn { padding:10px 12px; }
+}
+@media(max-width:800px) {
+  .parent-workspace .sidebar { width:auto;padding:16px 23px;border-top-width:6px; }
+  .parent-workspace .topbar { height:auto;flex:auto;min-height:80px;padding:16px 17px; }
+  .parent-workspace .content { padding:24px 17px; }
+  .parent-workspace nav button { font-size:12px;padding:8px;gap:7px; }
+  .parent-workspace .hospital-brand { gap:8px; }
+  .parent-workspace .hospital-brand strong { font-size:12px; }
+  .parent-workspace .hospital-brand small { font-size:7px; }
+  .parent-workspace .hospital-brand img { width:34px;height:34px; }
+  .parent-workspace h1 { font-size:23px; }
+  .parent-workspace .identity::before { display:none; }
+  .parent-workspace .welcome { padding:17px; }
+  .parent-workspace .welcome h2 { font-size:14px; }
+  .parent-workspace .task-name { font-size:15px; }
+  .parent-workspace .task-end .btn { padding:10px 12px; }
+}
+
+/* Match structure and inherited line boxes, not just the visible font sizes. */
+.brand { font-size:14px;line-height:1.75; }
+.brand > div { font-size:14px;line-height:1.75; }
+.brand strong { margin:0;line-height:1.75; }
+.brand small { display:inline;margin:0;line-height:1.75; }
+.parent-workspace .brand small { display:inline;margin:0;line-height:1.75; }
+.parent-workspace .brand-icon { flex-shrink:1; }
+.parent-workspace svg { width:21px;height:21px;flex-shrink:0; }
+.parent-workspace .sidebar { gap:28px;min-height:0;overflow-y:auto; }
+.parent-workspace .nav-label { margin:0 13px 13px; }
+.parent-workspace .nav { display:flex;flex-direction:column;gap:8px; }
+.parent-workspace .side-note { line-height:1.75; }
+.parent-workspace .side-note strong { display:flex;gap:7px;align-items:center;font-size:12px;margin-bottom:7px; }
+.parent-workspace .hospital-name { margin:0 0 4px;font-size:16px;font-weight:700;color:#333; }
+.parent-workspace .hospital-english { margin:0;font-size:9px;letter-spacing:.1px;color:#9ca3af; }
+.parent-workspace .identity { gap:10px;font-size:12px; }
+.parent-workspace .text-button { color:var(--dark); }
+.parent-workspace .filterbar button.active { background:var(--pale);border-color:#d3e2df; }
+.parent-workspace .grant-code,.parent-workspace .binding-phone { background:var(--pale); }
+.parent-workspace .content { max-width:1210px;width:100%;margin:auto;overscroll-behavior:contain;scrollbar-gutter:stable; }
+@media(min-width:801px) and (max-width:1100px){
+  .parent-workspace .sidebar { padding:32px 20px;gap:36px; }
+  .parent-workspace .content { padding:28px; }
+  .parent-workspace .topbar { min-height:94px;height:94px;flex-basis:94px;padding:17px 28px; }
+  .parent-workspace .brand strong { font-size:13px; }
+}
+@media(max-width:800px){
+  .parent-workspace .sidebar { gap:15px;padding:16px 23px; }
+  .parent-workspace .sidebar .brand { display:none; }
+  .parent-workspace .nav { flex-direction:row;flex-wrap:wrap;justify-content:space-between;margin-top:0; }
+  .parent-workspace .nav-label { display:none; }
+  .parent-workspace .hospital-name { font-size:12px; }
+  .parent-workspace .hospital-english { font-size:7px; }
+  .parent-workspace .content { max-width:none;scrollbar-gutter:auto; }
+}

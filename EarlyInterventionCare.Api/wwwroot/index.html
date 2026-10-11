@@ -7,7 +7,9 @@
   <title>登入｜早療智慧動態照顧系統</title>
   <link rel="stylesheet" href="/css/login.css?v=20261006-hospital-mark">
   <link rel="stylesheet" href="/css/teacher-access.css?v=20261006-invitation">
-  <script src="/js/login.js" defer></script>
+  <script src="/js/login.js?v=20261010-parent" defer></script>
+  <link rel="stylesheet" href="/css/parent-login.css?v=20261011-shared-style">
+  <script src="/js/parent-login.js?v=20261010-otp" defer></script>
   <script src="/js/teacher-access.js?v=20261006-invitation" defer></script>
 </head>
 <body>
@@ -28,12 +30,30 @@
       </div>
 
       <section id="panel-parent" class="role-panel" role="tabpanel" aria-labelledby="tab-parent">
-        <form id="parent-form">
-          <div class="field"><label for="child-id">孩童身分證字號 / 病歷號</label><input id="child-id" name="childIdentifier" placeholder="請輸入孩童身分證字號" autocomplete="off" maxlength="40" required></div>
-          <div class="field"><label for="parent-phone">家長手機號碼</label><input id="parent-phone" name="phone" type="tel" placeholder="09XX-XXX-XXX" autocomplete="tel" inputmode="tel" maxlength="20" required><span id="phone-error" class="field-error" hidden>請輸入 09 開頭的 10 碼手機號碼。</span></div>
-          <button class="primary-button" type="submit">取得驗證碼</button>
+        <div class="parent-demo-note">前端預覽 · 不會寄送簡訊或建立登入身分</div>
+        <form id="parent-form" novalidate>
+          <h2 class="parent-step-title">使用手機號碼登入</h2>
+          <p class="teacher-intro">家長您好，請使用手機號碼驗證登入。首次使用者登入後，再以醫護提供的邀請碼綁定孩子。</p>
+          <div class="field"><label for="parent-phone">家長手機號碼</label><input id="parent-phone" name="phone" type="tel" placeholder="請輸入 09 開頭的手機號碼" autocomplete="tel" inputmode="tel" maxlength="20" aria-describedby="parent-phone-help phone-error" required><span id="phone-error" class="field-error" role="alert" hidden>請輸入 09 開頭的 10 碼手機號碼。</span><p class="field-help" id="parent-phone-help">請使用虛構手機號碼體驗此畫面。</p></div>
+          <button class="primary-button" type="submit">取得驗證碼（示範）</button>
+          <p class="parent-binding-note"><span class="help-icon" aria-hidden="true">i</span>第一次使用？登入後再輸入醫護提供的邀請碼綁定孩子。</p>
           <p class="form-status" role="status" hidden></p>
         </form>
+        <form id="parent-otp-form" novalidate hidden>
+          <h2 class="parent-step-title" id="parent-otp-title" tabindex="-1">輸入手機驗證碼</h2>
+          <p class="parent-step-description">示範手機：<strong id="parent-masked-phone"></strong>（未寄送簡訊）</p>
+          <div class="field"><label for="parent-otp">6 位數驗證碼</label><input id="parent-otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="請輸入 6 位數驗證碼" aria-describedby="parent-otp-error parent-otp-expiry" required><p id="parent-otp-error" class="field-error" role="alert" hidden></p><p class="field-help" id="parent-otp-expiry"></p></div>
+          <div class="parent-demo-code">本次示範碼：<strong id="parent-demo-code"></strong><small>僅供預覽，不是正式 OTP。</small></div>
+          <button class="primary-button" type="submit">驗證並繼續（示範）</button>
+          <div class="parent-otp-actions"><button type="button" class="parent-text-button" id="parent-change-phone">更換手機號碼</button><button type="button" class="parent-text-button" id="parent-resend" disabled>重新取得示範碼</button></div>
+        </form>
+        <section id="parent-preview-complete" class="parent-preview-complete" hidden aria-labelledby="parent-complete-title">
+          <span class="parent-success-icon" aria-hidden="true">✓</span><h2 class="parent-step-title" id="parent-complete-title" tabindex="-1">登入流程示範完成</h2>
+          <p class="parent-step-description">手機驗證畫面體驗已完成；尚未正式登入。</p>
+          <div class="parent-next-step"><strong>下一步：我的孩子</strong><p>已綁定的孩子會顯示在首頁；首次使用者以醫護邀請碼綁定。以下先預覽虛構資料。</p></div>
+          <a class="primary-button parent-dashboard-link" href="/parent-workspace.html">預覽家長儀表板</a>
+          <button type="button" class="parent-text-button" id="parent-restart">重新體驗登入</button>
+        </section>
       </section>
 
       <section id="panel-teacher" class="role-panel" role="tabpanel" aria-labelledby="tab-teacher" hidden>

@@ -44,26 +44,6 @@ function showStatus(form, message) {
   status.hidden = false;
 }
 
-document.querySelector("#parent-phone").addEventListener("input", event => {
-  event.target.removeAttribute("aria-invalid");
-  document.querySelector("#phone-error").hidden = true;
-});
-
-document.querySelector("#parent-form").addEventListener("submit", event => {
-  event.preventDefault();
-  const phone = document.querySelector("#parent-phone");
-  const number = phone.value.replace(/[\s-]/g, "");
-  if (!/^09\d{8}$/.test(number)) {
-    phone.setAttribute("aria-invalid", "true");
-    phone.setAttribute("aria-describedby", "phone-error");
-    document.querySelector("#phone-error").hidden = false;
-    event.target.querySelector(".form-status").hidden = true;
-    phone.focus();
-    return;
-  }
-  showStatus(event.target, "家長驗證功能尚未串接，本次未寄出簡訊。接口完成後，將在這裡取得驗證碼。");
-});
-
 document.querySelector("#medical-form").addEventListener("submit", event => {
   event.preventDefault();
   document.querySelector("#staff-password").value = "";
@@ -82,7 +62,7 @@ function openInfo(title, paragraphs) {
 }
 
 document.querySelector("#open-faq").addEventListener("click", () => openInfo("系統操作說明與常見問題", [
-  "家長／照顧者：輸入孩童身分證字號或病歷號，以及登記的家長手機號碼，再取得驗證碼。",
+  "家長／照顧者：使用手機號碼與 OTP 登入；第一次使用時，再以醫護提供的一次性邀請碼綁定孩子。",
   "幼兒園教師：使用家長提供的授權碼或 QR Code，進入指定問卷。",
   "醫療行政：使用院方核准的單位代碼、帳號與密碼登入，不開放自行註冊。",
   "目前為開發試做版。教師可使用後端產生的測試授權碼取得虛構個案與 SNAP-IV；家長／醫療登入及正式問卷提交尚未串接。"
