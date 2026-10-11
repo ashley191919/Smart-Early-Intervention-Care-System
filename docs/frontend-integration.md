@@ -1,3 +1,5 @@
+最新共用版本與組員啟動方式請參考 [團隊啟動說明](team-frontend-start.md)。下方保留功能整合範圍與限制。
+
 # 共用前端整合（2026-10-11）
 
 目前分支：integration/frontend。既有 7、11、16 的頁面已置於同一 ASP.NET Core 專案，入口為 `/`，原 frontend-preview.html 轉向共用登入。
@@ -13,7 +15,7 @@
 5. 家長建立教師示範授權；到教師入口輸入 DEMO- 開頭示範碼。只取得授權任務。
 6. 第一份提交仍有效，全部授權任務提交後失效。撤銷阻止保存與提交，已提交答案保留；重新授權僅含未完成任務。
 7. 家長只顯示教師是否完成；醫療端儀表板／個案詳細的表單紀錄可以查看共用原始答案。
-8. 共用示範導覽可切換角色；「重設示範」需確認，僅重設本瀏覽器示範資料。
+8. 各角色由共用登入頁進入工作台；跨角色示範導覽已移除，家長、教師使用右上角選單登出。
 
 草稿、任務、答案與授權僅保存到 `earlycare.frontend.v1` 的 localStorage。教師示範會話用 sessionStorage；它們不是可信身分、正式權限、MySQL 紀錄或正式知情同意。只用虛構資料。不同瀏覽器／裝置不共享；5177 與 5180 也不共享。
 
@@ -26,7 +28,7 @@
 - 基本資料、滿意度、自編學校問卷尚未接入共用題目／填答；指派頁暫時停用這些選項。
 - 正式多輪複評、更多個案、跨裝置共享、同意查核與 API 權限。
 - 表單共用 API／MySQL 串接； schema 需變更时由 16 號統一產 migration。
-- 16 號確認 0608f09 是否為最新版本、三人驗收、PR 合入 main。
+- 16 號新提交 197dbf2 尚未額外整合；後續需比對並由三人驗收。
 
 目前共用流程固定 DEMO-001、第 2 輪、demo-1 示範版本；指派日期只用來展示提醒，不讓教師授權到期。
 
@@ -41,7 +43,8 @@
 在此整合工作目錄執行：
 
 ```powershell
-dotnet run --project EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj --launch-profile http --urls http://localhost:5180
+powershell -ExecutionPolicy Bypass -File .\scripts\Initialize-LocalJwt.ps1
+dotnet run --project EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj --launch-profile http -- --environment Development
 ```
 
 需保留既有本機 User Secrets（JWT 與 ConnectionString）；沒有執行 migration。

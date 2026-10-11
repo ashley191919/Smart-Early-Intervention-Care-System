@@ -8,11 +8,12 @@
   <title>登入｜早療智慧動態照顧系統</title>
   <link rel="stylesheet" href="/css/login.css?v=20261006-hospital-mark">
   <link rel="stylesheet" href="/css/teacher-access.css?v=20261006-invitation">
-  <script src="/js/login.js?v=20261010-parent" defer></script>
+  <script src="/js/login.js?v=20261011-product2" defer></script>
   <link rel="stylesheet" href="/css/parent-login.css?v=20261011-shared-style">
-  <script src="/js/parent-login.js?v=20261010-otp" defer></script>
-  <script src="/js/teacher-access.js?v=20261006-invitation" defer></script>
-<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-login-spacing5" defer></script>
+  <script src="/js/parent-login.js?v=20261011-product2" defer></script>
+  <script src="/js/teacher-access.js?v=20261011-product2" defer></script>
+<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-product2" defer></script>
+<link rel="stylesheet" href="/css/system-interface.css?v=20261011-product3">
 </head>
 <body>
   <main class="login-page">
@@ -34,41 +35,41 @@
       <section id="panel-parent" class="role-panel" role="tabpanel" aria-labelledby="tab-parent">
         <div class="parent-demo-note">前端預覽 · 不會寄送簡訊或建立登入身分</div>
         <form id="parent-form" novalidate>
-          <h2 class="parent-step-title">使用手機號碼登入</h2>
           <p class="teacher-intro">家長您好，請使用手機號碼驗證登入。首次使用者登入後，再以醫護提供的邀請碼綁定孩子。</p>
-          <div class="field"><label for="parent-phone">家長手機號碼</label><input id="parent-phone" name="phone" type="tel" placeholder="請輸入 09 開頭的手機號碼" autocomplete="tel" inputmode="tel" maxlength="20" aria-describedby="parent-phone-help phone-error" required><span id="phone-error" class="field-error" role="alert" hidden>請輸入 09 開頭的 10 碼手機號碼。</span><p class="field-help" id="parent-phone-help">請使用虛構手機號碼體驗此畫面。</p></div>
-          <button class="primary-button" type="submit">取得驗證碼（示範）</button>
-          <p class="parent-binding-note"><span class="help-icon" aria-hidden="true">i</span>第一次使用？登入後再輸入醫護提供的邀請碼綁定孩子。</p>
+          <div class="field"><label for="parent-phone">家長手機號碼</label><input id="parent-phone" name="phone" type="tel" placeholder="請輸入 09 開頭的手機號碼" autocomplete="tel" inputmode="tel" maxlength="20" aria-describedby="parent-phone-help phone-error" required><span id="phone-error" class="field-error" role="alert" hidden>請輸入 09 開頭的 10 碼手機號碼。</span><p class="field-help" id="parent-phone-help">請輸入您使用的手機號碼。</p></div>
+          <button class="primary-button" type="submit">取得驗證碼</button>
+          <p class="parent-binding-note"><svg class="binding-info-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><circle class="info-dot" cx="12" cy="7.5" r="1"></circle></svg><span>第一次使用？登入後再輸入醫護提供的邀請碼綁定孩子。</span></p>
           <p class="form-status" role="status" hidden></p>
+          <div class="workspace-entry"><a class="secondary-button" href="/parent-workspace.html">前往家長工作台</a></div>
         </form>
         <form id="parent-otp-form" novalidate hidden>
           <h2 class="parent-step-title" id="parent-otp-title" tabindex="-1">輸入手機驗證碼</h2>
-          <p class="parent-step-description">示範手機：<strong id="parent-masked-phone"></strong>（未寄送簡訊）</p>
+          <p class="parent-step-description">手機號碼：<strong id="parent-masked-phone"></strong></p>
           <div class="field"><label for="parent-otp">6 位數驗證碼</label><input id="parent-otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="請輸入 6 位數驗證碼" aria-describedby="parent-otp-error parent-otp-expiry" required><p id="parent-otp-error" class="field-error" role="alert" hidden></p><p class="field-help" id="parent-otp-expiry"></p></div>
-          <div class="parent-demo-code">本次示範碼：<strong id="parent-demo-code"></strong><small>僅供預覽，不是正式 OTP。</small></div>
-          <button class="primary-button" type="submit">驗證並繼續（示範）</button>
-          <div class="parent-otp-actions"><button type="button" class="parent-text-button" id="parent-change-phone">更換手機號碼</button><button type="button" class="parent-text-button" id="parent-resend" disabled>重新取得示範碼</button></div>
+          <div class="parent-demo-code">本次驗證碼：<strong id="parent-demo-code"></strong></div>
+          <button class="primary-button" type="submit">驗證並繼續</button>
+          <div class="parent-otp-actions"><button type="button" class="parent-text-button" id="parent-change-phone">更換手機號碼</button><button type="button" class="parent-text-button" id="parent-resend" disabled>重新取得授權碼</button></div>
         </form>
         <section id="parent-preview-complete" class="parent-preview-complete" hidden aria-labelledby="parent-complete-title">
-          <span class="parent-success-icon" aria-hidden="true">✓</span><h2 class="parent-step-title" id="parent-complete-title" tabindex="-1">登入流程示範完成</h2>
-          <p class="parent-step-description">手機驗證畫面體驗已完成；尚未正式登入。</p>
-          <div class="parent-next-step"><strong>下一步：我的孩子</strong><p>已綁定的孩子會顯示在首頁；首次使用者以醫護邀請碼綁定。以下先預覽虛構資料。</p></div>
-          <a class="primary-button parent-dashboard-link" href="/parent-workspace.html">預覽家長儀表板</a>
-          <button type="button" class="parent-text-button" id="parent-restart">重新體驗登入</button>
+          <span class="parent-success-icon" aria-hidden="true">✓</span><h2 class="parent-step-title" id="parent-complete-title" tabindex="-1">手機驗證完成</h2>
+          <p class="parent-step-description">請繼續前往家長工作台。</p>
+          <div class="parent-next-step"><strong>下一步：我的孩子</strong><p>已綁定的孩子會顯示在首頁；首次使用者請使用醫護邀請碼綁定。</p></div>
+          <a class="primary-button parent-dashboard-link" href="/parent-workspace.html">前往家長工作台</a>
+          <button type="button" class="parent-text-button" id="parent-restart">返回登入</button>
         </section>
       </section>
 
       <section id="panel-teacher" class="role-panel" role="tabpanel" aria-labelledby="tab-teacher" hidden>
         <p class="teacher-intro">老師您好，請輸入由家長提供給您的「專屬授權碼」即可登入填寫學校量表。</p>
         <form id="teacher-form">
-          <div class="field"><label for="teacher-code">授權碼</label><input id="teacher-code" name="authorizationCode" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" maxlength="80" spellcheck="false" aria-describedby="teacher-code-help" required><p class="field-help" id="teacher-code-help">開發測試：可展開下方「試做畫面預覽」產生測試授權碼</p></div>
+          <div class="field"><label for="teacher-code">授權碼</label><input id="teacher-code" name="authorizationCode" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" maxlength="80" spellcheck="false" aria-describedby="teacher-code-help" required><p class="field-help" id="teacher-code-help">請輸入家長提供的授權碼。</p></div>
           <button class="primary-button" type="submit">驗證授權碼</button>
           <p class="form-status" role="status" hidden></p>
         </form>
         <div class="divider"><span>或</span></div>
         <button id="scan-qr" class="secondary-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/></svg>掃描 QR Code</button>
         <p class="teacher-notice"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>授權不限時，提交成功或撤銷後失效</p>
-        <div class="teacher-workspace-preview"><a class="secondary-button" href="/teacher-workspace.html">預覽教師填答工作台</a><p>前端操作示範，尚未驗證授權；請使用虛構資料。</p></div>
+        <div class="workspace-entry"><a class="secondary-button" href="/teacher-workspace.html">前往教師工作台</a></div>
       </section>
 
       <section id="panel-medical" class="role-panel" role="tabpanel" aria-labelledby="tab-medical" hidden>
@@ -78,6 +79,7 @@
           <div class="field"><label for="staff-account">醫護人員帳號</label><input id="staff-account" name="account" placeholder="請輸入醫護人員帳號" autocomplete="username" maxlength="80" required></div>
           <div class="field"><label for="staff-password">登入密碼</label><input id="staff-password" name="password" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" maxlength="256" required></div>
           <button class="primary-button" type="submit">安全登入</button>
+          <div class="workspace-entry"><a class="secondary-button" href="/staff-dashboard.html">前往醫療人員工作台</a></div>
           <p class="form-status" role="status" hidden></p>
         </form>
       </section>
@@ -112,8 +114,8 @@
         </div>
         <div id="teacher-unavailable" class="teacher-state" hidden>
           <span class="authorization-pending-icon" aria-hidden="true">i</span>
-          <h2 id="unavailable-title" tabindex="-1">測試授權服務無法使用</h2>
-          <p class="state-description">開發測試授權服務目前無法使用。<br>請確認專案以 Development 啟動，或稍後重試。</p>
+          <h2 id="unavailable-title" tabindex="-1">暫時無法驗證授權</h2>
+          <p class="state-description">暫時無法驗證授權，請稍後重試。</p>
           <button class="primary-button" data-teacher-view="input" type="button">返回輸入授權碼</button>
         </div>
       </section>
@@ -125,7 +127,7 @@
       <p>天主教輔仁大學附設醫院</p>
       <p>登入即表示您已閱讀本系統之 <button class="footer-link" data-info="privacy" type="button">隱私權政策</button> 與 <button class="footer-link" data-info="security" type="button">資料保護安全聲明</button></p>
       <p class="copyright" lang="en">© 2026 Fu Jen Catholic University Hospital. All rights reserved.</p>
-      <p class="prototype-note">開發試做版：教師測試授權已啟用；家長 OTP 與醫療登入為前端示範；共用問卷流程不寫入 MySQL。</p>
+
       <details id="teacher-preview-controls" class="teacher-preview-controls" hidden>
         <summary>試做畫面預覽與測試授權</summary><button id="create-test-code" class="secondary-button" type="button">產生測試授權碼並填入</button><button id="show-teacher-invitation" class="secondary-button" type="button" hidden>查看邀請連結與 QR Code</button><p id="test-code-status" class="prototype-note" role="status" hidden></p>
         <nav aria-label="教師畫面預覽">
@@ -140,7 +142,7 @@
 
   <dialog id="teacher-invitation-dialog" aria-labelledby="teacher-invitation-title">
     <div class="dialog-header"><h2 id="teacher-invitation-title">教師測試邀請</h2><button id="close-teacher-invitation" class="close-button" type="button" aria-label="關閉教師邀請">×</button></div>
-    <p>開發測試：僅包含虛構個案，尚未驗證家長同意。連結開啟後，請按「驗證授權碼」。</p>
+    <p>開發測試：僅包含，尚未驗證家長同意。連結開啟後，請按「驗證授權碼」。</p>
     <img id="teacher-invitation-qr" width="208" height="208" alt="教師邀請 QR Code，內容與下方邀請連結相同">
     <label for="teacher-invitation-url">邀請連結</label><textarea id="teacher-invitation-url" readonly rows="2" spellcheck="false"></textarea>
     <p class="invitation-local-note">目前是本機網址，手機掃描無法連到這台電腦。可先在同一台電腦開啟連結測試。</p>

@@ -47,10 +47,10 @@
     const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
     const cooldown = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
     expiryLabel.textContent = remaining > 0
-      ? `示範碼有效時間：${Math.floor(remaining / 60)} 分 ${String(remaining % 60).padStart(2, '0')} 秒`
-      : '示範碼已過期，請重新取得。';
+      ? `驗證碼有效時間：${Math.floor(remaining / 60)} 分 ${String(remaining % 60).padStart(2, '0')} 秒`
+      : '驗證碼已過期，請重新取得。';
     resend.disabled = cooldown > 0;
-    resend.textContent = cooldown > 0 ? `重新取得（${cooldown} 秒）` : '重新取得示範碼';
+    resend.textContent = cooldown > 0 ? `重新取得（${cooldown} 秒）` : '重新取得驗證碼';
     if (remaining === 0) {
       currentCode = '';
       demoCode.textContent = '已過期';
@@ -101,9 +101,9 @@
     event.preventDefault();
     const code = otp.value.trim();
     let error = '';
-    if (Date.now() >= expiresAt || !currentCode) error = '示範碼已過期，請重新取得。';
+    if (Date.now() >= expiresAt || !currentCode) error = '驗證碼已過期，請重新取得。';
     else if (!/^\d{6}$/.test(code)) error = '請輸入 6 位數驗證碼。';
-    else if (code !== currentCode) error = '示範碼不正確，請確認畫面上的 6 位數示範碼。';
+    else if (code !== currentCode) error = '驗證碼不正確，請重新確認。';
     if (error) {
       otpError.textContent = error;
       otpError.hidden = false;
@@ -115,7 +115,7 @@
     phoneForm.reset();
     otpForm.hidden = true;
     complete.hidden = false;
-    document.querySelector('#parent-complete-title').focus();
+    window.location.assign('/parent-workspace.html');
   });
   document.querySelector('#parent-change-phone').addEventListener('click', () => { resetPreview(); phone.focus(); });
   document.querySelector('#parent-restart').addEventListener('click', () => { resetPreview(); phone.focus(); });

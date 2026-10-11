@@ -1,0 +1,22 @@
+/* Dashboard only: match parent/teacher typography and spacing without changing layout or behavior. */
+.brand-copy { font-size: 14px; line-height: 1.75; }
+.brand-copy small { display: inline; }
+.brand-copy strong,
+.brand-copy small { margin: 0; line-height: 1.75; }
+.nav-label { margin-bottom: 13px; }
+.page-heading > div > p:last-child { line-height: 1.6; }
+.dashboard-overview { margin-bottom: 16px; }
+.panel-heading { margin-bottom: 16px; }
+.panel-heading h2 { line-height: 1.6; }
+.panel-heading p { margin-top: 4px; line-height: 1.6; }
+.todo-details h3 { margin-bottom: 4px; font-size: 16px; font-weight: 700; line-height: 1.6; }
+.todo-meta { line-height: 1.6; }
+.dashboard-stat-item dt { font-size: 12px; line-height: 1.6; }
+.system-demo-panel h2 { font-size: 18px; line-height: 1.6; }
+.system-demo-panel p { font-size: 13px; line-height: 1.6; }
+.system-demo-panel th { font-size: 12px; line-height: 1.6; }
+.system-demo-panel button { font-family: inherit; font-size: 13px; font-weight: 700; line-height: 1.75; }
+@media (max-width: 520px) {
+    .todo-details h3 { font-size: 14px; }
+    .system-demo-panel h2 { font-size: 16px; }
+}

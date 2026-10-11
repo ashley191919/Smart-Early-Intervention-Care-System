@@ -66,6 +66,11 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 if (!JwtOptions.TryLoad(builder.Configuration, out var jwtOptions, out var decodedSigningKey, out var jwtError))
 {
     Console.WriteLine(jwtError);
+    Console.WriteLine($"Startup environment: {builder.Environment.EnvironmentName}");
+    Console.WriteLine($"Content root: {builder.Environment.ContentRootPath}");
+    Console.WriteLine(builder.Environment.IsDevelopment()
+        ? "Check this Windows user's User Secrets settings for Jwt:SigningKey, Jwt:Issuer, Jwt:Audience and Jwt:ExpirationMinutes."
+        : "User Secrets are loaded only in Development. Select the http launch profile for local development.");
     Environment.ExitCode = 1;
     return;
 }

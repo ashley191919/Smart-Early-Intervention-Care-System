@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="css/staff-dashboard.css">
     <link rel="stylesheet" href="css/case-detail.css">
     <link rel="stylesheet" href="css/staff-header.css">
-<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-login-spacing5" defer></script>
+<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-product1" defer></script>
+<link rel="stylesheet" href="/css/system-interface.css?v=20261011-product1">
 </head>
 <body>
     <!-- 專題展示用 Demo B；未來由同一個 case-detail.html 依 API 資料決定空狀態或紀錄列表。 -->
@@ -67,7 +68,7 @@
                     </button>
                     <section id="staff-notification-panel" class="header-popup header-notification-popup" aria-labelledby="staff-notification-title" tabindex="-1" hidden>
                         <div class="header-reminder-heading"><h2 id="staff-notification-title">待辦提醒</h2><span id="staff-overdue-count" class="header-overdue-count"></span></div>
-                        <p class="header-demo-note">前端 Demo：依本機日期顯示逾期、今日及未來 3 天到期待辦；最多列出 5 項。</p>
+
                         <ul id="staff-notification-list" class="header-reminders"></ul>
                         <p id="staff-notification-empty" class="header-demo-note" hidden>目前沒有待處理提醒</p>
                     </section>
@@ -208,7 +209,7 @@
                                 <p>可使用「新增預約」設定評估日期與時間。</p>
                             </div>
                             <p id="appointment-inactive-note" class="detail-demo-note" hidden>此預約已取消，目前無有效預約，可新增預約重新安排。</p>
-                            <p class="detail-demo-note">預約與操作歷程皆為前端 Demo，重新整理後恢復原始資料；未串接院內掛號或 HIS。</p>
+
                             <section class="appointment-history" aria-labelledby="appointment-history-title">
                                 <h3 id="appointment-history-title">預約歷程（Demo）</h3>
                                 <ol id="appointment-history-list" class="appointment-history-list" aria-label="Demo 預約操作歷程"></ol>
@@ -221,7 +222,7 @@
                             <div><h2 id="case-todo-title">後續待辦</h2><p>記錄接下來需要處理的工作；待辦狀態與個案及其他進度分開管理。</p></div>
                             <button id="case-todo-add" class="primary-button" type="button"><svg aria-hidden="true"><use href="#icon-plus"/></svg>新增待辦</button>
                         </div>
-                        <p class="detail-demo-note">前端 Demo：操作僅保留於目前頁面，重新整理後恢復原始資料。</p>
+
                         <p id="case-todo-feedback" class="case-todo-feedback" role="status" hidden></p>
                         <ul id="case-todo-list" class="case-todo-list" aria-label="後續待辦紀錄"></ul>
                         <div id="case-todo-empty" class="detail-empty"><h3>目前尚無後續待辦</h3></div>
@@ -278,7 +279,7 @@
                 </div>
                 <button id="contact-modal-close" class="contact-modal-close" type="button" aria-label="關閉新增聯絡紀錄">×</button>
             </header>
-            <p class="detail-demo-note">* 為必填。僅為前端 Demo，重新整理後新增紀錄將消失。</p>
+
             <form id="contact-form" novalidate>
                 <div class="contact-form-grid">
                     <div class="contact-field">
@@ -340,7 +341,7 @@
                 <div><h2 id="appointment-modal-title">新增預約</h2><p id="appointment-modal-description">設定本次早療評估的日期、時間與類型</p></div>
                 <button id="appointment-modal-close" class="contact-modal-close" type="button" aria-label="關閉預約視窗">×</button>
             </header>
-            <p class="detail-demo-note">* 為必填。僅為前端 Demo，重新整理後恢復原始資料。</p>
+
             <form id="appointment-form" novalidate>
                 <div class="contact-form-grid">
                     <div class="contact-field">
@@ -398,7 +399,7 @@
                 <div><h2 id="case-todo-modal-title">新增待辦</h2><p id="case-todo-modal-description">記錄此個案接下來需要處理的工作</p></div>
                 <button id="case-todo-close" class="contact-modal-close" type="button" aria-label="關閉待辦視窗">×</button>
             </header>
-            <p class="detail-demo-note">* 為必填。僅為前端 Demo，不會變更個案或其他進度。</p>
+
             <form id="case-todo-form" novalidate>
                 <div class="contact-form-grid">
                     <div class="contact-field contact-field-wide">
@@ -467,6 +468,6 @@
         </div>
     </dialog>
     <script src="js/case-detail.js" defer></script>
-    <script src="js/staff-header.js" defer></script>
+    <script src="js/staff-header.js?v=20261011-product1" defer></script>
 </body>
 </html>

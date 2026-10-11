@@ -1,0 +1,25 @@
+/* Medical login only: use the parent/teacher login typography and spacing. */
+.hospital-title { line-height: normal; letter-spacing: normal; margin-bottom: 4px; }
+.hospital-subtitle { margin-top: 0; line-height: normal; letter-spacing: .1px; }
+.system-header h1, .system-subtitle { letter-spacing: normal; }
+.form-field input { font-size: 16px; }
+
+@media (min-width: 851px) {
+    .system-demo-bar ~ .login-page { min-height: calc(100svh - 104px); padding: 12px 32px 8px; }
+    .system-header { padding-top: 20px; }
+    .role-tabs { margin-top: 16px; }
+    .login-form { padding-top: 18px; }
+    .form-field { margin-bottom: 10px; }
+    .form-field label { margin-bottom: 6px; }
+    .form-field input { height: 44px; padding: 10px 16px; }
+    .login-button { height: 48px; font-size: 16px; }
+    .forgot-password-link { margin-top: 14px; }
+    .help-link-wrap { margin-top: 16px; padding-top: 12px; }
+    .login-card { padding-bottom: 16px; }
+    .page-footer { margin-top: 14px; padding-top: 0; max-width: 540px; font-size: 11px; line-height: 1.6; }
+    .page-footer p { margin: 4px 0; }
+}
+
+@media (max-width: 560px) {
+    .form-field input { font-size: 16px; }
+}

@@ -57,7 +57,7 @@
             filterButton.classList.toggle("is-selected", selected);
             filterButton.setAttribute("aria-pressed", String(selected));
         });
-        resultCount.textContent = `${button.textContent.trim()}：顯示 ${visibleCount} 筆 Demo 待辦`;
+        resultCount.textContent = `${button.textContent.trim()}：顯示 ${visibleCount} 筆待辦`;
         emptyMessage.hidden = visibleCount > 0;
         dateReference.textContent = "Demo 日期判斷基準（本機日期）：" + today.replaceAll("-", "/");
     }

@@ -104,14 +104,14 @@ document.querySelector("#teacher-form").addEventListener("submit", async event =
 });
 const createTestCode=document.querySelector("#create-test-code");
 createTestCode.addEventListener("click",async()=>{
-  const status=document.querySelector("#test-code-status");clearTeacherInvitation();createTestCode.disabled=true;status.hidden=false;status.textContent="正在建立虛構個案的測試授權……";
+  const status=document.querySelector("#test-code-status");clearTeacherInvitation();createTestCode.disabled=true;status.hidden=false;status.textContent="正在建立的測試授權……";
   try{
     const response=await fetch("/api/dev/teacher-workspace/grants",{method:"POST",credentials:"same-origin",cache:"no-store"});
     if(!response.ok)throw new Error("unavailable");
     const result=await response.json();
     if(document.querySelector("#tab-teacher").getAttribute("aria-selected")!=="true")return;
     teacherCode.value=result.authorizationCode;teacherCode.setCustomValidity("");showTeacherView("input");
-    status.textContent="測試授權碼已填入。請按「驗證授權碼」。僅含虛構個案與 SNAP-IV；已存入 MySQL，重啟後可使用原碼。再次建立會撤銷舊測試碼。";
+    status.textContent="測試授權碼已填入。請按「驗證授權碼」。僅含與 SNAP-IV；已存入 MySQL，重啟後可使用原碼。再次建立會撤銷舊測試碼。";
     setTeacherInvitation(result);
   }catch{status.textContent="無法建立測試授權，請確認服務已更新且以 Development 啟動。";}
   finally{createTestCode.disabled=false;}
