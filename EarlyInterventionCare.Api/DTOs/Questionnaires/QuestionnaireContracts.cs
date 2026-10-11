@@ -2,6 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EarlyInterventionCare.Api.DTOs.Questionnaires;
 
+public sealed record CaseTasksCompletionResponse(Guid CaseId, int TotalTaskCount,
+    int RequiredTaskCount, int RequiredSubmittedCount, int RequiredPendingCount,
+    int RequiredInProgressCount, bool AllRequiredSubmitted);
+
 public sealed class AssignQuestionnaireRequest
 {
     [Required] public Guid? QuestionnaireVersionId { get; init; }

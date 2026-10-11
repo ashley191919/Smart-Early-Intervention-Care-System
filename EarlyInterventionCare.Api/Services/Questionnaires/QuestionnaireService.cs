@@ -21,6 +21,18 @@ public sealed class QuestionnaireService(IQuestionnaireStore store, TimeProvider
         return await store.ListTasksAsync(caseId, ct);
     }
 
+    public async Task<CaseTasksCompletionResponse> CompletionAsync(Guid caseId, CancellationToken ct = default)
+    {
+        // Reuse the same case-scoped task query; no status transition or answer access.
+        var tasks = await ListTasksAsync(caseId, ct);
+        var required = tasks.Where(t => t.IsRequired).ToArray();
+        var submitted = required.Count(t => t.TaskStatus == "SUBMITTED");
+        return new(caseId, tasks.Count, required.Length, submitted,
+            required.Count(t => t.TaskStatus == "PENDING"),
+            required.Count(t => t.TaskStatus == "IN_PROGRESS"),
+            required.Length > 0 && submitted == required.Length);
+    }
+
     public async Task<Guid> AssignAsync(Guid caseId, AssignQuestionnaireRequest input, CancellationToken ct = default)
     {
         if (input.QuestionnaireVersionId is null || input.QuestionnaireVersionId == Guid.Empty ||
