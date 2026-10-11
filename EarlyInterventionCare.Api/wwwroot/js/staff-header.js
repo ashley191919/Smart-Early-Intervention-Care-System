@@ -175,10 +175,9 @@
         }
     });
     header.querySelector("#staff-header-logout").addEventListener("click", () => {
-        // Single logout UI entry; a real authentication/logout flow is not implemented.
-        // Never clear JWT/cookies/login state or claim logout succeeded.
-        feedback.textContent = "Demo：尚未實作真正登出，不會變更登入狀態。";
-        feedback.hidden = false;
+        // 目前登出僅為 Demo 導頁功能，尚未實作真正的身分驗證登出。
+        // 不清除 JWT、Cookie、Token，也不變更登入狀態。
+        window.location.assign("staff-login.html");
     });
     refreshReminders();
     closePanels();
