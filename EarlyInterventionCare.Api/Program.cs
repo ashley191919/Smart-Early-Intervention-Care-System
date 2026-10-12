@@ -120,6 +120,9 @@ builder.Services.AddScoped<ICaseStatusActorContext, HttpContextCaseStatusActorCo
 builder.Services.AddScoped<ICaseStatusStore, EfCaseStatusStore>();
 builder.Services.AddSingleton<ICaseStatusAccessAuthorizer, DenyAllCaseStatusAccessAuthorizer>();
 builder.Services.AddScoped<CaseStatusService>();
+builder.Services.AddScoped<ICaseStatusHistoryStore, EfCaseStatusHistoryStore>();
+builder.Services.AddScoped<CaseStatusHistoryQueryService>();
+builder.Services.AddSingleton<ICaseStatusHistoryAccessAuthorizer, DenyAllCaseStatusHistoryAccessAuthorizer>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.IQuestionnaireStore,
     EarlyInterventionCare.Api.Services.Questionnaires.EfQuestionnaireStore>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.QuestionnaireService>();

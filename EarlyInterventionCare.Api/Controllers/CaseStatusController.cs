@@ -14,6 +14,8 @@ public sealed class CaseStatusErrorsAttribute : ExceptionFilterAttribute
     {
         if (context.Exception is CaseStatusOperationException operation)
             context.Result = Error(context, operation.Status, operation.Code, operation.Message);
+        else if (context.Exception is CaseStatusHistoryQueryOperationException historyOperation)
+            context.Result = Error(context, historyOperation.Status, historyOperation.Code, historyOperation.Message);
         else if (context.Exception is DbException or DbUpdateException or TimeoutException)
             context.Result = Error(context, StatusCodes.Status503ServiceUnavailable, "SAVE_UNAVAILABLE",
                 "暫時無法儲存個案狀態，請稍後再試。");

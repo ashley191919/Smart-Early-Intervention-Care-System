@@ -15,3 +15,9 @@ public sealed class ChangeCaseStatusRequest
 
 public sealed record ChangeCaseStatusResponse(Guid CaseId, string OldStatus, string NewStatus,
     DateTime ChangedAtUtc, Guid HistoryId, string? Reason);
+
+public sealed record CaseStatusHistoryItemResponse(Guid HistoryId, Guid CaseId, string OldStatus,
+    string NewStatus, DateTime ChangedAtUtc, string TriggerSource, string? Reason);
+
+public sealed record CaseStatusHistoryPageResponse(Guid CaseId, int Page, int PageSize, int TotalCount,
+    IReadOnlyList<CaseStatusHistoryItemResponse> Items);
