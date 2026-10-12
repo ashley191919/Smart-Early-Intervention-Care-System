@@ -118,6 +118,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<ICaseStatusActorContext, HttpContextCaseStatusActorContext>();
 builder.Services.AddScoped<ICaseStatusStore, EfCaseStatusStore>();
+builder.Services.AddSingleton<ICaseStatusAccessAuthorizer, DenyAllCaseStatusAccessAuthorizer>();
 builder.Services.AddScoped<CaseStatusService>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.IQuestionnaireStore,
     EarlyInterventionCare.Api.Services.Questionnaires.EfQuestionnaireStore>();
