@@ -23,7 +23,8 @@
         <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
         <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
     </svg>
-    <div class="dashboard-shell">
+    <p data-staff-auth-error role="alert" aria-live="assertive" hidden></p>
+    <div class="dashboard-shell" data-staff-protected hidden>
         <aside class="sidebar" aria-label="主要導覽">
             <a class="brand" href="#main-content" aria-label="早療智慧動態照護系統首頁">
                 <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
@@ -186,6 +187,7 @@
             </main>
         </div>
     </div>
+    <script src="js/staff-auth.js?v=20261013-cookie-session1" defer></script>
     <script src="js/staff-dashboard.js?v=20261011-product1" defer></script>
     <script src="js/staff-header.js?v=20261011-product1" defer></script>
 </body>

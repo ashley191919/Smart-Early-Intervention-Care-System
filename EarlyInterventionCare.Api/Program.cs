@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using EarlyInterventionCare.Api.Services.Authentication;
 using EarlyInterventionCare.Api.Services.Cases;
+using EarlyInterventionCare.Api.Security;
 // EF tooling uses the offline factory; do not initialize the runtime host or its secrets.
 if (EF.IsDesignTime)
 {
@@ -76,9 +77,21 @@ if (!JwtOptions.TryLoad(builder.Configuration, out var jwtOptions, out var decod
     return;
 }
 var signingKey = new SymmetricSecurityKey(decodedSigningKey);
+var staffSessionOptions = StaffSessionOptions.Load(builder.Configuration);
 builder.Services.AddSingleton(jwtOptions);
 builder.Services.AddSingleton(signingKey);
+builder.Services.AddSingleton(staffSessionOptions);
 builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddSingleton<StaffSessionCookieService>();
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-EarlyCare-CSRF";
+    options.Cookie.Name = "__Host-earlycare-csrf";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.Path = "/";
+});
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -101,6 +114,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = "username",
             RoleClaimType = "role"
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                // Leave the framework's normal Authorization: Bearer parsing untouched.
+                if (!context.Request.Headers.ContainsKey("Authorization"))
+                {
+                    context.Token = StaffCookieTokenReader.Read(context.Request, staffSessionOptions.IsEnabled);
+                    if (!string.IsNullOrWhiteSpace(context.Token))
+                        StaffAuthenticationSource.Set(context.HttpContext, StaffAuthenticationSource.StaffCookie);
+                }
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                if (context.HttpContext.Request.Headers.ContainsKey("Authorization"))
+                    StaffAuthenticationSource.Set(context.HttpContext, StaffAuthenticationSource.BearerHeader);
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 
@@ -116,6 +149,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<IAuthenticationService>(serviceProvider =>
+    serviceProvider.GetRequiredService<AuthenticationService>());
 builder.Services.AddScoped<ICaseStatusActorContext, HttpContextCaseStatusActorContext>();
 builder.Services.AddScoped<ICaseStatusStore, EfCaseStatusStore>();
 builder.Services.AddSingleton<ICaseStatusAccessAuthorizer, DenyAllCaseStatusAccessAuthorizer>();
@@ -167,6 +202,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseAuthentication();
+app.UseMiddleware<StaffCookieCsrfMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
 

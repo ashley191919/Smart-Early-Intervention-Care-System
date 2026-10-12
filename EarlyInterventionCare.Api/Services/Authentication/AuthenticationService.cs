@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EarlyInterventionCare.Api.Services.Authentication;
 
-public class AuthenticationService
+public class AuthenticationService : IAuthenticationService
 {
     private readonly ApplicationDbContext _db;
     private readonly JwtTokenService _tokens;

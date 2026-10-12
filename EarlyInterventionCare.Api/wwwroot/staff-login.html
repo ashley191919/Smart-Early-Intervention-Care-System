@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<script src="/js/shared-demo.js" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="早療智慧動態照護系統醫療人員登入頁面">
     <title>醫療人員登入｜早療智慧動態照護系統</title>
     <link rel="stylesheet" href="css/auth-common.css">
     <link rel="stylesheet" href="css/staff-login.css">
-<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-product1" defer></script>
+<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5">
     <link rel="stylesheet" href="css/staff-login-theme.css?v=20261011-spacing1">
 <link rel="stylesheet" href="/css/system-interface.css?v=20261011-product3">
 </head>
@@ -49,9 +48,9 @@
                     <input id="staff-password" name="staff-password" type="password" placeholder="請輸入登入密碼" autocomplete="current-password">
                 </div>
 
-                <button class="login-button" type="button">安全登入</button>
+                <button class="login-button" type="submit">安全登入</button>
                 <a class="forgot-password-link" href="staff-forgot-password.html">忘記密碼？</a>
-            <div class="workspace-entry"><a class="secondary-button" href="/staff-dashboard.html">前往醫療人員工作台</a></div></form>
+            </form>
 
             <section class="verification-state" aria-live="polite" aria-labelledby="verification-title" hidden>
                 <div class="loading-spinner" aria-hidden="true"></div>
@@ -62,7 +61,7 @@
             <section class="login-error-state" aria-live="polite" aria-labelledby="login-error-title" hidden>
                 <div class="login-error-icon" aria-hidden="true">!</div>
                 <h2 id="login-error-title">登入失敗</h2>
-                <p>帳號、密碼或單位代碼有誤，請確認後重新輸入。</p>
+                <p>帳號或密碼有誤，請確認後重新輸入。</p>
                 <button class="retry-login-button" type="button">重新登入</button>
             </section>
 

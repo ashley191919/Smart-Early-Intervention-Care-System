@@ -174,10 +174,20 @@
             closePanels(true);
         }
     });
-    header.querySelector("#staff-header-logout").addEventListener("click", () => {
-        // 目前登出僅為 Demo 導頁功能，尚未實作真正的身分驗證登出。
-        // 不清除 JWT、Cookie、Token，也不變更登入狀態。
-        window.location.assign("staff-login.html");
+    header.querySelector("#staff-header-logout").addEventListener("click", async () => {
+        if (!window.StaffAuth?.logout) {
+            feedback.textContent = "登入狀態尚未準備完成，請稍後再試。";
+            feedback.hidden = false;
+            return;
+        }
+
+        feedback.hidden = true;
+        try {
+            await window.StaffAuth.logout();
+        } catch (error) {
+            feedback.textContent = error instanceof Error ? error.message : "登出失敗，請稍後再試。";
+            feedback.hidden = false;
+        }
     });
     refreshReminders();
     closePanels();
