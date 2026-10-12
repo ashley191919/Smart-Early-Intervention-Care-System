@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using EarlyInterventionCare.Api.Services.Authentication;
+using EarlyInterventionCare.Api.Services.Cases;
 // EF tooling uses the offline factory; do not initialize the runtime host or its secrets.
 if (EF.IsDesignTime)
 {
@@ -112,8 +113,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 );
 // Add services to the container.
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<ICaseStatusActorContext, HttpContextCaseStatusActorContext>();
+builder.Services.AddScoped<ICaseStatusStore, EfCaseStatusStore>();
+builder.Services.AddScoped<CaseStatusService>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.IQuestionnaireStore,
     EarlyInterventionCare.Api.Services.Questionnaires.EfQuestionnaireStore>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.QuestionnaireService>();
