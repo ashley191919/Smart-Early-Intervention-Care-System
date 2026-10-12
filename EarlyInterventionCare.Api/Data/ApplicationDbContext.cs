@@ -17,6 +17,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<QuestionnaireDraft> QuestionnaireDrafts => Set<QuestionnaireDraft>();
     public DbSet<QuestionnaireResponse> QuestionnaireResponses => Set<QuestionnaireResponse>();
     public DbSet<AuditRecord> AuditLogs => Set<AuditRecord>();
+    public DbSet<CaseStatusHistory> CaseStatusHistories => Set<CaseStatusHistory>();
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
