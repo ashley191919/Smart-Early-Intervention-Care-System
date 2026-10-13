@@ -2,3 +2,13 @@
 **/bin/ 
 **/obj/ 
 *.csproj.user 
+
+# Local credentials and developer overrides (all directories).
+secrets.json
+.env
+.env.*
+appsettings.Local.json
+appsettings.*.Local.json
+# Credential-free templates may be committed.
+!.env.example
+!.env.*.example
