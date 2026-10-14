@@ -1,6 +1,7 @@
 'use strict';
 // Shared browser fixtures for DEMO-001 tasks; other binding/contact scenarios remain page-local. No real authentication or API.
 (() => {
+  if (new URLSearchParams(location.search).get("mode") === "account" || sessionStorage.getItem("earlycare.parent.accessToken")) return;
   const children = [{id:'DEMO-001',name:'王○安',age:'4 歲',sex:'男',relation:'主要照顧者',contact:'家長',phone:'0900-***-000'}];
   const makeTasks = () => [
     {id:'basic-r2',name:'早療評估個案基本資料',kind:'基本資料',status:'pending',round:2,meta:'第 2 輪複評 · 版本 1.0.0'},

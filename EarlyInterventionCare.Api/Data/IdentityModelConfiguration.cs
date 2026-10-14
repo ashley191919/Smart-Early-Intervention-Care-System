@@ -26,6 +26,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         IdentityMapping.Uuid(entity.Property(e => e.RoleId), "role_id");
         entity.Property(e => e.Username).HasColumnName("username").HasColumnType("varchar(100)").HasMaxLength(100).IsRequired();
         entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasColumnType("varchar(255)").HasMaxLength(255).IsRequired();
+        entity.Property(e => e.PhoneVerifiedAtUtc).HasColumnName("phone_verified_at_utc").HasColumnType("datetime(6)");
         entity.Property(e => e.Phone).HasColumnName("phone").HasColumnType("varchar(20)").HasMaxLength(20);
         entity.Property(e => e.Status).HasColumnName("status").HasColumnType("varchar(20)").HasMaxLength(20).HasDefaultValue("ACTIVE").IsRequired();
         entity.Property(e => e.LastLoginAtUtc).HasColumnName("last_login_at_utc").HasColumnType("datetime(6)");

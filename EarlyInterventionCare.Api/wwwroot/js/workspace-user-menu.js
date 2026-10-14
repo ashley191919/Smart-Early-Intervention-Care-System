@@ -30,8 +30,10 @@
         return;
       }
       if (typeof current !== 'undefined' && current && typeof saveDraft === 'function' && !await saveDraft(true)) return;
+      const accountMode=parent&&(new URLSearchParams(location.search).get('mode')==='account'||!!sessionStorage.getItem("earlycare.parent.accessToken"));
+      if (parent) sessionStorage.removeItem("earlycare.parent.accessToken");
       if (!parent) sessionStorage.removeItem('earlycare.demo.teacher');
-      location.assign('/?role=' + role);
+      location.assign('/?role=' + role+(accountMode?'&mode=account':''));
     } finally { logout.disabled=false; }
   });
 })();

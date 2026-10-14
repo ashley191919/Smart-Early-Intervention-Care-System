@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -231,10 +232,25 @@ foreach (var mutation in new Action<FakeStore>[] {
 // EF metadata and pending model check are local operations; factory prevents any DB connection.
 await using (var db = new ApplicationDbContextFactory().CreateDbContext([]))
 {
-    Check(!db.Database.HasPendingModelChanges(), "no pending schema/model changes");
+    if (!args.Contains("--case-guardian-schema-handoff"))
+        Check(!db.Database.HasPendingModelChanges(), "no pending schema/model changes; 16 must integrate migration before DB deployment");
+    else
+    {
+        var snapshot=db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsAssembly>().ModelSnapshot!.Model;
+        snapshot=db.GetService<Microsoft.EntityFrameworkCore.Infrastructure.IModelRuntimeInitializer>().Initialize(snapshot,designTime:true);
+        var current=db.GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>().Model;
+        var changes=db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsModelDiffer>().GetDifferences(snapshot.GetRelationalModel(),current.GetRelationalModel());
+        var tables=new[]{"guardians","case_guardians","parent_binding_invitations"};
+        Check(changes.OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.CreateTableOperation>().Select(o=>o.Name).Order().SequenceEqual(tables.Order()), "only declared Guardian tables added");
+        Check(changes.All(o=> o is Microsoft.EntityFrameworkCore.Migrations.Operations.CreateTableOperation t && tables.Contains(t.Name)
+            || o is Microsoft.EntityFrameworkCore.Migrations.Operations.CreateIndexOperation ix && (tables.Contains(ix.Table)||ix.Table=="cases"&&ix.Columns.SequenceEqual(new[]{"organization_id"}))
+            || o is Microsoft.EntityFrameworkCore.Migrations.Operations.AddColumnOperation c && (c.Table=="cases"&&(c.Name=="organization_id"||c.Name=="revision"||c.Name=="national_id"||c.Name=="address")||c.Table=="users"&&c.Name=="phone_verified_at_utc")
+            || o is Microsoft.EntityFrameworkCore.Migrations.Operations.AddForeignKeyOperation fk && fk.Table=="cases"&&fk.PrincipalTable=="organizations"&&fk.Columns.SequenceEqual(new[]{"organization_id"})), "schema handoff contains no questionnaire or undeclared changes");
+        Console.WriteLine("NOTE: Case/Guardian schema handoff is pending 16's migration. Default deployment check remains strict.");
+    }
     Check(db.Model.FindEntityType(typeof(QuestionnaireDraft))!.FindProperty("Revision")!.IsConcurrencyToken, "existing revision mapping preserved");
 }
-Console.WriteLine($"PASS: {checks} offline Phase 2-2 checks; draft/revision, scope, shared validation/hash, submit/receipt/idempotency, rollback and unchanged EF model.");
+Console.WriteLine($"PASS: {checks} offline Phase 2-2 checks; draft/revision, scope, shared validation/hash, submit/receipt/idempotency, rollback and schema validation (handoff only when explicitly selected).");
 
 sealed class TestClock : TimeProvider
 {

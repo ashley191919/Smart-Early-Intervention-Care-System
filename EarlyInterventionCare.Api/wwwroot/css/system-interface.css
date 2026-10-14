@@ -55,3 +55,19 @@
 .sidebar .sidebar-footer p { margin:0 0 3px; color:#567f7a; font-size:12px; font-weight:700; }
 .sidebar .sidebar-footer small { font-size:11px; }
 @media(max-width:850px) { .sidebar .sidebar-footer { display:none; } }
+
+.account-input { display:block; width:100%; min-height:46px; margin:8px 0 16px; padding:10px 12px; border:1px solid #d3e2df; border-radius:8px; font:inherit; }
+.account-error { color:#a23c37; }
+
+.account-card { padding:24px; margin-bottom:20px; }
+.account-card h2 { font-size:16px; line-height:1.6; margin:0; }
+.account-card p { font-size:13px; line-height:1.8; color:#87919b; }
+.account-card-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.account-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.account-summary strong { color:#7e9c98; font-size:28px; }
+.account-summary p { margin:4px 0 0; }
+.account-task-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-bottom:1px solid #edf0ef; }
+.account-task-row:last-child { border-bottom:0; }
+.account-task-row strong { font-size:14px; }
+.account-task-row p { margin:4px 0 0; }
+@media(max-width:560px) { .account-summary { grid-template-columns:1fr; gap:0; } .account-card { padding:18px; } }

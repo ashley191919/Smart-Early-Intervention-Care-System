@@ -48,6 +48,15 @@ if (builder.Environment.IsDevelopment())
 }
 builder.Services.AddRateLimiter(options =>
 {
+    options.AddPolicy("parent-otp-request", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit=5, Window=TimeSpan.FromMinutes(1), QueueLimit=0 }));
+    options.AddPolicy("parent-otp-verify", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit=10, Window=TimeSpan.FromMinutes(1), QueueLimit=0 }));
+    options.AddPolicy("parent-binding", context => RateLimitPartition.GetFixedWindowLimiter(
+        (context.User.FindFirst("userId")?.Value ?? "anonymous") + ":" + context.Connection.RemoteIpAddress,
+        _ => new FixedWindowRateLimiterOptions { PermitLimit=10, Window=TimeSpan.FromMinutes(1), QueueLimit=0 }));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy("teacher-workspace-code", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -113,7 +122,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Cases.CaseAccessService>();
+builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Cases.CaseGuardianService>();
 builder.Services.AddScoped<AuthenticationService>();
+// No real SMS provider is configured yet. Requests fail closed; no test-code backdoor.
+builder.Services.AddSingleton<IParentSmsVerification, ParentSmsUnavailable>();
+builder.Services.AddScoped<ParentOtpAuthenticationService>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.IQuestionnaireStore,
     EarlyInterventionCare.Api.Services.Questionnaires.EfQuestionnaireStore>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.QuestionnaireService>();

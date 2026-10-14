@@ -18,6 +18,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<QuestionnaireResponse> QuestionnaireResponses => Set<QuestionnaireResponse>();
     public DbSet<AuditRecord> AuditLogs => Set<AuditRecord>();
 
+    public DbSet<GuardianContact> Guardians => Set<GuardianContact>();
+    public DbSet<CaseGuardian> CaseGuardians => Set<CaseGuardian>();
+    public DbSet<ParentBindingInvitation> ParentBindingInvitations => Set<ParentBindingInvitation>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Permission> Permissions => Set<Permission>();

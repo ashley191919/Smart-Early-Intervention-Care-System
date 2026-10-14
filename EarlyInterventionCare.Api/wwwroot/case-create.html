@@ -117,8 +117,8 @@
                                 <p class="create-field-error" id="nationalId-error" hidden></p>
                             </div>
                             <div class="create-field create-field-wide">
-                                <label for="address">聯絡地址</label>
-                                <input class="create-field-control" id="address" name="address" type="text" placeholder="請輸入聯絡地址" aria-describedby="address-error">
+                                <label for="address">聯絡地址 <span aria-hidden="true">*</span></label>
+                                <input class="create-field-control" id="address" name="address" type="text" required maxlength="300" placeholder="請輸入聯絡地址" aria-describedby="address-error">
                                 <p class="create-field-error" id="address-error" hidden></p>
                             </div>
                         </div>
@@ -153,8 +153,8 @@
                                 <p class="create-field-error" id="phone-error" hidden></p>
                             </div>
                             <div class="create-field">
-                                <label for="email">電子郵件</label>
-                                <input class="create-field-control" id="email" name="email" type="email" placeholder="example@email.com" autocomplete="email" aria-describedby="email-error">
+                                <label for="email">電子郵件 <span aria-hidden="true">*</span></label>
+                                <input class="create-field-control" id="email" name="email" type="email" required maxlength="254" placeholder="example@email.com" autocomplete="email" aria-describedby="email-error">
                                 <p class="create-field-error" id="email-error" hidden></p>
                             </div>
                         </div>

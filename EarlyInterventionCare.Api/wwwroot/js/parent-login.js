@@ -2,6 +2,10 @@
 
 // Frontend demonstration only: no SMS, API calls, tokens or persistent phone/code storage.
 (() => {
+  if (new URLSearchParams(location.search).get('mode') === 'account') {
+    window.EarlyCareParentOtp.mount(window, document);
+    return;
+  }
   const phoneForm = document.querySelector('#parent-form');
   const otpForm = document.querySelector('#parent-otp-form');
   const complete = document.querySelector('#parent-preview-complete');

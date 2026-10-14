@@ -1,0 +1,68 @@
+@baseUrl = http://localhost:5177
+@medicalToken = REPLACE_WITH_LOCAL_MEDICAL_JWT
+@parentToken = REPLACE_WITH_LOCAL_VERIFIED_PARENT_JWT
+@caseId = REPLACE_WITH_CASE_GUID
+@guardianId = REPLACE_WITH_GUARDIAN_GUID
+
+### 需先由 16 套用 migration；token 與邀請碼只在本機填寫，不提交真實資料到 Git。
+POST {{baseUrl}}/api/cases
+Authorization: Bearer {{medicalToken}}
+Content-Type: application/json
+
+{"childName":"測試幼兒","birthDate":"2022-01-01","sex":"UNKNOWN","nationalId":"A123456789","address":"測試地址"}
+
+### 醫療讀取個案
+GET {{baseUrl}}/api/cases/{{caseId}}
+Authorization: Bearer {{medicalToken}}
+
+### 醫療個案列表（本院所、分頁）
+GET {{baseUrl}}/api/cases?page=1&pageSize=20
+Authorization: Bearer {{medicalToken}}
+
+### 修改核心資料；revision 必須使用上一次 GET 的結果
+PUT {{baseUrl}}/api/cases/{{caseId}}
+Authorization: Bearer {{medicalToken}}
+Content-Type: application/json
+
+{"childName":"修改測試幼兒","birthDate":"2022-01-01","sex":"UNKNOWN","nationalId":"A123456789","address":"修改測試地址","revision":0}
+
+### 新增照顧者
+POST {{baseUrl}}/api/cases/{{caseId}}/guardians
+Authorization: Bearer {{medicalToken}}
+Content-Type: application/json
+
+{"displayName":"測試照顧者","phone":"0900000000","email":"guardian@example.invalid","relationship":"GUARDIAN","isPrimaryContact":true}
+
+### 本院所既有照顧者；已有相同手機時先選擇既有聯絡資料
+GET {{baseUrl}}/api/guardians?page=1&pageSize=20
+Authorization: Bearer {{medicalToken}}
+
+### 連結既有照顧者；其他照顧者使用 false，不自動完成家長綁定
+POST {{baseUrl}}/api/cases/{{caseId}}/guardians/{{guardianId}}/link
+Authorization: Bearer {{medicalToken}}
+Content-Type: application/json
+
+{"relationship":"FATHER","isPrimaryContact":false}
+
+### 個案照顧者清單
+GET {{baseUrl}}/api/cases/{{caseId}}/guardians
+Authorization: Bearer {{medicalToken}}
+
+### 產生邀請（原碼只回傳一次）
+POST {{baseUrl}}/api/cases/{{caseId}}/guardians/{{guardianId}}/invitations
+Authorization: Bearer {{medicalToken}}
+
+### 家長綁定（必須已由後端驗證手機）
+POST {{baseUrl}}/api/parent/bindings
+Authorization: Bearer {{parentToken}}
+Content-Type: application/json
+
+{"invitationCode":"REPLACE_WITH_ONE_TIME_CODE"}
+
+### 我的孩子
+GET {{baseUrl}}/api/parent/cases
+Authorization: Bearer {{parentToken}}
+
+### 教師完成狀態，不包含答案
+GET {{baseUrl}}/api/parent/cases/{{caseId}}/teacher-completion
+Authorization: Bearer {{parentToken}}

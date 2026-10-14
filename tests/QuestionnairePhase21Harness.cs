@@ -24,12 +24,8 @@ async Task Error(Func<Task> action, string code, int status)
 }
 
 Check(typeof(QuestionnairesController).GetCustomAttribute<AuthorizeAttribute>() is not null, "JWT required");
-var caseGuard = typeof(QuestionnairesController).GetMethod("CaseAllowed", BindingFlags.NonPublic | BindingFlags.Instance)!;
-var developmentController = new QuestionnairesController(service, null!, new TestEnvironment("Development"));
-var productionController = new QuestionnairesController(service, null!, new TestEnvironment("Production"));
-Check((bool)caseGuard.Invoke(developmentController, new object[] { CoreDevelopmentSeed.CaseId })!, "development fixture allowed");
-Check(!(bool)caseGuard.Invoke(developmentController, new object[] { Guid.NewGuid() })!, "other cases fail closed");
-Check(!(bool)caseGuard.Invoke(productionController, new object[] { CoreDevelopmentSeed.CaseId })!, "production case operations fail closed");
+// Formal Case/Guardian/organization enforcement is exercised by CaseGuardianHarness's HTTP tests.
+Check(typeof(QuestionnairesController).GetConstructors().Single().GetParameters().Any(p=>p.ParameterType==typeof(EarlyInterventionCare.Api.Services.Cases.CaseAccessService)), "formal case scope service required");
 var list = await service.ListAsync();
 Check(list.Count == 1 && list[0].Versions.Count == 1, "catalog versions");
 Check((await service.ListTasksAsync(store.CaseId)).Count == 0, "empty existing case list");

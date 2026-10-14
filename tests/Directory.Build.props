@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- Each harness needs its own restore/compiler/apphost cache. -->
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+</Project>

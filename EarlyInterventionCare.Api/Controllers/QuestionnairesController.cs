@@ -26,9 +26,10 @@ public sealed class QuestionnaireErrorsAttribute : ExceptionFilterAttribute
 [ApiController]
 [Authorize]
 [QuestionnaireErrors]
+[CaseErrors]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class QuestionnairesController(QuestionnaireService service, ApplicationDbContext db,
-    IWebHostEnvironment environment) : ControllerBase
+    EarlyInterventionCare.Api.Services.Cases.CaseAccessService caseAccess) : ControllerBase
 {
     [HttpGet("api/questionnaires")]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -42,7 +43,7 @@ public sealed class QuestionnairesController(QuestionnaireService service, Appli
     {
         var denied = await CheckUser(ct);
         if (denied is not null) return denied;
-        if (!CaseAllowed(caseId)) return StatusCode(403, new { code = "CASE_ACCESS_NOT_INTEGRATED", message = "目前僅支援 Development 虛構個案；正式個案權限尚未接入。" });
+        if (!await CanAccessCaseAsync(caseId, ct)) return StatusCode(403, new { code = "CASE_ACCESS_NOT_INTEGRATED", message = "目前僅支援 Development 虛構個案；正式個案權限尚未接入。" });
         return Ok(await service.ListTasksAsync(caseId, ct));
     }
 
@@ -51,7 +52,7 @@ public sealed class QuestionnairesController(QuestionnaireService service, Appli
     {
         var denied = await CheckUser(ct);
         if (denied is not null) return denied;
-        if (!CaseAllowed(caseId)) return StatusCode(403, new { code = "CASE_ACCESS_NOT_INTEGRATED", message = "目前僅支援 Development 虛構個案；正式個案權限尚未接入。" });
+        if (!await CanAccessCaseAsync(caseId, ct)) return StatusCode(403, new { code = "CASE_ACCESS_NOT_INTEGRATED", message = "目前僅支援 Development 虛構個案；正式個案權限尚未接入。" });
         return Ok(await service.CompletionAsync(caseId, ct));
     }
 
@@ -60,12 +61,16 @@ public sealed class QuestionnairesController(QuestionnaireService service, Appli
     {
         var denied = await CheckUser(ct);
         if (denied is not null) return denied;
-        if (!CaseAllowed(caseId)) return StatusCode(403, new { code = "CASE_ACCESS_NOT_INTEGRATED", message = "目前僅支援 Development 虛構個案；正式個案權限尚未接入。" });
+        if (!await CanAccessCaseAsync(caseId, ct)) return StatusCode(403, new { code = "CASE_ACCESS_NOT_INTEGRATED", message = "目前僅支援 Development 虛構個案；正式個案權限尚未接入。" });
         var taskId = await service.AssignAsync(caseId, request, ct);
         return CreatedAtAction(nameof(Tasks), new { caseId }, new { taskId, caseId, taskStatus = "PENDING" });
     }
 
-    private bool CaseAllowed(Guid caseId) => environment.IsDevelopment() && caseId == CoreDevelopmentSeed.CaseId;
+    private async Task<bool> CanAccessCaseAsync(Guid caseId, CancellationToken ct)
+    {
+        var actor = await caseAccess.ActorAsync(User, ct);
+        return actor.IsMedical && await caseAccess.ReadableCases(actor).AnyAsync(c => c.CaseId == caseId, ct);
+    }
 
     private async Task<IActionResult?> CheckUser(CancellationToken ct)
     {
