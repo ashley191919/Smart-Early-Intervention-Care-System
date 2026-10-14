@@ -87,7 +87,13 @@ failure; cleanup failure reports SQL_SCRIPT_CLEANUP_FAILED (manual removal requi
 
 Safe codes: APPLY_BLOCKED, INVALID_ARGUMENT, INVALID_ENDPOINT,
 INVALID_DATABASE_VERSION, MIGRATION_HISTORY_MISMATCH, SCHEMA_DRIFT,
-SQL_SCRIPT_WRITE_FAILED. Unexpected failures use CHECK_FAILED; original exceptions
+SQL_SCRIPT_WRITE_FAILED. Connection diagnostics additionally distinguish
+DATABASE_AUTH_FAILED, DATABASE_PERMISSION_DENIED, DATABASE_NOT_FOUND,
+DATABASE_CONNECTION_FAILED, DATABASE_SECURITY_NEGOTIATION_FAILED and INTERNAL_ERROR.
+Only typed exceptions and MySQL error numbers are used, never message parsing.
+Diagnostics emit a fixed execution stage (e.g. OPEN_CONNECTION / QUERY_SERVER_INFO).
+Authentication failures may be account-host mismatch, not necessarily bad password;
+unknown provider errors remain INTERNAL_ERROR rather than guessed causes. Original exceptions
 and credentials are never printed. Since no Apply operation exists in this version,
 failure correctly states no Migration executed. Any future write-capable version
 must track the start of DDL and report possible partial changes, not reuse this text.

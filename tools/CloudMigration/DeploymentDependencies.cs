@@ -20,6 +20,17 @@ public class DeploymentDependencies
             .UseMySql(settings.ConnectionString, new MySqlServerVersion(new Version(8, 4, 11))).Options);
     }
     public virtual Task OpenConnection(ApplicationDbContext db) => db.Database.OpenConnectionAsync();
+    public virtual int? MySqlErrorNumber(Exception exception) => exception is MySqlException mysql ? mysql.Number : null;
+    public virtual async Task<List<string[]>> Read(ApplicationDbContext db, string sql)
+    {
+        await using var cmd = db.Database.GetDbConnection().CreateCommand();
+        cmd.CommandText = sql; cmd.CommandTimeout = 30;
+        var rows = new List<string[]>();
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync()) rows.Add(Enumerable.Range(0, reader.FieldCount)
+            .Select(i => reader.IsDBNull(i) ? "" : Convert.ToString(reader.GetValue(i), System.Globalization.CultureInfo.InvariantCulture)!).ToArray());
+        return rows;
+    }
     public virtual string PasswordInput()
     {
         if (Console.IsInputRedirected) throw new DeploymentException("INVALID_ARGUMENT");

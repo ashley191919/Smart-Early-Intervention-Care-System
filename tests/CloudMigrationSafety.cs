@@ -27,3 +27,4 @@ Check(!context.Database.HasPendingModelChanges());
 // No ConnectionOpening or database calls: policy and actual EF model checks are offline.
 Console.WriteLine($"PASS: {count} offline deployment policy/model checks; no database connections.");
 await EntryTests.Run();
+await ErrorTests.Run();

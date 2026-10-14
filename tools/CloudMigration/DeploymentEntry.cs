@@ -11,6 +11,7 @@ public static class DeploymentEntry
 {
 public static async Task<int> RunAsync(string[] args, DeploymentDependencies dependencies)
 {
+string stage = "VALIDATE_ARGUMENTS";
 try
 {
     var mode = DeploymentPolicy.Mode(args);
@@ -21,12 +22,14 @@ try
     }
     // Reject before reading credentials or opening any connection.
     if (mode == "apply") DeploymentPolicy.RequireApplyApproval();
+    stage = "OFFLINE_MODEL";
     using var offline = dependencies.OfflineContext();
     if (offline.Database.HasPendingModelChanges()) throw new DeploymentException("SCHEMA_DRIFT");
     var known = offline.Database.GetMigrations().ToArray();
     var assembly = offline.GetService<IMigrationsAssembly>();
     if (mode == "script")
     {
+        stage = "GENERATE_SCRIPT";
         // Offline full baseline script. No history inference, credentials or database connection.
         var sql = offline.GetService<IMigrator>().GenerateScript("0", known.Last());
         try { dependencies.WriteScript(args[2], sql); }
@@ -36,25 +39,23 @@ try
         return 0;
     }
     string? Env(string name) => dependencies.EnvironmentValue("EARLYCARE_DEPLOY_" + name);
+    stage = "VALIDATE_ENDPOINT";
     DeploymentPolicy.ValidateEndpoint(Env("HOST"), Env("PORT"), Env("DATABASE"), Env("USER"));
+    stage = "PASSWORD_INPUT";
     var password = Env("PASSWORD");
     if (string.IsNullOrEmpty(password)) password = dependencies.PasswordInput();
+    stage = "CREATE_DATABASE_CONTEXT";
     using var db = dependencies.DatabaseContext(password);
+    stage = "OPEN_CONNECTION";
     await dependencies.OpenConnection(db);
-    async Task<List<string[]>> Read(string sql)
-    {
-        await using var cmd = db.Database.GetDbConnection().CreateCommand(); cmd.CommandText = sql;
-        cmd.CommandTimeout = 30;
-        var rows = new List<string[]>();
-        await using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync()) rows.Add(Enumerable.Range(0, reader.FieldCount)
-            .Select(i => reader.IsDBNull(i) ? "" : Convert.ToString(reader.GetValue(i), System.Globalization.CultureInfo.InvariantCulture)!).ToArray());
-        return rows;
-    }
+    Task<List<string[]>> Read(string sql) => dependencies.Read(db, sql);
+    stage = "QUERY_SERVER_INFO";
     var server = (await Read("SELECT VERSION(), DATABASE(), @@lower_case_table_names"))[0];
+    stage = "VALIDATE_SERVER_INFO";
     DeploymentPolicy.ValidateServer(server[0], server[1], server[2]);
     Console.WriteLine("PASS: target version 8.4.11 / earlycare_dev / case-sensitive table names.");
     if (mode == "check") return 0;
+    stage = "QUERY_METADATA";
     var tables = (await Read("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()"))
         .Select(r => r[0]).ToHashSet(StringComparer.Ordinal);
     var applied = Array.Empty<string>();
@@ -106,7 +107,8 @@ try
 catch (Exception exception)
 {
     // Never emit provider/IO exception messages: these can contain credentials or environment values.
-    Console.Error.WriteLine(exception is DeploymentException safe ? safe.Code : "CHECK_FAILED");
+    Console.Error.WriteLine(DeploymentErrorClassifier.Classify(exception, stage, dependencies.MySqlErrorNumber(exception)));
+    Console.Error.WriteLine("Stage: " + stage);
     Console.Error.WriteLine("No Migration was executed; Apply is blocked.");
     return 1;
 }
