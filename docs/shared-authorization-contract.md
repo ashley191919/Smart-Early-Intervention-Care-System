@@ -6,8 +6,8 @@
 第一批 IPermissionService / PermissionService / AddPermissionServices 保留。
 本批新增 PermissionRequirement、PermissionAuthorizationHandler 與註冊擴充。
 啟動整合批次已在 Program.cs 註冊共用核心與 PermissionLookupExceptionMiddleware。
-沒有修改登入服務、Controller、Migration 或 Snapshot，沒有註冊正式 Permission Policy，因此現有 API 不會自動取得 Permission 保護。
-下列 Policy 設定是後續接入範例；本文件不是已啟用的授權配置。
+沒有修改登入服務、Controller、Migration 或 Snapshot。首批四個技術提案 Policy 已註冊，但尚未套用正式業務 API，因此現有 API 不會自動取得 Permission 保護。
+Policy 註冊不代表醫院核准角色權限矩陣，也不會建立角色授權資料。
 
 ## 07、11 的接入方式
 
@@ -101,3 +101,28 @@ PermissionServiceOfflineHarness 執行正式服務與 Pomelo EF 轉譯，但以 
 測試用 `TestOnly:read` Policy 與 /test 路由只存在於測試可執行檔，API Program.cs 完全不註冊。
 15 項包含 HTTP 401/403/200/503、503 固定欄位與敏感訊息排除、公開 WeatherForecast 與普通 Authorize 不增加 Permission 查詢、過期 JWT、Default/FallbackPolicy，以及直接 Middleware 邊界測試（其他例外、取消、已開始回應）和 Program 註冊/順序靜態核對。
 這不是啟動完整正式 API Program 的端到端測試，也不是 MySQL 驗收；登入/OTP/教師資料流程與 07 Cookie/CSRF 尚未做跨分支端到端驗證。
+
+## 首批四個 Policy 註冊批次（目前狀態，優先於前述歷史記錄）
+
+Program.cs 沿用 AddPermissionAuthorization，另呼叫 AddAuthorization(options => options.AddFirstBatchPermissionPolicies())。
+共用 AddFirstBatchPermissionPolicies 透過既有 AddPermissionPolicy 註冊，避免啟動程式與測試各維護一份設定；沒有重複註冊 PermissionService / Handler，也沒有更動 JWT、DefaultPolicy 或 FallbackPolicy。
+
+| Policy 名稱 | Permission Code | 預計接入（目前尚未套用） |
+| --- | --- | --- |
+| Permission:case.status.update | case.status.update | 07 狀態更新 |
+| Permission:case.status_history.read | case.status_history.read | 07 狀態歷程 |
+| Permission:case.read | case.read | 11 家長個案列表 |
+| Permission:questionnaire.task.read | questionnaire.task.read | 11 家長指定個案任務 |
+
+四者是小組技術提案，醫院角色權限矩陣尚未核准；沒有新增 Permission / RolePermission Seed，ADMIN 不具有隱含全權。
+缺少有效配置仍拒絕；註冊 Policy 不會使既有未標記端點自動套用它。
+
+07 必須另經 AccessAuthorizer 驗證個案讀寫範圍，DenyAll 保持不動；歷程原因欄位可見性獨立判斷。
+11 必須保留 ACTIVE 身分、手機驗證、院所、Guardian / Case 有效綁定，以及 PARENT / 非取消任務過濾。
+家長列表無有效綁定回 200 空集合；查詢未授權指定個案任務保留現有 404 契約，不藉由 Permission 放寬。
+這些是交接要求，並非本批已完成 07/11 端點驗收。
+
+`dotnet run --project tests/RbacPolicyHarness.csproj` 新增 43 項 Policy / Handler 測試：四個實際共用註冊、已驗證身分、4×4 Permission 隔離、無配置、停用、撤權重查、同名衝突與預設策略/DI檢查。
+該測試使用 IPermissionService 替身，不宣稱真正資料庫或 07/11 Controller 驗收。
+RbacHttpHarness 保留原有 15 項涵蓋，更新啟動程式斷言以反映新增註冊，另新增四個 Policy 故障的安全 HTTP 503 檢查，共 19 項；測試路由僅位於測試可執行檔。
+原 22 項及 34 項離線測試保留；真實 MySQL、正式 Host 與跨分支資源授權仍待另行驗收。

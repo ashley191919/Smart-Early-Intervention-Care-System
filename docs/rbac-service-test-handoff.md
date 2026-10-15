@@ -1,7 +1,7 @@
 # RBAC 服務測試與醫療端交接補充
 
 本補充保留既有 RBAC 類別與未提交測試；第四批在既有檔案上增量補強，另新增 PermissionLookupException。
-啟動整合批次已接入 Program.cs 的共用 DI 與窄範圍權限查詢例外 Middleware；沒有正式 Permission Policy、Seed、Migration、Controller 或業務流程變更。
+啟動整合批次已接入 Program.cs 的共用 DI 與窄範圍權限查詢例外 Middleware。首批 Policy 批次另註冊四個候選 Policy，仍沒有 Seed、Migration、Controller 或業務流程變更。
 
 ## 新增測試
 
@@ -20,20 +20,19 @@ PermissionServiceOfflineHarness 直接使用正式 PermissionService、Applicati
 正式 DI 使用 ValidateScopes / ValidateOnBuild 驗證，確認服務與 DbContext 為 scoped、不同 scope 不共用、重複擴充註冊只有一個 Permission Handler，根容器無法取得 scoped 服務。
 原有 RbacOfflineHarness 的 22 項測試保留，提供更多身分歧義與明確 Fail 行為驗證。
 
-## 啟動註冊與候選 Policy（Policy 尚未實施）
+## 啟動註冊與候選 Policy
 
 ```csharp
 using EarlyInterventionCare.Api.Services.Authorization;
 
 // 沿用既有 Authentication 與 AddDbContext<ApplicationDbContext>。
 builder.Services.AddPermissionAuthorization();
-builder.Services.AddAuthorization(options =>
-    options.AddPermissionPolicy("Permission:case.read", "case.read"));
+builder.Services.AddAuthorization(options => options.AddFirstBatchPermissionPolicies());
 ```
 
-上述 case.read 僅為候選範例，不是核准的權限配置。
+此共用方法註冊 Permission:case.status.update、Permission:case.status_history.read、Permission:case.read、Permission:questionnaire.task.read；均為技術提案，不是核准的角色配置。
 AddPermissionAuthorization 已包含 AddPermissionServices，不需再手動註冊另一份服務或 Handler。
-已沿用 UseAuthentication → UseAuthorization → MapControllers，在 Authentication 前加上查詢例外邊界；範例中的正式 Policy 仍待核准，未加入 Program.cs。
+已沿用 UseAuthentication → UseAuthorization → MapControllers，在 Authentication 前加上查詢例外邊界；四個 Policy 已註冊，但未套用正式業務 API。
 正式註冊前需確認沒有其他 IPermissionService 替身覆蓋或被 TryAdd 保留。
 
 ## 給 07 的共用契約

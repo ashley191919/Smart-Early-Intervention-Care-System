@@ -5,6 +5,13 @@ namespace EarlyInterventionCare.Api.Services.Authorization;
 
 public static class PermissionAuthorizationExtensions
 {
+    /// <summary>Registers the first batch's operation policies, without granting role permissions.</summary>
+    public static AuthorizationOptions AddFirstBatchPermissionPolicies(this AuthorizationOptions options) => options
+        .AddPermissionPolicy("Permission:case.status.update", "case.status.update")
+        .AddPermissionPolicy("Permission:case.status_history.read", "case.status_history.read")
+        .AddPermissionPolicy("Permission:case.read", "case.read")
+        .AddPermissionPolicy("Permission:questionnaire.task.read", "questionnaire.task.read");
+
     public static IServiceCollection AddPermissionAuthorization(this IServiceCollection services)
     {
         services.AddPermissionServices();

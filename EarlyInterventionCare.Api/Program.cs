@@ -103,6 +103,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddPermissionAuthorization();
+builder.Services.AddAuthorization(options => options.AddFirstBatchPermissionPolicies());
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(

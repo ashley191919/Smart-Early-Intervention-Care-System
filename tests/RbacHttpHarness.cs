@@ -51,6 +51,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options
         new MySqlServerVersion(new Version(8, 0, 46)))
     .AddInterceptors(new HttpNoNetwork(), rows));
 builder.Services.AddPermissionAuthorization();
+builder.Services.AddAuthorization(options => options.AddFirstBatchPermissionPolicies());
 // Policies/endpoints exist only in this test executable, never in API Program.cs.
 builder.Services.AddAuthorization(options => options.AddPermissionPolicy("TestOnly:read", "case.read"));
 builder.Services.AddControllers().AddApplicationPart(typeof(WeatherForecastController).Assembly);
@@ -61,6 +62,9 @@ app.UseAuthorization();
 app.MapGet("/test/protected", () => Results.Ok(new { value = "allowed" })).RequireAuthorization("TestOnly:read");
 app.MapGet("/test/auth-only", () => Results.Ok()).RequireAuthorization();
 app.MapGet("/test/public", () => Results.Ok());
+var firstBatchCodes = new[] { "case.status.update", "case.status_history.read", "case.read", "questionnaire.task.read" };
+for (var index = 0; index < firstBatchCodes.Length; index++)
+    app.MapGet($"/test/policies/{index}", () => Results.Ok()).RequireAuthorization("Permission:" + firstBatchCodes[index]);
 app.MapControllers();
 await app.StartAsync();
 using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()), Timeout = TimeSpan.FromSeconds(10) };
@@ -201,9 +205,22 @@ await Test("actual Program registers RBAC and preserves middleware order without
     var authorization = program.IndexOf("app.UseAuthorization();", StringComparison.Ordinal);
     var limiter = program.IndexOf("app.UseRateLimiter();", StringComparison.Ordinal);
     return program.Contains("builder.Services.AddPermissionAuthorization();") &&
-        !program.Contains("TestOnly:") && !program.Contains("AddPermissionPolicy(") &&
+        !program.Contains("TestOnly:") && program.Contains("builder.Services.AddAuthorization(options => options.AddFirstBatchPermissionPolicies());") &&
         boundary >= 0 && boundary < authentication && authentication < authorization && authorization < limiter;
 });
+for (var index = 0; index < firstBatchCodes.Length; index++)
+{
+    var routeIndex = index;
+    await Test($"first batch {firstBatchCodes[index]} lookup failure remains safe HTTP 503", async () =>
+    {
+        using var response = await Get($"/test/policies/{routeIndex}", Token(faultId));
+        var body = await response.Content.ReadAsStringAsync();
+        using var json = JsonDocument.Parse(body);
+        return response.StatusCode == HttpStatusCode.ServiceUnavailable && response.Headers.CacheControl?.NoStore == true &&
+            json.RootElement.GetProperty("code").GetString() == "AUTHORIZATION_UNAVAILABLE" &&
+            !body.Contains("SYNTHETIC_PRIVATE") && !body.Contains("SELECT") && !body.Contains("StackTrace");
+    });
+}
 await app.StopAsync();
 Console.WriteLine($"RBAC HTTP: {passed} passed, {failed} failed.");
 return failed == 0 ? 0 : 1;
