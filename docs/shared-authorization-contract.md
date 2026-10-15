@@ -5,8 +5,9 @@
 沿用 User.Id、Role.Id、Permission.Id 的 Guid，以及單一 User.RoleId；沒有 UserRoles。
 第一批 IPermissionService / PermissionService / AddPermissionServices 保留。
 本批新增 PermissionRequirement、PermissionAuthorizationHandler 與註冊擴充。
-尚未修改 Program.cs、登入服務、Controller、Migration 或 Snapshot，因此現有 API 不會自動取得這層保護。
-下列設定須經使用者確認後，在後續整合階段加入；本文件不是已啟用的授權配置。
+啟動整合批次已在 Program.cs 註冊共用核心與 PermissionLookupExceptionMiddleware。
+沒有修改登入服務、Controller、Migration 或 Snapshot，沒有註冊正式 Permission Policy，因此現有 API 不會自動取得 Permission 保護。
+下列 Policy 設定是後續接入範例；本文件不是已啟用的授權配置。
 
 ## 07、11 的接入方式
 
@@ -69,6 +70,8 @@ dotnet run --project tests/RbacOfflineHarness.csproj
 
 ## 第四批驗證與全域例外處理提案（未接入）
 
+本節保留原先 IExceptionHandler 方案供比對；本次實際採用下節的窄範圍 Middleware，而非全域 IExceptionHandler/fallback，避免影響其他模組的例外處理。
+
 PermissionServiceOfflineHarness 執行正式服務與 Pomelo EF 轉譯，但以 ADO 命令結果替身取代資料庫。
 沒有驗證真正資料庫執行 EF SQL，不能宣稱正式資料庫服務測試已完成。
 本機套件快取沒有 Microsoft.EntityFrameworkCore.InMemory 或 Microsoft.EntityFrameworkCore.Sqlite；本批沒有安裝新套件。
@@ -85,3 +88,16 @@ PermissionServiceOfflineHarness 執行正式服務與 Pomelo EF 轉譯，但以 
 
 整合測試建議：真實 Authorization Middleware 下分別測試未登入 401、缺權 403、具權成功、PermissionLookupException 503 及固定內容；以合成敏感字串確認回應與日誌不洩漏。
 另驗證登入/OTP匿名入口、教師Token、Cookie/Bearer及取消請求行為不變；此 HTTP 套件/Host 測試本批未執行。
+
+## 啟動整合批次：已實作與驗收界線
+
+- Program.cs 將原 AddAuthorization 改為 AddPermissionAuthorization，沿用既有 JWT、DbContext、RateLimiter、DefaultPolicy/FallbackPolicy；沒有正式 Permission Policy、Seed 或端點變更。
+- 在 UseAuthentication 之前加入 PermissionLookupExceptionMiddleware，Authentication → Authorization → RateLimiter 原順序不變。
+- Middleware 僅捕捉 PermissionLookupException，且僅在回應未開始、RequestAborted 尚未取消時清除未送出的回應並寫固定 JSON/503、Cache-Control: no-store；其他例外與已開始/已取消的情況向外傳遞，不強制寫入 503。
+- 沒有加入全域 catch-all fallback，不修改 Controller ExceptionFilter、OTP、Teacher Token 或 Cookie/CSRF；07/11 分支上的設定仍須未來逐段整合，不能視為本分支已包含。
+
+`dotnet run --project tests/RbacHttpHarness.csproj` 使用現有 ASP.NET Core Kestrel 在 loopback 隨機埠測試，不需要新增 TestHost/Mvc.Testing 套件。
+測試 Host 使用隨機且不輸出的短期測試 JWT 金鑰、真正 JwtBearer / Authorization 管線與正式 PermissionService，但 ADO 攔截器取代所有資料庫連線與查詢結果。
+測試用 `TestOnly:read` Policy 與 /test 路由只存在於測試可執行檔，API Program.cs 完全不註冊。
+15 項包含 HTTP 401/403/200/503、503 固定欄位與敏感訊息排除、公開 WeatherForecast 與普通 Authorize 不增加 Permission 查詢、過期 JWT、Default/FallbackPolicy，以及直接 Middleware 邊界測試（其他例外、取消、已開始回應）和 Program 註冊/順序靜態核對。
+這不是啟動完整正式 API Program 的端到端測試，也不是 MySQL 驗收；登入/OTP/教師資料流程與 07 Cookie/CSRF 尚未做跨分支端到端驗證。

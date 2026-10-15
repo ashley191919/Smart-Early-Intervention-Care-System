@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using EarlyInterventionCare.Api.Services.Authentication;
+using EarlyInterventionCare.Api.Services.Authorization;
 // EF tooling uses the offline factory; do not initialize the runtime host or its secrets.
 if (EF.IsDesignTime)
 {
@@ -101,7 +102,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             RoleClaimType = "role"
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddPermissionAuthorization();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
@@ -157,6 +158,7 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+app.UseMiddleware<PermissionLookupExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
