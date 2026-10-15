@@ -204,6 +204,138 @@ foreach (var mutation in new Action<FakeStore>[] {
     Check(await save == 401 && s.State.Drafts.Count == 0 && s.State.Tasks[0].TaskStatus == "SUBMITTED", "submit-first blocks overlapping draft");
 }
 
+// Batch 1: malformed definitions fail as server configuration errors, in draft and submit.
+foreach (var snapshot in new[] {
+    "{", "null", "[]", "{}", "{\"questions\":{}}", "{\"questions\":[]}",
+    "{\"questions\":[null]}", "{\"questions\":[{}]}",
+    "{\"questions\":[{\"questionId\":1,\"options\":[]}]}",
+    "{\"questions\":[{\"questionId\":\" \",\"options\":[]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\"}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":{}}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[null]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[{}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[{\"value\":null}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[{\"value\":1}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[{\"value\":\"\"}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[{\"value\":\"1\"},{\"value\":\"1\"}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"options\":[{\"value\":\"1\"}]},{\"questionId\":\"Q1\",\"options\":[{\"value\":\"2\"}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"type\":\"text\",\"options\":[{\"value\":\"1\"}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"type\":null,\"options\":[{\"value\":\"1\"}]}]}",
+    "{\"questions\":[{\"questionId\":\"Q1\",\"required\":\"false\",\"options\":[{\"value\":\"1\"}]}]}"
+})
+{
+    foreach (var complete in new[] { false, true })
+    {
+        var f = Fixture();
+        try { new QuestionnaireAnswerValidator().Validate(snapshot, Submit(f.Store), new(2026, 10, 9), complete); }
+        catch (InvalidOperationException ex)
+        { Check(ex.Message == "Questionnaire definition is invalid or unsupported.", "safe definition error"); continue; }
+        throw new Exception("Invalid definition accepted");
+    }
+}
+
+// A malformed stored definition must not leave staged draft/submit changes or success audit.
+foreach (var submit in new[] { false, true })
+{
+    var f = Fixture(); var s = f.Store;
+    await f.Service.SaveDraftAsync(FakeStore.Token, s.TaskId, Draft(s, 0), "saved");
+    s.State.Versions[0].DefinitionSnapshot = "{\"questions\":[{}]}";
+    var before = JsonSerializer.Serialize(s.State); var auditCount = f.Audit.Query().Count;
+    try {
+        if (submit) await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, Guid.NewGuid(), Submit(s), "invalid-definition");
+        else await f.Service.SaveDraftAsync(FakeStore.Token, s.TaskId, Draft(s, 1), "invalid-definition");
+        throw new Exception("definition failure expected");
+    }
+    catch (InvalidOperationException) {
+        Check(before == JsonSerializer.Serialize(s.State) && auditCount == f.Audit.Query().Count,
+            "invalid definition preserves saved state and audit");
+    }
+}
+
+// Explicit metadata remains compatible: required=false does not silently relax submission.
+foreach (var required in new[] { true, false })
+{
+    var f = Fixture(); var s = f.Store;
+    s.State.Versions[0].DefinitionSnapshot = JsonSerializer.Serialize(new { questions = Enumerable.Range(1, 3).Select(n => new {
+        questionId = $"Q{n}", type = "singleChoice", required,
+        options = Enumerable.Range(0, 4).Select(v => new { value = v.ToString() }) }) });
+    await f.Service.SaveDraftAsync(FakeStore.Token, s.TaskId, Draft(s, 0, new[] { Answers()[0] }), "partial");
+    await Error(async () => { await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, Guid.NewGuid(),
+        Submit(s) with { Answers = new[] { Answers()[0] } }, "partial"); }, "INVALID_ANSWERS", 400);
+    Check(s.State.Responses.Count == 0 && s.State.Drafts.Single().Revision == 1, "metadata preserves partial draft only");
+    await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, Guid.NewGuid(), Submit(s), "complete");
+    Check(s.State.Responses.Count == 1, "explicit singleChoice full submit accepted");
+}
+
+// Cancellation/revocation must preserve the entire saved state, including an existing draft.
+foreach (var revoked in new[] { false, true })
+{
+    var f = Fixture(); var s = f.Store;
+    await f.Service.SaveDraftAsync(FakeStore.Token, s.TaskId, Draft(s, 0, new[] { Answers()[0] }), "before");
+    if (revoked) s.State.Grant.GrantStatus = "REVOKED";
+    else s.State.Tasks[0].TaskStatus = "CANCELLED";
+    var before = JsonSerializer.Serialize(s.State); var auditCount = f.Audit.Query().Count;
+    var code = revoked ? "GRANT_UNAVAILABLE" : "TASK_SUBMITTED"; var status = revoked ? 401 : 409;
+    await Error(async () => { await f.Service.GetDraftAsync(FakeStore.Token, s.TaskId); }, code, status);
+    await Error(async () => { await f.Service.SaveDraftAsync(FakeStore.Token, s.TaskId, Draft(s, 1), "denied"); }, code, status);
+    await Error(async () => { await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, Guid.NewGuid(), Submit(s), "denied"); }, code, status);
+    if (revoked) await Error(async () => { await f.Service.GetReceiptAsync(FakeStore.Token, s.TaskId); }, code, status);
+    Check(before == JsonSerializer.Serialize(s.State) && auditCount == f.Audit.Query().Count, "denied operations leave saved state unchanged");
+}
+
+// A submitted task remains immutable even while another task keeps its grant ACTIVE.
+{
+    var f = Fixture(); var s = f.Store; s.AddTask(); var key = Guid.NewGuid();
+    await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, key, Submit(s), "first");
+    var before = JsonSerializer.Serialize(s.State);
+    await Error(async () => { await f.Service.GetDraftAsync(FakeStore.Token, s.TaskId); }, "TASK_SUBMITTED", 409);
+    await Error(async () => { await f.Service.SaveDraftAsync(FakeStore.Token, s.TaskId, Draft(s, 0), "overwrite"); }, "TASK_SUBMITTED", 409);
+    await Error(async () => { await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, Guid.NewGuid(), Submit(s) with { Observation = "changed" }, "overwrite"); }, "TASK_SUBMITTED", 409);
+    await Error(async () => { await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, key, Submit(s) with { Observation = "changed" }, "overwrite"); }, "IDEMPOTENCY_CONFLICT", 409);
+    var retry = await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, key, Submit(s), "retry");
+    Check(retry.Replayed && before == JsonSerializer.Serialize(s.State), "active grant retry/denials preserve every original response field");
+}
+
+// Different keys race for one task; exercise both ACTIVE and final USED grant outcomes.
+foreach (var keepActive in new[] { false, true })
+{
+    var f = Fixture(); var s = f.Store; if (keepActive) s.AddTask();
+    async Task<int> Send() {
+        try { await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, Guid.NewGuid(), Submit(s), "race"); return 200; }
+        catch (QuestionnaireWorkflowException ex) {
+            Check(ex.Code == (keepActive ? "TASK_SUBMITTED" : "GRANT_UNAVAILABLE"), "different key loser rejected");
+            return ex.Status;
+        }
+    }
+    var results = await Task.WhenAll(Send(), Send());
+    Check(results.Order().SequenceEqual(new[] { 200, keepActive ? 409 : 401 }), "one different-key submission wins");
+    Check(s.State.Responses.Count == 1 && f.Audit.Query().Count == 1, "race creates one response and one success audit");
+}
+
+// Commit failure after staging every final-submit effect must restore the complete state.
+{
+    var f = Fixture(); var s = f.Store;
+    await f.Service.SaveDraftAsync(FakeStore.Token, s.TaskId, Draft(s, 0, new[] { Answers()[0] }), "saved");
+    var before = JsonSerializer.Serialize(s.State); var auditCount = f.Audit.Query().Count; s.FailCommit = true;
+    try { await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, Guid.NewGuid(), Submit(s), "failure"); throw new Exception("failure expected"); }
+    catch (IOException) { Check(before == JsonSerializer.Serialize(s.State), "failed commit restores response/task/grant/sessions/draft"); }
+    Check(f.Audit.Query().Count == auditCount, "failed final submission has no success audit");
+}
+
+// The receipt window ends exactly at its deadline; revocation also blocks valid receipt retries.
+foreach (var revoke in new[] { false, true })
+{
+    var f = Fixture(); var s = f.Store; var key = Guid.NewGuid();
+    await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, key, Submit(s), "submit");
+    if (revoke) s.State.Grant.GrantStatus = "REVOKED";
+    else f.Clock.Time = TestClock.Initial.AddMinutes(15);
+    var before = JsonSerializer.Serialize(s.State);
+    await Error(async () => { await f.Service.GetReceiptAsync(FakeStore.Token, s.TaskId); }, "GRANT_UNAVAILABLE", 401);
+    await Error(async () => { await f.Service.SubmitAsync(FakeStore.Token, s.TaskId, key, Submit(s), "retry"); }, "GRANT_UNAVAILABLE", 401);
+    Check(before == JsonSerializer.Serialize(s.State), "receipt rejection cannot mutate original submission");
+}
+
 // EF metadata and pending model check are local operations; factory prevents any DB connection.
 {
     var f = Fixture();

@@ -1,6 +1,6 @@
 # 共用個案、問卷、任務與教師授權規格 v1.1
 
-狀態：依使用者補充更新的對接基準；九張核心模型與 InitialSharedCore migration 已套用至使用者本機 earlycare_dev，虛構 seed 重跑及跨連線查回通過；教師開發 API 的授權、會話及任務查詢已改接 MySQL；Development SNAP-IV 提交已實作並獨立測試，使用者已確認本機驗收可保存推送；跨次草稿與正式身分整合尚未實作。更新日期：2026-10-06。檔名沿用 shared-contract-v1.md。實作進度見 database/migration-setup.md。
+狀態：本文件區分規格、Development 已實作及待整合項目。教師草稿已接 EF 持久化、revision 與共用提交驗證；正式家長身分／作者、同意及有效輪次尚待整合。本輪未連線 MySQL，既有資料庫驗收紀錄不代表本輪重新驗證。更新日期：2026-10-15。檔名沿用 shared-contract-v1.md。歷史實作進度見 database/migration-setup.md。
 
 ### 已確認與待確認
 
@@ -158,7 +158,7 @@ Idempotency-Key 為提交請求 UUID，按 grant + key 唯一。相同 key、同
 
 ## 10. 現有程式與正式規格的差異
 
-目前 /api/dev/teacher-workspace/* 的授權、會話與任務查詢已使用 MySQL，caseId／taskId／versionId 均取資料庫 UUID；僅操作虛構 seed。版本 snapshot 轉換為既有畫面格式，同時回傳 questionIds／optionValues 供後續答案保存使用。尚無正式 draft 或 response 儲存。既有兩題 /teacher/test-form 仍是另一個記憶體測試模組。
+目前 /api/dev/teacher-workspace/* 的授權、會話、任務、draft 與 response 已有 EF/MySQL 儲存實作，caseId／taskId／versionId 均取資料庫 UUID；僅操作虛構 seed。版本 snapshot 轉換為既有畫面格式，同時回傳 questionIds／optionValues。這不是正式家長／教師 API；既有兩題 /teacher/test-form 仍是另一個記憶體測試模組。
 
 現有 JSON 的 questions 陣列與 0 起算索引只是畫面試做；正式版本改成 questionId + optionValue，選項值為字串，分數為數字。現有「驗證新碼會登出同一碼舊會話」可保留為 v1 單一有效會話政策；開發會話固定 8 小時，到期重驗原碼；正式 CSRF、身分及同意對接仍待實作。
 
@@ -190,4 +190,47 @@ Idempotency-Key 為提交請求 UUID，按 grant + key 唯一。相同 key、同
 
 ## Development 最小提交實作（2026-10-06）
 
+本節保留歷史提交說明；目前完成範圍與驗證界線以後述「16 問卷核心補強第一批」為準。
+
 POST /api/dev/teacher-workspace/tasks/{taskId}/submit 使用上述提交 payload、Idempotency-Key UUID 與 X-Teacher-Submission: 1；同來源、限定已驗證 cookie 與 grant 指定任務。response、SUBMITTED、USED 與會話失效同一交易；相同請求回簡短收據，不讀答案。第三份 migration 增加 teacher_sessions.receipt_expires_at_utc：只限成功提交的會話重試原內容，最多 15 分鐘且不超過原會話到期；登出清除。這不延長授權，也不重新啟用已失效會話的一般接口。開發入口在前輪完成後可建立新虛構 task，不重新開啟舊 response；正式指派／複評未完成。詳見 teacher-submission-testing.md。
+
+## 16 問卷核心補強第一批（2026-10-15）
+
+### 已完成與本批變動
+
+- 既有 TeacherQuestionnaireWorkflowService 在讀寫草稿／建立新答案前要求 Task 為 PENDING 或 IN_PROGRESS 且尚無 Response；CANCELLED 與 SUBMITTED 均拒絕。Grant REVOKED 阻擋草稿、提交與收據。沒有新增正式 API 或更動 Service／Store 的授權規則。
+- EfTeacherQuestionnaireStore 既有實作在同一交易先鎖 Grant，再排序鎖 Task；response、Task、Grant 與 Session 效果由同一次 Commit 保存。每 Task 唯一 Response 及 Grant＋Key 唯一索引維持原狀。
+- 新增測試確認 ACTIVE 多任務 Grant 下，已提交 Task 仍不能讀寫草稿或用新 Key 改答案；相同 Key／內容只回收據，不新增 Response；相同 Key／不同內容拒絕。不同 Key 並行競爭只產生一份答案，失敗提交不改原始答案、hash、時間或狀態。
+- 新增完整狀態比較，確認取消／撤銷／定義錯誤／Commit 失敗不留下部分答案、草稿 revision、Task／Grant／Session 狀態或成功稽核。
+- 保留原有 hash 正規化、收據重送、登出清除及最長 15 分鐘且不超過 Session 到期的規則；新增恰好到期的邊界測試。
+- QuestionnaireAnswerValidator 新增 snapshot 結構檢查：非空題目陣列、題目／選項物件、非空字串題號／選項值、題號唯一、每題選項值唯一、非空選項集合。若明確提供 type，僅接受 singleChoice；required 若提供必須為 boolean。異常統一拋出固定 InvalidOperationException，由既有 WorkspaceErrors 回安全 503，不將錯誤定義誤報為使用者答案 400，也不輸出 snapshot。
+
+### type／required 相容性方案
+
+- 舊 snapshot 省略 type／required 仍可使用既有單選驗證，不回寫或改造版本資料。
+- required=true／false 都不改變原有完整提交規則：提交仍須回答全部題目；草稿可缺題。測試固定此行為，避免本批默默放寬驗證。
+- 可選題語意、其他題型、家長專用量表與醫院內容／計分變更另案確認後再實作。標題、文字、分數不由本批推定或修改。
+
+### 驗證方式與限制
+
+本批結果：API Build 0 警告／0 錯誤；RBAC 118 項（34＋22＋19＋43）全通過；Phase 2-2 擴充後 158 項全通過；Phase 2-1、離線 CoreDatabaseHarness 與 11 項 Node 問卷測試通過。Git diff --check 通過；沒有 Migration／Snapshot／Seed 或 07／11 Controller／Service 變更。
+
+執行方式（專案根目錄）：
+
+```powershell
+dotnet build EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj --no-restore
+dotnet run --project tests/QuestionnairePhase22Harness.csproj --no-launch-profile --no-restore
+dotnet run --project tests/QuestionnairePhase21Harness.csproj --no-launch-profile --no-restore
+dotnet run --project tests/CoreDatabaseHarness.csproj --no-launch-profile --no-restore
+node --test tests/TeacherDraftClient.test.cjs tests/SharedFrontendDemo.test.cjs
+```
+
+- Phase 2-2 直接呼叫正式 Workflow／Validator，使用 clone-on-transaction、SemaphoreSlim 序列化的 Fake Store；涵蓋失敗及並行情境，但不執行 EfTeacherQuestionnaireStore 的 SQL 或真正資料庫 rollback。
+- Phase 2-1 使用 Fake Store；CoreDatabaseHarness 及 Phase 2-2 的 EF 模型檢查只驗證模型／Snapshot，相應 factory 禁止開啟連線。
+- RBAC 的 PermissionServiceOfflineHarness 使用正式 EF／Pomelo 查詢與 ADO 連線／命令攔截器提供結果；這不是 MySQL SQL 引擎。其他 RBAC 測試另含替身及隔離 loopback HTTP，非完整正式網站／跨模組驗收。
+- 本輪不連線真正 MySQL，不執行需要既有 API／資料庫的教師提交腳本；MySQL 唯一鍵執行、鎖定／死結、隔離及持久化仍需後續獨立驗收。Fake Store 的失敗不等同已驗證實體 DB Commit 失敗。
+- 提交不可變性目前是既有服務入口保證；沒有資料庫 trigger 或全面阻擋任意 DbContext／raw SQL 改寫的機制。Store 未對外提供 Response 更新／刪除操作，本批未擴大到全域資料庫防寫設計。
+
+### Development 限制與待整合
+
+仍只允許 IsDevelopment=true、固定虛構 Case 的教師流程。正式家長作者、草稿歸屬、家長去重、Guardian 撤銷競爭、同意與正式 Grant 契約等待 11；醫療可見範圍、有效輪次、封存及 CaseStatus 同交易協調等待 07。Completion Summary 目前仍是全部輪次，不得當作已完成有效輪次整合。這些項目沒有在本批猜測規則或直接接入其他分支。
