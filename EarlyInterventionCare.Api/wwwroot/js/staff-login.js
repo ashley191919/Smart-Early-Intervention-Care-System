@@ -66,6 +66,35 @@ function isValidStaffSessionResponse(body) {
         && !Number.isNaN(Date.parse(body.expiresAt));
 }
 
+async function addCsrfForExistingSession(headers) {
+    // A valid existing HttpOnly session cookie makes this POST subject to the same
+    // cookie-write CSRF protection as every other unsafe request. We deliberately
+    // do not inspect browser cookies or retain the token after this request.
+    const response = await fetch("/api/auth/csrf", {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        credentials: "same-origin"
+    });
+
+    if (response.status === 401) {
+        // No active session exists, so the login POST is an anonymous request.
+        return;
+    }
+
+    let body = null;
+    try {
+        body = await response.json();
+    } catch {
+        // The validated response format is checked below.
+    }
+
+    if (!response.ok || typeof body?.requestToken !== "string" || !body.requestToken) {
+        throw new Error("無法取得安全驗證資訊，請稍後再試。");
+    }
+
+    headers.set("X-EarlyCare-CSRF", body.requestToken);
+}
+
 async function submitLogin() {
     if (isSubmitting) return;
 
@@ -82,12 +111,14 @@ async function submitLogin() {
     showVerificationState();
 
     try {
+        const headers = new Headers({
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        });
+        await addCsrfForExistingSession(headers);
         const response = await fetch("/api/auth/staff-session", {
             method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            },
+            headers,
             credentials: "same-origin",
             body: JSON.stringify({ username, password })
         });

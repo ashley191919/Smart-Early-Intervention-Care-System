@@ -2,9 +2,86 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const root = path.join(__dirname, '..', 'EarlyInterventionCare.Api', 'wwwroot');
 const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
+
+async function loadStaffAuth(responses) {
+    const protectedArea = { hidden: false, cleared: false, replaceChildren() { this.cleared = true; } };
+    const errorArea = { hidden: true, textContent: '' };
+    const redirects = [];
+    const calls = [];
+    const document = {
+        querySelectorAll(selector) { return selector === '[data-staff-protected]' ? [protectedArea] : []; },
+        querySelector(selector) { return selector === '[data-staff-auth-error]' ? errorArea : null; },
+        dispatchEvent() {}
+    };
+    const window = {
+        location: { origin: 'https://localhost:7127', replace: (url) => redirects.push(url) }
+    };
+    const context = {
+        window,
+        document,
+        Headers,
+        URL,
+        CustomEvent: class CustomEvent { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+        fetch: async (url, options = {}) => {
+            calls.push({ url, options });
+            const next = responses.shift();
+            if (next instanceof Error) throw next;
+            return new Response(next?.body === undefined ? null : JSON.stringify(next.body), { status: next.status });
+        }
+    };
+    vm.runInNewContext(read('js', 'staff-auth.js'), context, { filename: 'staff-auth.js' });
+    await new Promise((resolve) => setImmediate(resolve));
+    return { protectedArea, errorArea, redirects, calls, auth: window.StaffAuth };
+}
+
+async function submitStaffLogin(responses) {
+    const handlers = {};
+    const makeElement = () => ({
+        hidden: false,
+        disabled: false,
+        value: '',
+        textContent: '',
+        focus() {},
+        addEventListener(type, handler) { handlers[this.name + ':' + type] = handler; }
+    });
+    const loginCard = { classList: { add() {}, remove() {} } };
+    const loginButton = makeElement(); loginButton.name = 'loginButton';
+    const loginForm = makeElement(); loginForm.name = 'loginForm';
+    const verificationState = makeElement();
+    const loginErrorState = makeElement();
+    const errorMessage = makeElement();
+    loginErrorState.querySelector = () => errorMessage;
+    const retryLoginButton = makeElement(); retryLoginButton.name = 'retryLoginButton';
+    const staffAccountInput = makeElement(); staffAccountInput.name = 'staffAccountInput'; staffAccountInput.value = 'staff';
+    const staffPasswordInput = makeElement(); staffPasswordInput.name = 'staffPasswordInput'; staffPasswordInput.value = 'correct-password';
+    const selectors = new Map([
+        ['.login-card', loginCard], ['.login-button', loginButton], ['.login-form', loginForm],
+        ['.verification-state', verificationState], ['.login-error-state', loginErrorState],
+        ['.retry-login-button', retryLoginButton], ['#staff-account', staffAccountInput], ['#staff-password', staffPasswordInput]
+    ]);
+    const calls = [];
+    const redirects = [];
+    const context = {
+        window: { location: { assign: (url) => redirects.push(url) } },
+        document: { querySelector: (selector) => selectors.get(selector) || null },
+        Headers,
+        fetch: async (url, options = {}) => {
+            calls.push({ url, options });
+            const next = responses.shift();
+            return new Response(next?.body === undefined ? null : JSON.stringify(next.body), { status: next.status });
+        }
+    };
+    vm.runInNewContext(read('js', 'staff-login.js'), context, { filename: 'staff-login.js' });
+    handlers['loginForm:submit']({ preventDefault() {} });
+    await new Promise((resolve) => setImmediate(resolve));
+    return { calls, redirects };
+}
+
+const activeUser = { userId: '10000000-0000-4000-8000-000000000001', username: 'staff', role: 'MEDICAL_STAFF' };
 
 test('staff login uses the cookie session endpoint without exposing a JWT', () => {
     const source = read('js', 'staff-login.js');
@@ -33,8 +110,87 @@ test('common staff authentication uses me, csrf and logout without script-readab
     assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|Authorization\s*:/);
 });
 
+test('未登入時 Dashboard 隱藏受保護內容並導回登入頁', async () => {
+    const state = await loadStaffAuth([{ status: 401 }]);
+    assert.equal(state.protectedArea.hidden, true);
+    assert.equal(state.protectedArea.cleared, true);
+    assert.deepEqual(state.redirects, ['/staff-login.html']);
+});
+
+test('Dashboard API 回傳 401 時會要求重新登入', async () => {
+    const state = await loadStaffAuth([{ status: 401 }]);
+    assert.equal(state.calls[0].url, '/api/auth/me');
+    assert.equal(state.redirects.length, 1);
+});
+
+test('Dashboard API 回傳 403 時顯示權限不足而不導向登入頁', async () => {
+    const state = await loadStaffAuth([{ status: 403 }]);
+    assert.equal(state.protectedArea.hidden, true);
+    assert.equal(state.errorArea.hidden, false);
+    assert.match(state.errorArea.textContent, /沒有使用醫療端工作區的權限/);
+    assert.deepEqual(state.redirects, []);
+});
+
+test('正常登出取得 CSRF token 後清除畫面並返回登入頁', async () => {
+    const state = await loadStaffAuth([
+        { status: 200, body: activeUser },
+        { status: 200, body: { requestToken: 'csrf-token' } },
+        { status: 204 }
+    ]);
+    await state.auth.logout();
+    assert.equal(state.calls[1].url, '/api/auth/csrf');
+    assert.equal(state.calls[2].url, '/api/auth/logout');
+    assert.equal(new Headers(state.calls[2].options.headers).get('X-EarlyCare-CSRF'), 'csrf-token');
+    assert.equal(state.protectedArea.cleared, true);
+    assert.deepEqual(state.redirects, ['/staff-login.html']);
+});
+
+test('CSRF 驗證失敗時登出不可假裝成功', async () => {
+    const state = await loadStaffAuth([
+        { status: 200, body: activeUser },
+        { status: 200, body: { requestToken: 'csrf-token' } },
+        { status: 403 }
+    ]);
+    await assert.rejects(state.auth.logout(), /未通過安全驗證/);
+    assert.deepEqual(state.redirects, []);
+    assert.equal(state.protectedArea.hidden, false);
+});
+
+test('登出 API 失敗時保留畫面並回報錯誤', async () => {
+    const state = await loadStaffAuth([
+        { status: 200, body: activeUser },
+        { status: 200, body: { requestToken: 'csrf-token' } },
+        { status: 503 }
+    ]);
+    await assert.rejects(state.auth.logout(), /登出服務暫時無法使用/);
+    assert.deepEqual(state.redirects, []);
+    assert.equal(state.protectedArea.hidden, false);
+});
+
+test('已有 Cookie 時重新登入會先取得並送出 CSRF token，且不讀取 Cookie 或 JWT', async () => {
+    const source = read('js', 'staff-login.js');
+    const state = await submitStaffLogin([
+        { status: 200, body: { requestToken: 'csrf-token' } },
+        { status: 200, body: { ...activeUser, permissions: [], expiresAt: '2026-10-15T00:30:00Z' } }
+    ]);
+    assert.match(source, /async function addCsrfForExistingSession/);
+    assert.equal(state.calls[0].url, '/api/auth/csrf');
+    assert.equal(state.calls[1].url, '/api/auth/staff-session');
+    assert.equal(new Headers(state.calls[1].options.headers).get('X-EarlyCare-CSRF'), 'csrf-token');
+    assert.deepEqual(state.redirects, ['/staff-dashboard.html']);
+    assert.doesNotMatch(source, /document\.cookie|localStorage|sessionStorage|accessToken/);
+});
+
 test('header delegates logout to the common session owner', () => {
     const source = read('js', 'staff-header.js');
     assert.match(source, /window\.StaffAuth\.logout\(\)/);
     assert.doesNotMatch(source, /window\.location\.assign\("staff-login\.html"\)/);
+});
+
+test('登出錯誤提示不再使用會被產品 CSS 隱藏的 demo class', () => {
+    const page = read('staff-dashboard.html');
+    const css = read('css', 'staff-header.css');
+    assert.match(page, /id="staff-header-logout-feedback" class="header-logout-feedback"/);
+    assert.match(css, /\.header-logout-feedback\s*\{\s*display: block;/);
+    assert.match(css, /\.header-logout-feedback\[hidden\]\s*\{\s*display: none !important;/);
 });

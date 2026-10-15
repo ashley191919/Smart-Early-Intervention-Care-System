@@ -22,6 +22,8 @@
 .header-reminder-overdue .header-reminder-state { color: #b56e68; background: #fbefee; }
 .header-popup h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
 .header-demo-note { margin: 8px 0; font-size: 11px; color: #81908f; }
+.header-logout-feedback { display: block; margin: 8px 4px 4px; color: #a23c37; font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+.header-logout-feedback[hidden] { display: none !important; }
 .header-reminders { margin: 0; padding: 0; list-style: none; }
 .header-reminders li + li { border-top: 1px solid #edf1f0; }
 .header-reminder { display: flex; align-items: flex-start; gap: 10px; padding: 12px 4px; color: inherit; text-decoration: none; border-radius: 6px; }

@@ -9,6 +9,7 @@
     class StaffAuthError extends Error {}
 
     function showError(message) {
+        currentUser = null;
         protectedAreas.forEach((area) => { area.hidden = true; });
         if (errorArea) {
             errorArea.textContent = message;
@@ -153,8 +154,8 @@
 
         if (response.status === 401) {
             clearProtectedContent();
-            redirectToLogin();
-            return;
+            showError("登入狀態已失效，無法確認登出結果，請重新登入。");
+            throw new StaffAuthError("登入狀態已失效，無法確認登出結果，請重新登入。");
         }
 
         if (response.status === 403) {
