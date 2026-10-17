@@ -54,6 +54,9 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("teacher-workspace-code", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.AddPolicy(StaffLoginRateLimitPolicy.Name, new StaffLoginRateLimitPolicy(
+        builder.Configuration.GetValue<int?>("StaffLoginRateLimit:PermitLimit") ?? StaffLoginRateLimitPolicy.DefaultPermitLimit,
+        builder.Configuration.GetValue<int?>("StaffLoginRateLimit:WindowSeconds") ?? StaffLoginRateLimitPolicy.DefaultWindowSeconds));
 });
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (!string.IsNullOrWhiteSpace(connectionString))

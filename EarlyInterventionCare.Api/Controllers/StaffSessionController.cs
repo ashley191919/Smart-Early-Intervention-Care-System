@@ -5,6 +5,8 @@ using EarlyInterventionCare.Api.Services.Authentication;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using EarlyInterventionCare.Api.Security;
 
 namespace EarlyInterventionCare.Api.Controllers;
 
@@ -16,10 +18,12 @@ public sealed class StaffSessionController(IAuthenticationService authentication
 {
     [HttpPost("staff-session")]
     [AllowAnonymous]
+    [EnableRateLimiting(StaffLoginRateLimitPolicy.Name)]
     [ProducesResponseType(typeof(StaffSessionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Create([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
