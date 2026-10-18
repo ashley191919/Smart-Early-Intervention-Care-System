@@ -5,7 +5,13 @@
   return async function api(path, options = {}) {
    const token = session.token();
    if (!token) throw Object.assign(new Error("請先登入家長帳號。"), {status:401});
-   const response = await fetcher(path, {...options, headers:{...options.headers, Authorization:"Bearer " + token, "Content-Type":"application/json"}, cache:"no-store"});
+   let response;
+   try { response = await fetcher(path, {...options, headers:{...options.headers, Authorization:"Bearer " + token, "Content-Type":"application/json"}, cache:"no-store"}); }
+   catch {
+    if (session.token() !== token) throw Object.assign(new Error("登入身分已變更，請重新載入。"), {status:401, code:"SESSION_CHANGED"});
+    // A failed write may already have committed. Never retry automatically.
+    throw Object.assign(new Error("連線中斷，無法確認操作結果。請檢查網路，重新載入資料確認後再操作。"), {status:0, code:"NETWORK_UNAVAILABLE"});
+   }
    if (session.token() !== token) throw Object.assign(new Error("登入身分已變更，請重新載入。"), {status:401, code:"SESSION_CHANGED"});
    if (response.status === 401) {
     session.signOut();
@@ -13,7 +19,11 @@
    }
    if (response.status === 204) return null;
    let body;
-   try { body = await response.json(); } catch { throw new Error("暫時無法取得資料，請稍後重試。"); }
+   try { body = await response.json(); } catch {
+    if (session.token() !== token) throw Object.assign(new Error("登入身分已變更，請重新載入。"), {status:401, code:"SESSION_CHANGED"});
+    const message = response.status === 403 ? "目前沒有存取權限，請重新載入或聯絡醫護人員。" : response.status === 404 ? "找不到資料，或目前已無法存取。" : "無法確認操作結果，請重新載入資料後再操作。";
+    throw Object.assign(new Error(message), {status:response.status, code:"INVALID_RESPONSE"});
+   }
    if (session.token() !== token) throw Object.assign(new Error("登入身分已變更，請重新載入。"), {status:401, code:"SESSION_CHANGED"});
    if (!response.ok) throw Object.assign(new Error(body.message || "暫時無法取得資料，請稍後重試。"), {status:response.status, code:body.code});
    return body;

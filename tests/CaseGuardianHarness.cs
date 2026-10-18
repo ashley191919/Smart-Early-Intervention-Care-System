@@ -132,6 +132,27 @@ if(browserFixture)
  foreach(var item in new[]{(Round:1u,Status:"PENDING"),(Round:2u,Status:"IN_PROGRESS"),(Round:3u,Status:"SUBMITTED")})db.QuestionnaireTasks.Add(new QuestionnaireTask{TaskId=Guid.NewGuid(),CaseId=second.CaseId,QuestionnaireId=form.QuestionnaireId,QuestionnaireVersionId=pv.QuestionnaireVersionId,RespondentRole="PARENT",AssignmentRound=item.Round,TaskStatus=item.Status,IsRequired=true});
  await db.SaveChangesAsync();
  app.UseDefaultFiles();app.UseStaticFiles();
+ string fixtureScenario = "normal"; int fixtureBindingRequests = 0;
+ app.MapGet("/fixture-scenario/{scenario}",(string scenario)=>{
+  if(!new[]{"normal","forbidden","expired","unavailable","slow-binding"}.Contains(scenario))return Results.BadRequest();
+  fixtureScenario=scenario;fixtureBindingRequests=0;return Results.Text("Disposable fixture scenario: "+scenario);
+ });
+ app.MapGet("/fixture-binding-count",()=>Results.Text(fixtureBindingRequests.ToString()));
+ app.Use(async(context,next)=>{
+  if(context.Request.Path.StartsWithSegments("/api/parent")){
+   var scenario=fixtureScenario;
+   if(scenario is "forbidden" or "expired" or "unavailable"){
+    context.Response.StatusCode=scenario=="forbidden"?403:scenario=="expired"?401:503;
+    context.Response.ContentType="text/html";await context.Response.WriteAsync("Fixture response");return;
+   }
+   if(scenario=="slow-binding"&&context.Request.Method=="POST"&&context.Request.Path=="/api/parent/bindings"){
+    System.Threading.Interlocked.Increment(ref fixtureBindingRequests);
+    await Task.Delay(1500);context.Response.StatusCode=400;
+    await context.Response.WriteAsJsonAsync(new{message="邀請碼無效，請確認後再試。",code="FIXTURE_INVALID_CODE"});return;
+   }
+  }
+  await next();
+ });
  app.MapGet("/fixture-login",()=>Results.Content("<html><meta charset='utf-8'><script src='/js/parent-session.js'></script><script>EarlyCareParentSession.signIn({role:'PARENT',accessToken:'"+parent.UserId+"'});</script></html>","text/html"));
  app.MapPost("/fixture-profile-change",async()=>{await using var context=new ApplicationDbContext(options);await context.Guardians.Where(g=>g.GuardianId==sg.GuardianId).ExecuteUpdateAsync(s=>s.SetProperty(g=>g.DisplayName,"其他工作階段更新姓名").SetProperty(g=>g.Revision,g=>g.Revision+1));return Results.NoContent();});
 }

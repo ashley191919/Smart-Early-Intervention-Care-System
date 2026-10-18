@@ -111,6 +111,8 @@
   if (!["account-bind","account-profile"].includes(event.target.id)) return;
   event.preventDefault();
   const form = event.target, button = form.querySelector('button[type="submit"]'), error = form.querySelector(".account-error");
+  if (form.dataset.submitting === "true" || button.disabled) return;
+  form.dataset.submitting = "true";
   button.disabled = true; error.hidden = true;
   let conflict = false;
   try {
@@ -123,8 +125,8 @@
   } catch (reason) {
    error.textContent = reason.message; error.hidden = false;
    if (reason.status === 409 && form.id === "account-profile") { conflict = true; form.querySelector('[data-action="reload-account"]').hidden = false; }
-   if (reason.status === 401) { modal.close(); clearData(); root.innerHTML = errorPanel(reason); }
-  } finally { button.disabled = conflict; }
+   if ([401,403,404].includes(reason.status)) { modal.close(); loadGate.begin(); renderGate.begin(); clearData(); root.innerHTML = errorPanel(reason); }
+  } finally { delete form.dataset.submitting; button.disabled = conflict; }
  });
  load();
 })();

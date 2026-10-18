@@ -13,6 +13,28 @@ test('invalid child list fails instead of retaining cached medical data',async()
  await assert.rejects(loadChildren(async()=>({caseId:'not-a-list'})),/孩子資料/);
 });
 function session(value='parent-token'){return {value,token(){return this.value;},signOut(){this.value=null;}};}
+
+test('non-JSON access denial retains status so the workspace can clear protected data',async()=>{
+ for(const status of [403,404]){
+  const state=session();let calls=0;
+  const api=createClient(state,async()=>{calls++;return {status,ok:false,json:async()=>{throw new SyntaxError('HTML response');}};});
+  await assert.rejects(api('/cases'),e=>e.status===status&&e.code==='INVALID_RESPONSE');
+  assert.equal(calls,1);assert.equal(state.value,'parent-token');
+ }
+});
+
+test('network failure does not retry a possibly committed write or expose transport details',async()=>{
+ let calls=0;const api=createClient(session(),async()=>{calls++;throw new TypeError('internal transport detail');});
+ await assert.rejects(api('/bindings',{method:'POST',body:'{}'}),e=>e.code==='NETWORK_UNAVAILABLE'&&e.status===0&&!e.message.includes('internal'));
+ assert.equal(calls,1);
+});
+
+test('session change during failed response parsing discards the old response',async()=>{
+ const state=session('old');let fail;
+ const api=createClient(state,async()=>({status:403,ok:false,json:()=>new Promise((resolve,reject)=>{fail=reject;})}));
+ const pending=api('/cases');await new Promise(resolve=>setImmediate(resolve));state.value='new';fail(new Error('invalid JSON'));
+ await assert.rejects(pending,e=>e.code==='SESSION_CHANGED');assert.equal(state.value,'new');
+});
 test('counts separate pending, drafts and submissions, excluding teacher/cancelled/unknown tasks',()=>{
  const row=(role,status)=>({respondentRole:role,taskStatus:status});
  assert.deepEqual(summarize([row('PARENT','PENDING'),row('PARENT','IN_PROGRESS'),row('PARENT','SUBMITTED'),row('PARENT','CANCELLED'),row('TEACHER','PENDING'),row('PARENT','UNKNOWN')]),{pending:1,drafts:1,submitted:1,outstanding:2});
