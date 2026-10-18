@@ -8,7 +8,23 @@ const sharedCode=sessionStorage.getItem('earlycare.demo.teacher');
 let sharedTasks=[],sharedRevisions={};
 let assignedTask=null;
 const draftClient=authorizedMode?new TeacherDraftClient((...args)=>fetch(...args)):null;
-let draftBusy=false,formOpenSequence=0;
+let draftBusy=false,formOpenSequence=0,accessBlocked=false,submissionBusy=false;
+function blockUnavailableAccess(error){
+  if(!authorizedMode||![401,403].includes(error?.status))return false;
+  accessBlocked=true;formOpenSequence++;state=fresh();current=null;pendingSubmission=null;
+  draftClient.records.clear();
+  document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
+  document.querySelectorAll('.page').forEach(page=>page.hidden=true);
+  $('questions').replaceChildren();$('task-list').replaceChildren();
+  $('questionnaire').reset();$('respondent-name').value='';$('observation').value='';
+  document.querySelectorAll('[data-nav]').forEach(button=>button.disabled=true);
+  const main=document.querySelector('.content');let panel=$('access-unavailable');
+  if(!panel){panel=document.createElement('section');panel.id='access-unavailable';panel.className='panel help-card';main.append(panel);}
+  panel.replaceChildren();const title=document.createElement('h1');title.tabIndex=-1;title.textContent='無法繼續填答';
+  const note=document.createElement('p');note.textContent='授權或登入狀態已失效，請返回教師入口重新驗證。';
+  const link=document.createElement('a');link.className='btn';link.href='/?role=teacher';link.textContent='返回教師入口';
+  panel.append(title,note,link);main.hidden=false;title.focus();$('session-label').textContent='授權無法使用';$('nav-count').textContent='—';return true;
+}
 if(authorizedMode)document.querySelector('.content').hidden=true;
 const icon=name=>`<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
 let forms=[
@@ -74,12 +90,13 @@ function renderHome(){const done=completed();$('today').textContent=new Intl.Dat
 function openAssignedForm(id){$('confirm-submit').disabled=false;current=forms.find(f=>f.id===id);if(!current||draft(id).submittedAt)return;const d=draft(id);$('form-title').textContent=current.title;$('form-instructions').textContent=current.instructions;const source=document.createElement('span');source.className='source-note';source.textContent='題目來源：'+current.source+'。';$('form-instructions').append(source);$('respondent-name').value=d.respondent||'';$('respondent-date').value=authorizedMode?(d.date||''):d.date||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now());$('questions').innerHTML=current.questions.map((q,i)=>`${current.groups[i]?`<h2 class="group-heading">${current.groups[i]}</h2>`:''}<fieldset class="question" id="q-${i}"><legend><span class="qnum">${i+1}</span>${q}<span class="required">必填</span></legend><div class="options ${current.options.length===3?'three':''}">${current.options.map((option,value)=>`<label class="option"><input type="radio" name="q${i}" value="${value}" ${d.answers[i]===value?'checked':''} required><span>${option}</span></label>`).join('')}</div></fieldset>`).join('');$('observation').value=d.note;$('form-error').hidden=true;$('save-state').textContent=d.savedAt?(authorizedMode?'已保存至 DB · ':'本頁上次暫存 ')+formatter.format(d.savedAt):'尚未儲存草稿';
 $('reload-draft').hidden=!authorizedMode;$('draft-notice').hidden=true;$('form-deadline').textContent=authorizedMode?'提交成功後不可修改，全部指定問卷提交後授權失效。':'授權不限時，提交後不可修改。';$('confirm-submit').disabled=false;updateProgress();navigate('form');}
 async function openForm(id){
+  if(accessBlocked)return;
   if(draftBusy||pendingSubmission){toast('請先完成目前的保存或提交重試。');return;}
   const sequence=++formOpenSequence;
   if(authorizedMode){
     try{
       const response=await fetch('/api/dev/teacher-workspace/task',{credentials:'same-origin',cache:'no-store'});
-      if(!response.ok)throw new Error('授權無法使用，請重新驗證。');
+      if(!response.ok)throw Object.assign(new Error('授權無法使用，請重新驗證。'),{status:response.status});
       const task=await response.json(),form=task.questionnaires.find(f=>f.id===id);
       if(!form)throw new Error('找不到可填寫的任務。');
       const record=draftClient.record(form);
@@ -90,7 +107,7 @@ async function openForm(id){
       }
       if(sequence!==formOpenSequence)return;
       assignedTask=task;forms=task.questionnaires;
-    }catch(error){toast(error.message||'無法載入 DB 草稿，請稍後重試。');return;}
+    }catch(error){if(!blockUnavailableAccess(error))toast(error.message||'無法載入草稿，請稍後重試。');return;}
   }
   openAssignedForm(id);
   if(authorizedMode)showDraftStatus();
@@ -103,6 +120,7 @@ function captureCurrentInput(){
     respondent:$('respondent-name').value.trim(),date:$('respondent-date').value};
 }
 function lockDraftControls(locked){
+  locked=locked||accessBlocked;
   draftBusy=locked;
   $('questionnaire').querySelectorAll('input,textarea,button').forEach(el=>el.disabled=locked);
   for(const id of ['reload-draft','confirm-reload-draft','back-home','form-help'])$(id).disabled=locked;
@@ -131,6 +149,7 @@ async function saveDraft(silent=false){
       showDraftStatus();renderHome();
       if(!silent)toast('草稿已保存至 DB。');return true;
     }catch(error){
+      if(blockUnavailableAccess(error))return false;
       state.forms[form.id]={...input,dirty:true};
       showDraftStatus(error.code==='DRAFT_CONFLICT'?'草稿衝突：請重新載入最新草稿':'儲存失敗，尚未確認保存');
       toast(error.message||'儲存失敗，輸入仍保留。');return false;
@@ -154,11 +173,11 @@ $('confirm-reload-draft').addEventListener('click',async()=>{
     const saved=await draftClient.load(form);
     state.forms[form.id]={...saved,dirty:false};$('reload-draft-dialog').close();
     openAssignedForm(form.id);showDraftStatus();renderHome();toast('已載入 DB 最新草稿。');
-  }catch(error){$('reload-draft-dialog').close();showDraftStatus('重新載入失敗，目前輸入仍保留。');toast(error.message||'無法載入最新草稿。');}
+  }catch(error){if(!blockUnavailableAccess(error)){$('reload-draft-dialog').close();showDraftStatus('重新載入失敗，目前輸入仍保留。');toast(error.message||'無法載入最新草稿。');}}
   finally{lockDraftControls(false);}
 });
 window.addEventListener('beforeunload',event=>{
-  if(authorizedMode&&(draftBusy||pendingSubmission||Object.values(state.forms).some(d=>d.dirty&&!d.submittedAt))){event.preventDefault();event.returnValue='';}
+  if(authorizedMode&&!accessBlocked&&(draftBusy||pendingSubmission||Object.values(state.forms).some(d=>d.dirty&&!d.submittedAt))){event.preventDefault();event.returnValue='';}
 });
 $('task-list').addEventListener('click',e=>{const b=e.target.closest('[data-form]');if(b&&!b.disabled)openForm(b.dataset.form);});
 $('questionnaire').addEventListener('input',()=>{
@@ -178,31 +197,38 @@ async function leaveAuthorizedWorkspace(){if(!await saveDraft(true))return;try{c
 let pendingSubmission=null;
 $('confirm-dialog').addEventListener('cancel',event=>{if(pendingSubmission)event.preventDefault();});
 async function submitAssigned(){
-  if(!current||draft(current.id).submittedAt)return;
+  if(accessBlocked||submissionBusy||!current||draft(current.id).submittedAt)return;
+  submissionBusy=true;
   const d=draft(current.id);
   const body={questionnaireVersionId:current.versionId,respondentName:d.respondent,filledOn:d.date,
     answers:current.questionIds.map((questionId,i)=>({questionId,optionValue:current.optionValues[d.answers[i]]})),observation:d.note};
   const json=JSON.stringify(body);
-  if(pendingSubmission&&pendingSubmission.json!==json){toast('上次提交結果尚未確認，請先重試原內容。');return;}
+  if(pendingSubmission&&pendingSubmission.json!==json){submissionBusy=false;toast('上次提交結果尚未確認，請先重試原內容。');return;}
   pendingSubmission??={key:crypto.randomUUID(),json};
   const button=$('confirm-submit');button.disabled=true;button.textContent='正在保存…';$('cancel-submit').disabled=true;
   try{
     const response=await fetch(`/api/dev/teacher-workspace/tasks/${current.taskId}/submit`,{method:'POST',credentials:'same-origin',cache:'no-store',
       headers:{'Content-Type':'application/json','Idempotency-Key':pendingSubmission.key,'X-Teacher-Submission':'1'},body:pendingSubmission.json});
-    const receipt=await response.json();
-    if(!response.ok){if(response.status<500)pendingSubmission=null;throw new Error(receipt.message||'暫時無法提交，請重試。');}
-    state.forms[current.id]={...d,submittedAt:Date.parse(receipt.submittedAtUtc)};persist();pendingSubmission=null;
+    if([401,403].includes(response.status))throw Object.assign(new Error('授權無法使用，請重新驗證。'),{status:response.status});
+    let receipt;try{receipt=await response.json();}catch{throw new Error('無法確認提交結果，請重試本次提交。');}
+    if(!response.ok){if(response.status<500)pendingSubmission=null;throw Object.assign(new Error(receipt.message||'暫時無法提交，請重試。'),{status:response.status});}
+    if(receipt.taskId!==current.taskId||receipt.questionnaireVersionId!==current.versionId||!receipt.responseId||!Number.isFinite(Date.parse(receipt.submittedAtUtc))||!['ACTIVE','USED'].includes(receipt.grantStatus))throw new Error('提交回執無法確認，請重試本次提交。');
+    state.forms[current.id]={...d,submittedAt:Date.parse(receipt.submittedAtUtc)};persist();pendingSubmission=null;renderHome();$('toast').hidden=true;
     $('confirm-dialog').close();$('success-title').textContent='本次指定問卷已提交';
-    $('success-description').textContent='答案已保存至開發資料庫。本次授權已完成，不能再填寫或修改。';
+    const allDone=receipt.grantStatus==='USED';
+    $('success-title').textContent=allDone?'本次指定問卷已全部提交':'本份問卷已提交';
+    $('success-description').textContent=allDone?'答案已保存，本次授權已完成。':'答案已保存，請繼續完成其他指定問卷。';
     $('receipt-form').textContent=current.title;$('receipt-respondent').textContent=d.respondent;$('receipt-date').textContent=d.date;
     $('receipt-time').textContent=formatter.format(Date.parse(receipt.submittedAtUtc));$('receipt-progress').textContent=`${completed()} / ${forms.length} 份`;
     document.querySelector('#success-page .receipt-row:first-child strong').textContent=`${assignedTask.patient.displayName} · ${assignedTask.patient.caseCode}`;
     document.querySelector('#success-page .receipt-row:nth-child(5) span').textContent='提交時間';
     document.querySelector('#success-page .hint').textContent=`答案已保存 · 收據 ${receipt.responseId} · 授權 ${receipt.grantStatus}`;
-    $('success-actions').replaceChildren();const exit=document.createElement('button');exit.type='button';exit.className='btn secondary';exit.textContent='登出並返回教師入口';exit.addEventListener('click',leaveAuthorizedWorkspace);$('success-actions').append(exit);
-    $('session-label').textContent='本次授權已完成';navigate('success');
-  }catch(error){toast(error instanceof TypeError?'提交結果尚未確認，請按確認送出重試；不要重新整理頁面。':error.message||'暫時無法提交，請重試。');}
-  finally{button.disabled=false;button.textContent=pendingSubmission?'重試本次提交':'確認送出';$('cancel-submit').disabled=!!pendingSubmission;}
+    $('success-actions').replaceChildren();
+    if(!allDone){const next=document.createElement('button');next.type='button';next.className='btn';next.textContent='返回其他待填問卷';next.addEventListener('click',()=>{renderHome();navigate('home');});$('success-actions').append(next);}
+    const exit=document.createElement('button');exit.type='button';exit.className='btn secondary';exit.textContent='登出並返回教師入口';exit.addEventListener('click',leaveAuthorizedWorkspace);$('success-actions').append(exit);
+    $('session-label').textContent=allDone?'本次授權已完成':'本次填答任務';navigate('success');
+  }catch(error){if(!blockUnavailableAccess(error))toast(error instanceof TypeError?'提交結果尚未確認，請按確認送出重試；不要重新整理頁面。':error.message||'暫時無法提交，請重試。');}
+  finally{submissionBusy=false;button.disabled=accessBlocked;button.textContent=pendingSubmission?'重試本次提交':'確認送出';$('cancel-submit').disabled=accessBlocked||!!pendingSubmission;}
 }
 function applyTask(task){
   assignedTask=task;forms=task.questionnaires; $('reset-demo').hidden=true; $('help-reset').hidden=true;

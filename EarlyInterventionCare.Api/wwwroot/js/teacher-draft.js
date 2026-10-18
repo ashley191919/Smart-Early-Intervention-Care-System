@@ -15,7 +15,7 @@
     const raw=await response.text();
     let body;
     try{body=JSON.parse(raw.replace(/("revision"\s*:\s*)(\d+)(?=\s*[,}])/g,'$1"$2"'));}
-    catch{throw new DraftApiError('無法確認草稿結果，請重新載入最新草稿。');}
+    catch{throw new DraftApiError('無法確認草稿結果，請重新載入最新草稿。','DRAFT_UNAVAILABLE',response.status);}
     if(!response.ok)throw new DraftApiError(body.message||'暫時無法讀寫草稿。',body.code||'DRAFT_UNAVAILABLE',response.status);
     return body;
   }

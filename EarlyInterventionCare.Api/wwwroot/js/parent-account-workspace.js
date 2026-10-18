@@ -7,6 +7,33 @@
  const root = document.querySelector("#page-content"), select = document.querySelector("#child-select"), modal = document.querySelector("#modal");
  const count = document.querySelector(".nav-count"), bind = document.querySelector('[data-action="bind"]');
  let children = [], profiles = [], currentId = "", page = "home", loaded = false;
+ function accountFormDirty() {
+  if(!modal.open)return false;
+  const form = modal.querySelector("form");
+  return !!form && (form.dataset.submitting === "true" || Array.from(form.querySelectorAll("input")).some(input => input.value !== input.defaultValue));
+ }
+ let discardPrompt = null;
+ async function closeAccountDialog() {
+  if(!modal.open)return true;
+  if(modal.querySelector('form[data-submitting="true"]'))return false;
+  if(accountFormDirty()){
+   if(discardPrompt)return discardPrompt;
+   const prompt=document.createElement("dialog");prompt.setAttribute("aria-labelledby","account-discard-title");
+   prompt.innerHTML='<h2 id="account-discard-title">放棄尚未儲存的變更？</h2><p>離開後需要重新輸入，已保存的資料不受影響。</p><div class="actions"><button class="btn secondary" type="button" data-keep>繼續編輯</button><button class="btn" type="button" data-discard>放棄變更並離開</button></div>';
+   document.body.append(prompt);
+   discardPrompt=new Promise(resolve=>{
+    const finish=discard=>{prompt.close();prompt.remove();discardPrompt=null;if(discard)modal.close();resolve(discard);};
+    prompt.querySelector('[data-keep]').addEventListener('click',()=>finish(false));
+    prompt.querySelector('[data-discard]').addEventListener('click',()=>finish(true));
+    prompt.addEventListener('cancel',event=>{event.preventDefault();finish(false);});
+    prompt.showModal();prompt.querySelector('[data-keep]').focus();
+   });return discardPrompt;
+  }
+  modal.close();return true;
+ }
+ window.addEventListener("beforeunload",event=>{if(accountFormDirty()){event.preventDefault();event.returnValue="";}});
+ modal.addEventListener("cancel",event=>{event.preventDefault();closeAccountDialog();});
+ window.EarlyCareParentWorkspace=Object.freeze({beforeLogout:closeAccountDialog});
  const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const statusNames = {NEW:"新個案",TO_CONTACT:"待聯絡",APPOINTED:"已預約",WAITING_FORM:"待填表",FORM_COMPLETED:"表單完成",COMPLETED:"已完成"};
  const relations = {FATHER:"父親",MOTHER:"母親",GRANDPARENT:"祖父母",RELATIVE:"其他親屬",GUARDIAN:"監護人",CAREGIVER:"照顧者",OTHER:"其他"};
@@ -22,6 +49,7 @@
   document.querySelector("#modal-title").textContent = title;
   document.querySelector("#modal-body").innerHTML = html;
   modal.showModal();
+  const input = modal.querySelector("input"); if(input)input.focus();
  }
  function childCard(child) {
   return `<section class="panel account-card"><div class="account-card-heading"><h2>${esc(child.childName)}</h2><span class="tag">${esc(statusNames[child.caseStatus] || child.caseStatus)}</span></div><p>個案代碼 ${esc(child.caseCode)}</p><p>身分證字號 ${esc(child.nationalId)}</p><p>地址 ${esc(child.address)}</p><p>出生日期 ${esc(child.birthDate)} · ${esc({MALE:"男",FEMALE:"女",UNKNOWN:"未提供"}[child.sex])}</p><p>與孩子的關係：${child.relationships.map(r => esc(relations[r.relationship] || r.relationship) + (r.isPrimaryContact ? "（主要聯絡人）" : "")).join("、") || "未提供"}</p></section>`;
@@ -66,7 +94,8 @@
    else if (selectedPage === "teacher") {
     const rows = child ? await api(`/api/parent/cases/${child.caseId}/teacher-completion`) : [];
     html = `<section class="panel account-card"><h2>教師問卷完成進度</h2>${rows.length ? rows.map(t => `<p><strong>${esc(t.questionnaireTitle)}</strong> · 第 ${esc(t.assignmentRound)} 輪 · ${t.isCompleted ? "已完成" : "尚未完成"}</p>`).join("") : "<p>目前沒有指定教師問卷。</p>"}</section>`;
-   } else html = `<section class="panel account-card"><p>${esc(labels[selectedPage][1])}</p></section>`;
+   } else if(selectedPage === "help") html = window.EarlyCareParentHelp.render();
+   else html = `<section class="panel account-card"><p>${esc(labels[selectedPage][1])}</p></section>`;
    if (renderGate.current(request)) { root.innerHTML = html; count.textContent = String(EarlyCareParentClient.summarize(tasks).outstanding); }
   } catch (error) {
    if (renderGate.current(request)) {
@@ -90,16 +119,17 @@
   } catch (error) { if (loadGate.current(request)) { clearData(); root.innerHTML = errorPanel(error); } }
  }
  select.addEventListener("change", () => { currentId = select.value; render(); });
- document.querySelector("#close-modal").addEventListener("click", () => modal.close());
- document.addEventListener("click", event => {
+ document.querySelector("#close-modal").addEventListener("click", closeAccountDialog);
+ document.addEventListener("click", async event => {
   const nav = event.target.closest("[data-page]");
   if (nav) {
+   if(!await closeAccountDialog())return;
    page = nav.dataset.page;
    document.querySelectorAll(".nav [data-page]").forEach(button => { button.classList.toggle("active",button.dataset.page === page); button.removeAttribute("aria-current"); if (button.dataset.page === page) button.setAttribute("aria-current","page"); });
    const crumb = document.querySelector("#crumb"); if (crumb) crumb.textContent = labels[page][0];
    document.querySelector("#content").scrollTop = 0; render();
   }
-  if (event.target.closest('[data-action="reload-account"]')) { if (modal.open) modal.close(); load(); }
+  if (event.target.closest('[data-action="reload-account"]')) { if(!await closeAccountDialog())return; load(); }
   if (event.target.closest('[data-action="bind"]') && loaded) dialog("綁定孩子",'<form id="account-bind"><label for="binding-code">醫護提供的邀請碼</label><input class="account-input" id="binding-code" name="invitationCode" maxlength="80" required autocomplete="off"><p class="account-error" role="alert" hidden></p><button class="btn" type="submit">確認綁定</button></form>');
   const edit = event.target.closest("[data-edit-profile]");
   if (edit && loaded) {
@@ -112,6 +142,9 @@
   event.preventDefault();
   const form = event.target, button = form.querySelector('button[type="submit"]'), error = form.querySelector(".account-error");
   if (form.dataset.submitting === "true" || button.disabled) return;
+  const field=form.id==="account-bind"?form.elements.invitationCode:form.elements.displayName;
+  if(!field.value.trim()){error.textContent=form.id==="account-bind"?"請輸入邀請碼。":"請輸入姓名。";error.hidden=false;field.setAttribute("aria-invalid","true");field.focus();return;}
+  field.removeAttribute("aria-invalid");
   form.dataset.submitting = "true";
   button.disabled = true; error.hidden = true;
   let conflict = false;
@@ -124,6 +157,7 @@
    modal.close(); await load();
   } catch (reason) {
    error.textContent = reason.message; error.hidden = false;
+   error.tabIndex=-1;error.focus();
    if (reason.status === 409 && form.id === "account-profile") { conflict = true; form.querySelector('[data-action="reload-account"]').hidden = false; }
    if ([401,403,404].includes(reason.status)) { modal.close(); loadGate.begin(); renderGate.begin(); clearData(); root.innerHTML = errorPanel(reason); }
   } finally { delete form.dataset.submitting; button.disabled = conflict; }

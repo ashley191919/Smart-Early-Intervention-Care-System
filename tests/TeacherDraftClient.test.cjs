@@ -9,6 +9,14 @@ const dto=(revision=0,extra={})=>({taskId:form.taskId,questionnaireVersionId:for
 const response=(body,status=200)=>new Response(JSON.stringify(body),{status});
 const input={answers:{0:2},respondent:'',date:'',note:''};
 
+test('HTML authorization failures retain status for blocking the teacher workspace',async()=>{
+ for(const status of [401,403]){
+  const client=new TeacherDraftClient(async()=>new Response('<h1>Denied</h1>',{status}));
+  await assert.rejects(client.load(form),error=>error.status===status);
+  assert.equal(client.record(form).loaded,false);
+ }
+});
+
 test('GET initializes revision 0; partial PUT sends cookie/header/version/revision and accepts server timestamp',async()=>{
   const requests=[];
   const client=new TeacherDraftClient(async(url,options)=>{

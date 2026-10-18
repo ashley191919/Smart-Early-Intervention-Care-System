@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<title>家長同意書閱讀與確認｜介面設計稿</title>
+<link rel="stylesheet" href="../../EarlyInterventionCare.Api/wwwroot/css/parent-workspace.css">
+<link rel="stylesheet" href="../../EarlyInterventionCare.Api/wwwroot/css/workspace-theme.css">
+<style>
+.prototype-note{margin:0 0 18px;padding:12px 16px;border:1px solid var(--line);background:var(--pale);border-radius:12px;color:var(--dark)}
+.consent-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start}.consent-grid .panel{padding:24px}
+.document-header{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}.document-header h2{margin:0 0 8px;font-size:18px}
+.document-header p{margin:0;color:var(--muted)}.document-section h3{font-size:15px;margin:18px 0 8px}.document-section p{margin:0;line-height:1.9}
+.consent-meta{display:grid;grid-template-columns:74px 1fr;gap:12px;margin:0}.consent-meta dt{color:var(--muted)}.consent-meta dd{margin:0;overflow-wrap:anywhere}
+.read-check{display:flex;gap:12px;align-items:start;padding:16px 0;line-height:1.8}.read-check input{margin-top:6px;width:18px;height:18px;flex:none;accent-color:var(--dark)}
+.consent-actions{display:flex;gap:12px;flex-wrap:wrap}.consent-actions .btn:disabled{opacity:.5;cursor:not-allowed}.prototype-step{padding:12px;border-radius:10px;margin-bottom:8px}.prototype-step.active{background:var(--pale);color:var(--dark);font-weight:700}
+.hospital-name{font-weight:700;margin:0}.hospital-english{font-size:10px;color:var(--muted);margin:4px 0 0}.consent-dialog{width:min(520px,calc(100vw - 32px));padding:28px;border:1px solid var(--line);color:var(--ink)}
+.consent-dialog::backdrop{background:#37415166}.consent-dialog h2{font-size:20px;margin-top:0}.content h1{outline:none}.consent-result{margin-top:18px;padding:14px;background:var(--pale);border-radius:10px}
+@media(max-width:950px){.consent-grid{grid-template-columns:minmax(0,1fr)}.sidebar{display:none}.topbar{padding:16px;height:auto}.content{padding:20px}.app{min-height:100svh;height:auto}.workspace{min-height:100svh}}
+@media print{.sidebar,.prototype-note,.consent-actions,.read-check,.consent-grid aside{display:none}.consent-grid{display:block}.content{overflow:visible}.app{height:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+ <aside class="sidebar"><div class="brand"><span class="brand-icon" aria-hidden="true">✧</span><div><strong>早療智慧動態照顧</strong><small>家長照顧工作台</small></div></div><p class="nav-label">同意書閱讀流程</p><div id="step-read" class="prototype-step active" aria-current="step">1　閱讀說明</div><div id="step-review" class="prototype-step">2　確認閱讀</div><div class="side-note"><strong>輔仁大學附設醫院</strong><p>兒童發展聯合評估中心</p></div></aside>
+ <div class="workspace">
+  <header class="topbar"><div class="hospital-brand"><img src="../../EarlyInterventionCare.Api/wwwroot/images/hospital-logo.png" alt="輔仁大學附設醫院院徽"><div><p class="hospital-name">天主教輔仁大學附設醫院</p><p class="hospital-english" lang="en">FU JEN CATHOLIC UNIVERSITY HOSPITAL</p></div></div><span>家長／照顧者</span></header>
+  <main class="content">
+   <div class="heading"><div><div class="eyebrow">CONSENT REVIEW</div><h1 tabindex="-1" id="page-heading">閱讀資料使用說明</h1><p>確認文件、適用對象與閱讀操作。</p></div></div>
+   <p class="prototype-note">獨立介面設計稿：本文與版本尚未核定。所有操作只在本頁顯示，不會建立正式同意、授權或登入紀錄。</p>
+   <div class="consent-grid">
+    <section class="panel" aria-labelledby="document-title">
+     <header class="document-header"><h2 id="document-title">資料使用與教師填答授權說明</h2><p>文件狀態：介面草稿　｜　草稿識別：DRAFT-UI-01（非正式文件版本）</p></header>
+     <div class="document-section"><h3>一、資料用途</h3><p>此區預留院方核定的蒐集目的、使用範圍及承辦窗口資訊。介面不自行宣告額外的研究、轉交或其他使用權限。</p></div>
+     <div class="document-section"><h3>二、涉及資料與可見範圍</h3><p>此區將說明實際使用的兒童、照顧者與問卷資料項目，以及各角色可見範圍。現有規則為家長只查看教師是否完成問卷，不提供教師答案、分數或草稿；正式文件仍須核定。</p></div>
+     <div class="document-section"><h3>三、教師填答的授權範圍</h3><p>此區預留指定孩子、教師問卷及任務的說明。閱讀資料使用說明與建立教師填答授權是不同操作，不因勾選閱讀就自動建立教師授權。</p></div>
+     <div class="document-section"><h3>四、保存、更正及撤回</h3><p>資料保存期間、權利行使方式、撤回對既有答案及後續存取的影響，待院方與使用單位確認後放置於此，不在介面草稿自行定案。</p></div>
+     <label class="read-check"><input id="read-confirm" type="checkbox"><span>我已閱讀本頁介面草稿，繼續查看確認畫面。<br><small>此勾選不代表正式知情同意。</small></span></label>
+     <div class="consent-actions"><button class="btn secondary" id="cancel" type="button">取消本次閱讀操作</button><button class="btn" id="next" type="button" disabled>查看確認畫面</button></div>
+     <p id="result" class="consent-result" role="status" hidden></p>
+    </section>
+    <aside class="panel"><h2 style="font-size:18px;margin-top:0">本次閱讀資訊</h2><dl class="consent-meta"><dt>適用對象</dt><dd>測試孩子（虛構）</dd><dt>文件類型</dt><dd>資料使用／教師填答說明</dd><dt>文件版本</dt><dd>待院方核定</dd><dt>目前階段</dt><dd id="stage">閱讀介面草稿</dd></dl><p>正式整合後，此處由後端提供可信的孩子、文件及版本資料，不接受前端自行指定同意者。</p></aside>
+   </div>
+  </main>
+ </div>
+</div>
+<dialog id="review" class="consent-dialog" aria-labelledby="review-title"><h2 id="review-title">確認閱讀資訊</h2><p>對象：測試孩子（虛構）</p><p>文件：DRAFT-UI-01 介面草稿</p><p>此步僅檢視確認流程，沒有正式文件，也不會保存同意紀錄。</p><div class="consent-actions"><button class="btn secondary" id="back" type="button">返回閱讀</button><button class="btn" id="finish" type="button">完成介面檢視</button></div></dialog>
+<script>
+'use strict';
+const read=document.getElementById('read-confirm'),next=document.getElementById('next'),review=document.getElementById('review'),result=document.getElementById('result');
+function setStep(confirming){document.getElementById('step-read').classList.toggle('active',!confirming);document.getElementById('step-review').classList.toggle('active',confirming);for(const id of ['step-read','step-review'])document.getElementById(id).removeAttribute('aria-current');document.getElementById(confirming?'step-review':'step-read').setAttribute('aria-current','step');}
+read.addEventListener('change',()=>{next.disabled=!read.checked;result.hidden=true;});
+next.addEventListener('click',()=>{if(!read.checked)return;setStep(true);review.showModal();document.getElementById('back').focus();});
+function back(){review.close();setStep(false);next.focus();}
+document.getElementById('back').addEventListener('click',back);review.addEventListener('cancel',event=>{event.preventDefault();back();});
+function end(message){if(review.open)review.close();read.checked=false;next.disabled=true;setStep(false);document.getElementById('stage').textContent='閱讀介面草稿';result.textContent=message;result.hidden=false;document.getElementById('page-heading').focus();}
+document.getElementById('cancel').addEventListener('click',()=>end('已取消閱讀操作，沒有建立任何同意或授權紀錄。'));
+document.getElementById('finish').addEventListener('click',()=>end('已完成本次介面檢視，沒有建立正式同意紀錄。'));
+</script>
+</body></html>

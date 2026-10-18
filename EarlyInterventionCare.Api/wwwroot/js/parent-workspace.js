@@ -126,7 +126,7 @@
     } else if(page==='consent'){
       content.innerHTML=`<div class="split"><section class="panel article"><h2>資料用途與可見範圍</h2><p>家長與教師提供的資料，供獲授權的醫療團隊作為評估參考。</p><ul><li>家長僅查看已綁定孩子的指定問卷與教師完成狀態。</li><li>教師僅填寫本次授權的指定問卷。</li><li>家長與教師提交後不能修改原始答案。</li><li>醫護若修改匯出的 Excel，不會覆蓋系統原始答案。</li></ul></section><section class="panel article"><h2>知情同意紀錄</h2><p>目前沒有正式同意紀錄可查詢。正式同意書內容、版本與取得方式，需要與團隊及院方確認。</p><span class="pill pending">尚未串接</span><p>本頁閱讀說明、勾選或建立教師授權，都不代表已完成正式知情同意。</p><button class="btn ghost" data-page="teacher">返回教師授權</button></section></div>`;
     } else {
-      content.innerHTML=`<div class="split"><section class="panel article"><h2>開始使用的四個步驟</h2><ol><li><strong>綁定孩子：</strong>首次使用醫護提供的邀請碼。</li><li><strong>完成指定問卷：</strong>醫護決定表單及版本，填寫途中可保存草稿。</li><li><strong>邀請老師：</strong>由已綁定家長提供指定教師問卷授權。</li><li><strong>確認完成進度：</strong>檢查家長問卷與教師問卷是否完成。</li></ol></section><section class="panel article"><h2>常見問題</h2><h3>沒有看到問卷？</h3><p>請先核對目前選擇的孩子，再與醫護確認是否已指派表單。</p><h3>提交後可以修改嗎？</h3><p>不能直接修改。如需補充資訊，請聯絡醫療團隊。</p><h3>邀請码無法使用？</h3><p>正式流程會核對有效期限、指定手機與使用狀態，請向原提供邀請的醫護確認。</p></section></div>`;
+      content.innerHTML=window.EarlyCareParentHelp.render();
     }
   }
   function navigate(next){page=next;render();document.querySelector('#content').scrollTop=0;document.querySelector('#page-title').focus({preventScroll:true});}

@@ -25,6 +25,7 @@
   logout.addEventListener('click',async () => {
     logout.disabled=true;
     try {
+      if(window.EarlyCareParentWorkspace&&!await window.EarlyCareParentWorkspace.beforeLogout())return;
       if (typeof authorizedMode !== 'undefined' && authorizedMode && typeof leaveAuthorizedWorkspace === 'function') {
         await leaveAuthorizedWorkspace();
         return;
