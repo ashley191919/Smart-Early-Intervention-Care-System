@@ -34,6 +34,12 @@
  window.addEventListener("beforeunload",event=>{if(accountFormDirty()){event.preventDefault();event.returnValue="";}});
  modal.addEventListener("cancel",event=>{event.preventDefault();closeAccountDialog();});
  window.EarlyCareParentWorkspace=Object.freeze({beforeLogout:closeAccountDialog});
+ // A history restore can reuse the old DOM without rerunning scripts or making requests.
+ window.addEventListener("pagehide",()=>{
+  loadGate.begin();renderGate.begin();clearData();root.replaceChildren();
+  if(modal.open)modal.close();document.querySelector("#modal-body").replaceChildren();
+ });
+ window.addEventListener("pageshow",event=>{if(event.persisted)load();});
  const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const statusNames = {NEW:"新個案",TO_CONTACT:"待聯絡",APPOINTED:"已預約",WAITING_FORM:"待填表",FORM_COMPLETED:"表單完成",COMPLETED:"已完成"};
  const relations = {FATHER:"父親",MOTHER:"母親",GRANDPARENT:"祖父母",RELATIVE:"其他親屬",GUARDIAN:"監護人",CAREGIVER:"照顧者",OTHER:"其他"};

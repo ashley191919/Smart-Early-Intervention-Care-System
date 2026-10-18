@@ -25,7 +25,11 @@ function blockUnavailableAccess(error){
   const link=document.createElement('a');link.className='btn';link.href='/?role=teacher';link.textContent='返回教師入口';
   panel.append(title,note,link);main.hidden=false;title.focus();$('session-label').textContent='授權無法使用';$('nav-count').textContent='—';return true;
 }
-if(authorizedMode)document.querySelector('.content').hidden=true;
+if(authorizedMode){
+  document.querySelector('.content').hidden=true;
+  window.addEventListener('pagehide',()=>{formOpenSequence++;document.querySelector('.content').hidden=true;});
+  window.addEventListener('pageshow',event=>{if(event.persisted)loadAssignedTask();});
+}
 const icon=name=>`<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
 let forms=[
  {id:'snap',title:'SNAP-IV 評量表',desc:'26 題 · 依過去一個星期的狀況填答 · 四個作答選項',options:['完全沒有','有一點點','還算不少','非常的多'],instructions:'請選擇一個代碼，最能表達在過去的一個星期中，您孩子的狀況。',source:'SNAP.pdf · James M. Swanson, PhD · Translated by Susan Shur-Fen Gau（高淑芬）, M.D., PhD',color:'',groups:{0:'第 1–9 題｜注意力不足',9:'第 10–18 題｜過動、衝動',18:'第 19–26 題｜反抗對立行為'},questions:[
@@ -260,6 +264,7 @@ async function loadAssignedTask(){
     if(!response.ok)throw new Error('unavailable');
     applyTask(await response.json());
   }catch{
+    accessBlocked=true;current=null;state=fresh();pendingSubmission=null;draftBusy=false;draftClient.records.clear();
     const main=document.querySelector('.content');main.replaceChildren();
     const panel=document.createElement('div');panel.className='panel help-card';
     const heading=document.createElement('h1');heading.textContent='無法取得填答任務';

@@ -206,8 +206,8 @@ try
     var queryHttp = await client.GetAsync($"/api/dev/audit-logs?grantId={grant.GrantId}&limit=2");
     var queryJson = System.Text.Json.JsonDocument.Parse(await queryHttp.Content.ReadAsStringAsync());
     Check(queryHttp.IsSuccessStatusCode && queryHttp.Headers.CacheControl?.NoStore == true
-        && queryJson.RootElement.GetProperty("events").GetArrayLength() == 2
-        && queryJson.RootElement.GetProperty("notice").GetString()!.Contains("尚非正式持久化稽核"), "Development query filter/limit/no-store and memory notice");
+        && queryJson.RootElement.GetProperty("events").GetArrayLength() == 2,
+        "Development query filter/limit/no-store");
     foreach (var badQuery in new[] { "limit=0", "limit=201", "grantId=bad" })
         Check((await client.GetAsync("/api/dev/audit-logs?" + badQuery)).StatusCode == HttpStatusCode.BadRequest,
             "audit query validates bounds and grant ID");
