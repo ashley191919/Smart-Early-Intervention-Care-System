@@ -46,7 +46,7 @@
  const taskNames = {PENDING:"待填寫",IN_PROGRESS:"填寫中",SUBMITTED:"已提交"};
  const labels = {home:["家長照顧儀表板","查看孩子資料與本次評估準備。"],children:["我的孩子","新增孩子時使用醫護提供的邀請碼。"],tasks:["我的問卷","查看醫護指定的家長問卷。"],teacher:["教師問卷完成進度","家長僅查看教師是否完成問卷。"],help:["使用協助","需要更正孩子資料時，請聯絡醫護人員。"],consent:["同意與資料使用","如需查閱同意紀錄，請聯絡承辦窗口。"]};
  function errorPanel(error) {
-  return `<section class="panel account-card" role="alert"><p>${esc(error.message)}</p><a class="btn secondary" href="/?role=parent&mode=account">返回家長登入</a><button class="btn secondary" data-action="reload-account">重新載入</button></section>`;
+  return `<section class="panel account-card" role="alert"><p>${esc(error.message)}</p><div class="actions"><a class="btn secondary" href="/?role=parent&mode=account">返回家長登入</a><button class="btn secondary" type="button" data-action="reload-account">重新載入</button></div></section>`;
  }
  function clearData() {
   loaded = false; children = []; profiles = []; select.replaceChildren(); select.disabled = true; count.textContent = "—"; bind.disabled = true;
