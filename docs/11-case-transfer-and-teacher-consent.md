@@ -54,3 +54,35 @@
 - 7／11／16 確認：登入渠道、帳號停用、JWT／Cookie 即時失效及共用權限。
 
 本輪僅完成交接與需求文件，不新增 Consent Entity、Migration、真實同意紀錄或正式授權 API。
+
+## 2026-10-19 教師授權／同意現況盤點
+
+此次依本分支程式重新核對，沒有修改共用核心、資料模型或權限。前面「登入渠道待確認」已由使用者決定家長採 Email OTP；其餘未決規則不能因前端畫面存在而視為定案。
+
+| 階段 | 程式現況 | 正式整合缺口／下一步 |
+| --- | --- | --- |
+| 家長登入及孩子資格 | Email Actor／Guardian Scope 已實作並隔離驗證；正式入口仍關閉 | 16 Migration／回填後驗收，不以展示資料當有效家長。 |
+| 查教師任務進度 | CasesController 的 GET `/api/parent/cases/{caseId}/teacher-completion` 只回 taskId、title、round、isCompleted | 保留最小揭露，不改成教師答案查詢。 |
+| 同意閱讀與確認 | 有獨立 prototype 與說明，沒有正式 Consent Entity／保存 API | 本文、版本、保存、撤回效力與 Grant 關聯待核定。閱讀／勾選不算已保存同意。 |
+| 家長建立教師 Grant | 展示頁可操作；Development Controller 有建立測試 Grant 的入口 | 尚無家長正式建立入口；11 接可信家長／指定任務／同意，16 配合共用儲存。不將 dev 建立入口直接改名使用。 |
+| 授權碼／連結／QR | 既有前端與 Grant／GrantTask 基礎存在 | 三種呈現須對應同一有效 Grant，不另建 FormAccessToken 或第二套任務。 |
+| 教師驗證及 Session | Development verify／task／logout 已存在 | 正式入口與 Cookie／CSRF／Session 撤銷規格需對齊 7／16；不移除 IsDevelopment 保護來開放正式資料。 |
+| 草稿／提交 | Development Draft／Submit／Receipt 呼叫共用 workflow，檢查 Session、Grant 及指定 task | 16 統整正式共用服務；11 專用 API 接身分與範圍。沿用 revision、Idempotency-Key，不複製保存核心。 |
+| 單份／全部完成 | 單份提交後有未完成任務則繼續；全部完成 Grant=USED，撤銷 Session 的填答資格 | 保留回執例外讀取，不能把「不能再填」解讀成刪除歷史答案。 |
+| Grant 撤銷 | dev revoke 與 workflow 已有處理 | 家長正式撤銷入口、角色資格及共同交易仍待整合；不可只在畫面改狀態。 |
+| 回執 | workflow 只回提交證明；全數完成後有最多 15 分鐘且不超過 Session 期限的讀取窗 | 不把回執當答案；正式規則由共用契約確認。 |
+
+### 狀態與未決事項
+
+- ACTIVE：僅有效 Session、Grant 及指定任務可讀寫；SUBMITTED 任務不再接受新答案。
+- USED：全部指定任務完成，停止新填答；依服務允許條件讀既有收據，不能產生新 Response。
+- REVOKED／Session 無效或逾期：停止後續讀寫。撤銷不刪除已提交答案。
+- Grant 的業務有效期間、Session 登入期限與收據讀取窗是不同概念；沿用目前既定行為，不擅自新增 Grant 到期規則。
+- 仍待共同決定：撤銷 Guardian 是否連動其教師 Grant、同意撤回影響範圍、正式 Cookie／CSRF／SessionVersion、作者欄位、交易擁有者與鎖定順序、新照顧者碰到既有草稿。
+- 家長 Task List 繼續沿用現有路由；Definition／Draft／Submit／OwnResponse 等待 16 固定服務／DTO。以上缺口不藉由另建保存 API 解決。
+
+### 取得穩定契約後的驗收順序（尚未完成正式驗收）
+
+有效家長與指定孩子 → 保存核定版本同意 → 只選該孩子的 TEACHER 任務建立 Grant → 教師驗證 → 草稿保存／版本衝突 → 單份完成仍可填其他任務 → 全數完成停止寫入 → 原收據可依規則查閱 → 撤銷後新存取拒絕 → 原答案與稽核紀錄保留。
+
+另外測錯碼、錯孩子／任務、重複提交、跨站寫入、帳號／Guardian 失效與撤銷／提交並發。這是後續驗收需求，不宣稱正式 Consent 或 MySQL 交易已完成。

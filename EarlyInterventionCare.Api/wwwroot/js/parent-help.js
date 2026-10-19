@@ -1,5 +1,5 @@
 "use strict";
-// Public, channel-neutral instructions. No identity, answers or consent is stored here.
+// Public Email-login instructions. No identity, answers or consent is stored here.
 (function (root) {
  const questions = [
   ["登入成功，為什麼還看不到孩子？", "登入驗證用來確認帳號身分；綁定則決定可以查看哪位孩子。第一次使用時，請登入後輸入醫護提供的一次性邀請碼。請勿用孩子姓名、生日或個案編號代替邀請碼。"],
@@ -13,7 +13,7 @@
   ["綁定或教師授權被撤銷後會怎樣？", "被撤銷後不能繼續使用原本的存取權限；已提交資料不會因此刪除。若需重新綁定或授權，請聯絡醫護或提供授權的家長；重新授權不代表可以修改原已提交答案。"]
  ];
  function render() {
-  return '<div class="parent-guide"><section class="panel article"><h2>登入與綁定是兩個步驟</h2><ol><li>依登入頁提供的方式完成身分驗證。</li><li>首次使用時，以醫護提供的邀請碼綁定孩子。</li><li>選擇孩子，查看醫護指派的問卷。</li><li>填寫、暫存並確認提交，再追蹤完成狀態。</li></ol></section><section class="panel article"><h2>常見問題</h2>' + questions.map(([title,body])=>`<details><summary>${title}</summary><p>${body}</p></details>`).join('') + '</section><section class="panel article"><h2>使用安全提醒</h2><p>驗證碼只用於本人登入。請勿公開邀請碼或教師授權連結，也不要在共用電腦保留登入狀態；離開時使用右上角選單登出。</p></section></div>';
+  return '<div class="parent-guide"><section class="panel article"><h2>登入與綁定是兩個步驟</h2><ol><li>使用電子郵件接收驗證碼，完成登入身分驗證。</li><li>首次使用時，以醫護提供的邀請碼綁定孩子；邀請指定信箱須與登入信箱相符。</li><li>選擇孩子，查看醫護指派的問卷。</li><li>填寫、暫存並確認提交，再追蹤完成狀態。</li></ol></section><section class="panel article"><h2>常見問題</h2>' + questions.map(([title,body])=>`<details><summary>${title}</summary><p>${body}</p></details>`).join('') + '</section><section class="panel article"><h2>使用安全提醒</h2><p>驗證碼只用於本人登入。請勿公開邀請碼或教師授權連結，也不要在共用電腦保留登入狀態；離開時使用右上角選單登出。</p></section></div>';
  }
  root.EarlyCareParentHelp = Object.freeze({render});
  document.querySelectorAll('[data-parent-help]').forEach(target=>target.innerHTML=render());

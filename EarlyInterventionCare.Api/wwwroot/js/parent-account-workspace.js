@@ -140,7 +140,7 @@
   const edit = event.target.closest("[data-edit-profile]");
   if (edit && loaded) {
    const profile = profiles.find(p => p.guardianId === edit.dataset.editProfile); if (!profile) return;
-   dialog("修改聯絡人姓名",`<form id="account-profile" data-guardian-id="${esc(profile.guardianId)}"><label for="profile-name">姓名</label><input class="account-input" id="profile-name" name="displayName" value="${esc(profile.displayName)}" maxlength="100" required><p>Email：${esc(profile.email)}</p><p>手機：${esc(profile.phone)}。如需變更手機，請聯絡醫護並重新驗證。</p><p class="account-error" role="alert" hidden></p><button class="btn" type="submit">儲存</button><button class="btn secondary" type="button" data-action="reload-account" hidden>重新載入最新資料</button></form>`);
+   dialog("修改聯絡人姓名",`<form id="account-profile" data-guardian-id="${esc(profile.guardianId)}"><label for="profile-name">姓名</label><input class="account-input" id="profile-name" name="displayName" value="${esc(profile.displayName)}" maxlength="100" required><p>Email：${esc(profile.email)}</p><p>手機：${esc(profile.phone)}。聯絡資料如需變更，請聯絡醫療團隊；更換登入信箱須重新核准與驗證。</p><p class="account-error" role="alert" hidden></p><button class="btn" type="submit">儲存</button><button class="btn secondary" type="button" data-action="reload-account" hidden>重新載入最新資料</button></form>`);
   }
  });
  document.addEventListener("submit", async event => {

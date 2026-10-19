@@ -9,3 +9,7 @@
 
 /* Per-task completion uses the shared workspace controls. */
 .teacher-task{padding:10px 0;border-bottom:1px solid var(--line)}.teacher-task:last-of-type{border-bottom:0}.teacher-task .teacher-status{margin:0 0 8px}.teacher-task .btn{max-width:100%}
+
+/* Long case identifiers must not set the mobile grid's intrinsic width. */
+.child-switch select{min-width:0;max-width:100%;width:100%}
+@media(max-width:800px){.child-switch{grid-template-columns:minmax(0,1fr) auto}.child-switch .text-button{white-space:nowrap}}
