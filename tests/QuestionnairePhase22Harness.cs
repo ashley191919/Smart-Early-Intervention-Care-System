@@ -243,10 +243,12 @@ await using (var db = new ApplicationDbContextFactory().CreateDbContext([]))
         var tables=new[]{"guardians","case_guardians","parent_binding_invitations"};
         Check(changes.OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.CreateTableOperation>().Select(o=>o.Name).Order().SequenceEqual(tables.Order()), "only declared Guardian tables added");
         Check(changes.All(o=> o is Microsoft.EntityFrameworkCore.Migrations.Operations.CreateTableOperation t && tables.Contains(t.Name)
-            || o is Microsoft.EntityFrameworkCore.Migrations.Operations.CreateIndexOperation ix && (tables.Contains(ix.Table)||ix.Table=="cases"&&ix.Columns.SequenceEqual(new[]{"organization_id"}))
-            || o is Microsoft.EntityFrameworkCore.Migrations.Operations.AddColumnOperation c && (c.Table=="cases"&&(c.Name=="organization_id"||c.Name=="revision"||c.Name=="national_id"||c.Name=="address")||c.Table=="users"&&c.Name=="phone_verified_at_utc")
+            || o is Microsoft.EntityFrameworkCore.Migrations.Operations.CreateIndexOperation ix && (tables.Contains(ix.Table)||ix.Table=="cases"&&ix.Columns.SequenceEqual(new[]{"organization_id"})||ix.Table=="users"&&ix.Name=="ix_users_normalized_email"&&!ix.IsUnique&&ix.Columns.SequenceEqual(new[]{"normalized_email"}))
+            || o is Microsoft.EntityFrameworkCore.Migrations.Operations.AddColumnOperation c && (c.Table=="cases"&&(c.Name=="organization_id"||c.Name=="revision"||c.Name=="national_id"||c.Name=="address")||c.Table=="users"&&new[]{"phone_verified_at_utc","email","normalized_email","email_verified_at_utc"}.Contains(c.Name))
             || o is Microsoft.EntityFrameworkCore.Migrations.Operations.AddForeignKeyOperation fk && fk.Table=="cases"&&fk.PrincipalTable=="organizations"&&fk.Columns.SequenceEqual(new[]{"organization_id"})), "schema handoff contains no questionnaire or undeclared changes");
-        Console.WriteLine("NOTE: Case/Guardian schema handoff is pending 16's migration. Default deployment check remains strict.");
+        Check(changes.OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.AddColumnOperation>().Where(c=>c.Table=="users"&&new[]{"email","normalized_email","email_verified_at_utc"}.Contains(c.Name)).Count()==3,"declared Email identity columns pending migration");
+        Check(changes.OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.CreateTableOperation>().Single(t=>t.Name=="parent_binding_invitations").Columns.Any(c=>c.Name=="target_email_normalized"&&c.IsNullable),"legacy phone invitations do not acquire Email authority by default");
+        Console.WriteLine("NOTE: Case/Guardian/Email schema handoff is pending 16's migration. Default deployment check remains strict.");
     }
     Check(db.Model.FindEntityType(typeof(QuestionnaireDraft))!.FindProperty("Revision")!.IsConcurrencyToken, "existing revision mapping preserved");
 }

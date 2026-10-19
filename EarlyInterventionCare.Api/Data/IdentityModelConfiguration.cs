@@ -28,6 +28,11 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasColumnType("varchar(255)").HasMaxLength(255).IsRequired();
         entity.Property(e => e.PhoneVerifiedAtUtc).HasColumnName("phone_verified_at_utc").HasColumnType("datetime(6)");
         entity.Property(e => e.Phone).HasColumnName("phone").HasColumnType("varchar(20)").HasMaxLength(20);
+        entity.Property(e => e.Email).HasColumnName("email").HasColumnType("varchar(254)").HasMaxLength(254);
+        entity.Property(e => e.NormalizedEmail).HasColumnName("normalized_email").HasColumnType("varchar(254)").HasMaxLength(254).UseCollation("utf8mb4_bin");
+        entity.Property(e => e.EmailVerifiedAtUtc).HasColumnName("email_verified_at_utc").HasColumnType("datetime(6)");
+        // Lookup only: ambiguous approved parent accounts fail closed at login.
+        entity.HasIndex(e => e.NormalizedEmail).HasDatabaseName("ix_users_normalized_email");
         entity.Property(e => e.Status).HasColumnName("status").HasColumnType("varchar(20)").HasMaxLength(20).HasDefaultValue("ACTIVE").IsRequired();
         entity.Property(e => e.LastLoginAtUtc).HasColumnName("last_login_at_utc").HasColumnType("datetime(6)");
         entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc").HasColumnType("datetime(6)").IsRequired();

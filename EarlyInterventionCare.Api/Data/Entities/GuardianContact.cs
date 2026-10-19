@@ -30,6 +30,8 @@ public sealed class ParentBindingInvitation
     public Guid GuardianId { get; set; }
     public string CodeHash { get; set; } = "";
     public string TargetPhone { get; set; } = "";
+    // Null on legacy phone invitations: never infer a verified email from them.
+    public string? TargetEmailNormalized { get; set; }
     public Guid IssuedByUserId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? ExpiresAtUtc { get; set; }

@@ -45,7 +45,8 @@ var clock=new Clock();var access=new CaseAccessService(db);var service=new CaseG
 var org=new Organization{Id=Guid.NewGuid(),Code="TEST",Name="Test",Status="ACTIVE"};var otherOrg=new Organization{Id=Guid.NewGuid(),Code="OTHER",Name="Other",Status="ACTIVE"};db.Organizations.AddRange(org,otherOrg);await db.SaveChangesAsync();
 async Task<CaseActor> Account(string role,string name,string phone,bool verified,Guid organization)
 {
- var r=await db.Roles.SingleAsync(x=>x.Name==role);var u=new User{Id=Guid.NewGuid(),RoleId=r.Id,OrganizationId=organization,Username=name,Phone=phone,PhoneVerifiedAtUtc=verified?clock.GetUtcNow().UtcDateTime:null,PasswordHash="test-only-not-a-password"};db.Users.Add(u);await db.SaveChangesAsync();return await access.ActorAsync(Principal(u.Id));
+ var email=name=="parent"?"guardian@example.invalid":name+"@example.invalid";
+ var r=await db.Roles.SingleAsync(x=>x.Name==role);var u=new User{Id=Guid.NewGuid(),RoleId=r.Id,OrganizationId=organization,Username=name,Phone=phone,Email=email,NormalizedEmail=email,EmailVerifiedAtUtc=verified?clock.GetUtcNow().UtcDateTime:null,PasswordHash="test-only-not-a-password"};db.Users.Add(u);await db.SaveChangesAsync();return await access.ActorAsync(Principal(u.Id));
 }
 ClaimsPrincipal Principal(Guid id)=>new(new ClaimsIdentity(new[]{new Claim("userId",id.ToString()),new Claim("role","ADMIN")},"test"));
 var staff=await Account("CASE_MANAGER","staff","0900000000",false,org.Id);var parent=await Account("PARENT","parent","0911111111",true,org.Id);var wrong=await Account("PARENT","wrong","0922222222",true,org.Id);var unverified=await Account("PARENT","unverified","0933333333",false,org.Id);var outsider=await Account("CASE_MANAGER","outsider","0944444444",false,otherOrg.Id);
@@ -64,13 +65,18 @@ var g=await service.AddGuardianAsync(staff,c.CaseId,new GuardianInput{Email="gua
 await Error(async()=>{await service.AddGuardianAsync(staff,c.CaseId,new GuardianInput{Email="second@example.invalid",DisplayName="第二位",Phone="0999999999",Relationship="OTHER"});},"PRIMARY_CONTACT_EXISTS");
 await Error(async()=>{await service.AddGuardianAsync(staff,c.CaseId,new GuardianInput{DisplayName="缺Email",Phone="0999999999",Relationship="OTHER"});},"INVALID_EMAIL");
 var invite=await service.InviteAsync(staff,c.CaseId,g.GuardianId);Check(invite.Code.Length==32,"128-bit invitation");Check((await db.ParentBindingInvitations.AsNoTracking().SingleAsync()).CodeHash!=invite.Code,"hash only storage");
-await Error(async()=>{await service.BindAsync(unverified,invite.Code);},"PHONE_VERIFICATION_REQUIRED");await Error(async()=>{await service.BindAsync(wrong,invite.Code);},"INVITATION_UNAVAILABLE");Check((await db.ParentBindingInvitations.AsNoTracking().SingleAsync()).ConsumedAtUtc==null,"wrong phone does not consume");
+Check((await db.ParentBindingInvitations.AsNoTracking().SingleAsync()).TargetEmailNormalized=="guardian@example.invalid","invitation bound to normalized email");
+await db.ParentBindingInvitations.Where(i=>i.InvitationId==invite.InvitationId).ExecuteUpdateAsync(s=>s.SetProperty(i=>i.TargetEmailNormalized,(string?)null));
+await Error(async()=>{await service.BindAsync(parent,invite.Code);},"INVITATION_UNAVAILABLE");
+await db.ParentBindingInvitations.Where(i=>i.InvitationId==invite.InvitationId).ExecuteUpdateAsync(s=>s.SetProperty(i=>i.TargetEmailNormalized,"guardian@example.invalid"));
+Check(parent.EmailVerified&&!parent.PhoneVerified,"Email scope does not require phone verification");
+await Error(async()=>{await service.BindAsync(unverified,invite.Code);},"EMAIL_VERIFICATION_REQUIRED");await Error(async()=>{await service.BindAsync(wrong,invite.Code);},"INVITATION_UNAVAILABLE");Check((await db.ParentBindingInvitations.AsNoTracking().SingleAsync()).ConsumedAtUtc==null,"wrong email does not consume");
 await service.BindAsync(parent,invite.Code);Check((await service.ListAsync(parent)).Single().CaseId==c.CaseId,"bound child list");
 var ownRelations=(await service.ParentCasesAsync(parent)).Single().Relationships;Check(ownRelations.Count==1&&ownRelations[0].Relationship=="MOTHER"&&ownRelations[0].IsPrimaryContact,"parent own relation and primary contact");
 Check((await service.ParentCasesAsync(wrong)).Count==0,"unbound parent has no relation data");await Error(async()=>{await service.BindAsync(parent,invite.Code);},"INVITATION_UNAVAILABLE");Check((await db.ParentBindingInvitations.AsNoTracking().SingleAsync()).ConsumedByUserId==parent.UserId,"consumed with account");
 var profile=(await service.ProfilesAsync(parent)).Single();await service.UpdateProfileAsync(parent,profile.GuardianId,new ProfileInput{DisplayName="家長新姓名",Revision=profile.Revision});Check((await service.ProfilesAsync(parent)).Single().DisplayName=="家長新姓名","own contact update");
 var medicalProfile=(await service.GuardiansAsync(staff,c.CaseId)).Single();
-await Error(async()=>{await service.UpdateGuardianAsync(staff,c.CaseId,g.GuardianId,new GuardianUpdateInput{Email="guardian@example.invalid",DisplayName="家長",Phone="0999999999",Relationship="MOTHER",Revision=medicalProfile.Revision});},"PHONE_CHANGE_REQUIRES_REVERIFICATION");
+await Error(async()=>{await service.UpdateGuardianAsync(staff,c.CaseId,g.GuardianId,new GuardianUpdateInput{Email="changed@example.invalid",DisplayName="家長",Phone=parent.Phone!,Relationship="MOTHER",Revision=medicalProfile.Revision});},"EMAIL_CHANGE_REQUIRES_REVERIFICATION");
 await service.UpdateGuardianAsync(staff,c.CaseId,g.GuardianId,new GuardianUpdateInput{Email="guardian@example.invalid",DisplayName="醫護確認姓名",Phone=parent.Phone!,Relationship="GUARDIAN",Revision=medicalProfile.Revision});Check((await service.GuardiansAsync(staff,c.CaseId)).Single().Relationship=="GUARDIAN","medical guardian update");
 await Error(async()=>{await service.UpdateGuardianAsync(staff,c.CaseId,g.GuardianId,new GuardianUpdateInput{Email="guardian@example.invalid",DisplayName="舊版",Phone=parent.Phone!,Relationship="GUARDIAN",Revision=medicalProfile.Revision});},"REVISION_CONFLICT");
 await Error(async()=>{await service.UpdateProfileAsync(wrong,g.GuardianId,new ProfileInput{DisplayName="越權",Revision=0});},"PROFILE_NOT_FOUND");
@@ -223,8 +229,8 @@ await using(var jwtApp=jwtBuilder.Build())
  Check((await db.Users.AsNoTracking().SingleAsync(u=>u.Id==otpParent.UserId)).PhoneVerifiedAtUtc.HasValue,"provider proof updates verified timestamp");
  Check((await jwtClient.PostAsync("/api/parent/auth/otp/verify",new StringContent(JsonSerializer.Serialize(new{challengeId=challenge.ChallengeId,code="654321"}),System.Text.Encoding.UTF8,"application/json"))).StatusCode==HttpStatusCode.Unauthorized,"provider single-use proof cannot replay");
  jwtClient.DefaultRequestHeaders.Authorization=new("Bearer",login.AccessToken);
- Check((await jwtClient.GetAsync("/api/parent/cases")).IsSuccessStatusCode,"OTP-issued JWT passes real HTTP signature validation");
- Check(await (await jwtClient.GetAsync("/api/parent/cases")).Content.ReadAsStringAsync()=="[]","phone verification does not auto-bind any child");
+ Check((await jwtClient.GetAsync("/api/parent/cases")).StatusCode==HttpStatusCode.Forbidden,"legacy phone OTP cannot grant Email scope");
+ Check((await db.Users.AsNoTracking().SingleAsync(u=>u.Id==otpParent.UserId)).EmailVerifiedAtUtc is null,"phone proof cannot mark Email verified");
  jwtClient.DefaultRequestHeaders.Authorization=null;
  var parentToken=tokens.CreateToken(parent.UserId,"test-parent","ADMIN").AccessToken; // forged role cannot overrule DB
  jwtClient.DefaultRequestHeaders.Authorization=new("Bearer",parentToken);
@@ -249,6 +255,45 @@ await using(var jwtApp=jwtBuilder.Build())
  await db.Users.Where(u=>u.Id==parent.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Status,"ACTIVE"));
  await jwtApp.StopAsync();
 }
+// Email proof must select an approved account, never infer a child or organization.
+var emailMail=new EmailTestSender();
+var emailVerification=new EarlyInterventionCare.Api.Services.Email.ParentEmailVerification(emailMail,clock);
+var emailLogin=new EarlyInterventionCare.Api.Services.Authentication.ParentEmailAuthenticationService(db,emailVerification,tokens,clock);
+async Task<EarlyInterventionCare.Api.Services.Authentication.ParentOtpLoginResponse> EmailLogin(string email)
+{
+ var proof=await emailLogin.RequestAsync(email);return await emailLogin.VerifyAsync(proof.ChallengeId,emailMail.Code);
+}
+var emailProof=await emailLogin.RequestAsync("OTP-PARENT@EXAMPLE.INVALID");
+var emailCode=emailMail.Code;
+await Error(async()=>{await emailLogin.VerifyAsync(emailProof.ChallengeId,"invalid");},"OTP_INVALID");
+var emailResult=await emailLogin.VerifyAsync(emailProof.ChallengeId,emailCode);
+Check(emailResult.UserId==otpParent.UserId&&emailResult.Role=="PARENT"&&!string.IsNullOrEmpty(emailResult.AccessToken),"Email proof issues JWT for approved account only");
+var emailAccount=await db.Users.AsNoTracking().SingleAsync(u=>u.Id==otpParent.UserId);
+Check(emailAccount.EmailVerifiedAtUtc.HasValue,"Email proof updates EmailVerifiedAtUtc");
+var emailActor=await access.ActorAsync(Principal(otpParent.UserId));
+Check(emailActor.EmailVerified&&(await service.ParentCasesAsync(emailActor)).Count==0,"Email verification does not auto-bind children");
+await Error(async()=>{await emailLogin.VerifyAsync(emailProof.ChallengeId,emailCode);},"OTP_INVALID");
+await Error(async()=>{await EmailLogin("unknown@example.invalid");},"PARENT_ACCOUNT_NOT_READY");
+Check(!await db.Users.AnyAsync(u=>u.NormalizedEmail=="unknown@example.invalid"),"unknown Email never creates account");
+await Error(async()=>{await EmailLogin("staff@example.invalid");},"PARENT_ACCOUNT_NOT_READY");
+await db.Users.Where(u=>u.Id==wrong.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Status,"DISABLED"));
+await Error(async()=>{await EmailLogin("wrong@example.invalid");},"PARENT_ACCOUNT_NOT_READY");
+await db.Users.Where(u=>u.Id==wrong.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Status,"ACTIVE"));
+await db.Organizations.Where(o=>o.Id==org.Id).ExecuteUpdateAsync(s=>s.SetProperty(o=>o.Status,"DISABLED"));
+await Error(async()=>{await EmailLogin("unverified@example.invalid");},"PARENT_ACCOUNT_NOT_READY");
+await db.Organizations.Where(o=>o.Id==org.Id).ExecuteUpdateAsync(s=>s.SetProperty(o=>o.Status,"ACTIVE"));
+var ambiguous=await Account("PARENT","ambiguous","0988888888",false,otherOrg.Id);
+await db.Users.Where(u=>u.Id==ambiguous.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Email,"guardian@example.invalid").SetProperty(u=>u.NormalizedEmail,"guardian@example.invalid"));
+await Error(async()=>{await EmailLogin("guardian@example.invalid");},"PARENT_ACCOUNT_NOT_READY");
+await db.Users.Where(u=>u.Id==ambiguous.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Email,"ambiguous@example.invalid").SetProperty(u=>u.NormalizedEmail,"ambiguous@example.invalid"));
+await db.Users.Where(u=>u.Id==unverified.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.PhoneVerifiedAtUtc,clock.GetUtcNow().UtcDateTime));
+var phoneOnlyActor=await access.ActorAsync(Principal(unverified.UserId));
+Check(phoneOnlyActor.PhoneVerified&&!phoneOnlyActor.EmailVerified,"phone proof never grants Email verification");
+await Error(async()=>{await service.ParentCasesAsync(phoneOnlyActor);},"EMAIL_VERIFICATION_REQUIRED");
+await db.Users.Where(u=>u.Id==parent.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Email,"changed@example.invalid"));
+Check(!(await access.ActorAsync(Principal(parent.UserId))).EmailVerified,"mismatched login email invalidates scope");
+await db.Users.Where(u=>u.Id==parent.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Email,"guardian@example.invalid"));
+
 // Two independent relational contexts redeem the same code; only one succeeds.
 var raceCase=await service.CreateAsync(staff,new CaseInput{NationalId="A123456789",Address="測試地址",ChildName="競爭綁定",BirthDate=new(2020,1,1)});
 var raceGuardian=await service.LinkGuardianAsync(staff,raceCase.CaseId,g.GuardianId,new GuardianLinkInput{Relationship="GUARDIAN"});var raceInvite=await service.InviteAsync(staff,raceCase.CaseId,raceGuardian.GuardianId);
@@ -262,8 +307,14 @@ try{
 var principal=Principal(parent.UserId);await db.Users.Where(u=>u.Id==parent.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Status,"DISABLED"));await Error(async()=>{await access.ActorAsync(principal);},"UNAUTHENTICATED");
 await using var mysql=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseMySql("Server=localhost;Database=offline;User=x;Password=x",new MySqlServerVersion(new Version(8,4,11))).Options);
 Check(mysql.Model.FindEntityType(typeof(CaseGuardian))!.FindPrimaryKey()!.Properties.Count==2,"production composite key");Check(mysql.Model.FindEntityType(typeof(ParentBindingInvitation))!.GetIndexes().Any(i=>i.IsUnique),"production unique hash");Check(mysql.Model.GetEntityTypes().SelectMany(e=>e.GetForeignKeys()).All(f=>f.DeleteBehavior==DeleteBehavior.Restrict),"restricted deletes");
-Console.WriteLine($"PASS: {checks} relational Case/Guardian checks; scope, binding/replay/expiry/revoke, profile revision, teacher privacy, multi-child and disabled account. MySQL mapping inspected; no real DB migration performed.");
+Console.WriteLine($"PASS: {checks} relational Case/Guardian/Email checks; account proof, scope, binding/replay/expiry/revoke, profile revision, teacher privacy, multi-child and disabled account. MySQL mapping inspected; no real DB migration performed.");
 sealed class Clock:TimeProvider{DateTimeOffset now=new(2026,10,13,0,0,0,TimeSpan.Zero);public override DateTimeOffset GetUtcNow()=>now;public void Advance(TimeSpan duration)=>now+=duration;}
+
+sealed class EmailTestSender:EarlyInterventionCare.Api.Services.Email.IParentEmailSender
+{
+ public string Code="";
+ public Task SendCodeAsync(string email,string code,int validMinutes,CancellationToken ct=default){Code=code;return Task.CompletedTask;}
+}
 
 // Provider double exists solely inside this executable; never registered by the application.
 sealed class TestSms:EarlyInterventionCare.Api.Services.Authentication.IParentSmsVerification

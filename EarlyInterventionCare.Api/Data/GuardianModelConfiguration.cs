@@ -51,6 +51,7 @@ internal sealed class BindingInvitationConfiguration : IEntityTypeConfiguration<
         IdentityMapping.Table(e, "parent_binding_invitations"); e.HasKey(x => x.InvitationId);
         e.Property(x => x.CodeHash).HasMaxLength(64).IsRequired(); e.HasIndex(x => x.CodeHash).IsUnique();
         e.Property(x => x.TargetPhone).HasMaxLength(20).IsRequired();
+        e.Property(x => x.TargetEmailNormalized).HasMaxLength(254).UseCollation("utf8mb4_bin");
         e.HasOne<CaseGuardian>().WithMany().HasForeignKey(x => new { x.CaseId, x.GuardianId }).OnDelete(DeleteBehavior.Restrict);
         e.HasOne<User>().WithMany().HasForeignKey(x => x.IssuedByUserId).OnDelete(DeleteBehavior.Restrict);
         e.HasOne<User>().WithMany().HasForeignKey(x => x.ConsumedByUserId).OnDelete(DeleteBehavior.Restrict);

@@ -4,6 +4,7 @@ using EarlyInterventionCare.Api.Data;
 using EarlyInterventionCare.Api.Data.Entities;
 using EarlyInterventionCare.Api.DTOs.Cases;
 using Microsoft.EntityFrameworkCore;
+using EarlyInterventionCare.Api.Services.Email;
 namespace EarlyInterventionCare.Api.Services.Cases;
 public sealed class CaseGuardianService(ApplicationDbContext db, CaseAccessService access, TimeProvider clock)
 {
@@ -60,9 +61,7 @@ public sealed class CaseGuardianService(ApplicationDbContext db, CaseAccessServi
     }
     static string Email(string? value)
     {
-        var email = (value ?? "").Trim();
-        if (email.Length is < 1 or > 254 || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email)) throw new CaseAccessException("INVALID_EMAIL", 400, "Email 為必填，請確認格式。");
-        return email;
+        return EmailAddressIdentity.LookupKey(value);
     }
     static void Relationship(string value)
     {
@@ -108,12 +107,12 @@ public sealed class CaseGuardianService(ApplicationDbContext db, CaseAccessServi
         if (input.IsPrimaryContact && await db.CaseGuardians.AnyAsync(l => l.CaseId == caseId && l.GuardianId != guardianId && l.LinkStatus == "ACTIVE" && l.IsPrimaryContact, ct)) throw new CaseAccessException("PRIMARY_CONTACT_EXISTS", 409, "此孩子已有主要聯絡人。");
         var phone = NormalizePhone(input.Phone); var name = Name(input.DisplayName); var email = Email(input.Email);
         if (await db.Guardians.AnyAsync(x => x.OrganizationId == actor.OrganizationId && x.Phone == phone && x.GuardianId != guardianId, ct)) throw new CaseAccessException("CONTACT_ALREADY_EXISTS", 409, "此手機已有聯絡資料，請選擇既有照顧者共用。");
-        if (phone != g.Phone && g.ParentUserId != null) throw new CaseAccessException("PHONE_CHANGE_REQUIRES_REVERIFICATION", 409, "已綁定帳號的手機變更需要重新驗證。");
+        if (email != Email(g.Email) && g.ParentUserId != null) throw new CaseAccessException("EMAIL_CHANGE_REQUIRES_REVERIFICATION", 409, "已綁定照顧者的電子郵件變更需要重新核准與驗證。");
         if (input.Relationship is not ("FATHER" or "MOTHER" or "GRANDPARENT" or "RELATIVE" or "GUARDIAN" or "CAREGIVER" or "OTHER")) throw new CaseAccessException("INVALID_RELATIONSHIP", 400, "請選擇照顧者關係。");
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         if (await db.Guardians.Where(x => x.GuardianId == guardianId && x.Revision == input.Revision).ExecuteUpdateAsync(s => s.SetProperty(x => x.DisplayName, name).SetProperty(x => x.Phone, phone).SetProperty(x => x.Email, email).SetProperty(x => x.UpdatedAtUtc, Now).SetProperty(x => x.Revision, x => x.Revision + 1), ct) != 1) throw new CaseAccessException("REVISION_CONFLICT", 409, "資料已更新，請重新載入。");
         if (await db.CaseGuardians.Where(l => l.CaseId == caseId && l.GuardianId == guardianId && l.LinkStatus == "ACTIVE").ExecuteUpdateAsync(s => s.SetProperty(l => l.Relationship, input.Relationship).SetProperty(l => l.IsPrimaryContact, input.IsPrimaryContact), ct) != 1) throw new CaseAccessException("LINK_NOT_FOUND", 404, "找不到有效綁定。");
-        if (phone != g.Phone) await db.ParentBindingInvitations.Where(i => i.GuardianId == guardianId && i.ConsumedAtUtc == null && i.RevokedAtUtc == null).ExecuteUpdateAsync(s => s.SetProperty(i => i.RevokedAtUtc, Now), ct);
+        if (email != Email(g.Email)) await db.ParentBindingInvitations.Where(i => i.GuardianId == guardianId && i.ConsumedAtUtc == null && i.RevokedAtUtc == null).ExecuteUpdateAsync(s => s.SetProperty(i => i.RevokedAtUtc, Now), ct);
         await tx.CommitAsync(ct);
     }
     public async Task<IReadOnlyList<GuardianDto>> GuardiansAsync(CaseActor actor, Guid caseId, CancellationToken ct = default)
@@ -129,7 +128,7 @@ public sealed class CaseGuardianService(ApplicationDbContext db, CaseAccessServi
         if (g == null) throw new CaseAccessException("GUARDIAN_NOT_FOUND", 404, "找不到照顧者。");
         if (await db.CaseGuardians.AnyAsync(l => l.CaseId == caseId && l.GuardianId == guardianId && l.BoundAtUtc != null, ct)) throw new CaseAccessException("ALREADY_BOUND", 409, "此個案已完成綁定。");
         var code = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
-        var i = new ParentBindingInvitation { InvitationId = Guid.NewGuid(), CaseId = caseId, GuardianId = guardianId, TargetPhone = g.Phone, CodeHash = Hash(code), IssuedByUserId = actor.UserId, CreatedAtUtc = Now, ExpiresAtUtc = null };
+        var i = new ParentBindingInvitation { InvitationId = Guid.NewGuid(), CaseId = caseId, GuardianId = guardianId, TargetPhone = g.Phone, TargetEmailNormalized = Email(g.Email), CodeHash = Hash(code), IssuedByUserId = actor.UserId, CreatedAtUtc = Now, ExpiresAtUtc = null };
         db.ParentBindingInvitations.Add(i); await db.SaveChangesAsync(ct); return (i.InvitationId, code, null);
     }
     public async Task RevokeInviteAsync(CaseActor actor, Guid id, CancellationToken ct = default)
@@ -149,15 +148,18 @@ public sealed class CaseGuardianService(ApplicationDbContext db, CaseAccessServi
     }
     public async Task<CaseDto> BindAsync(CaseActor actor, string code, CancellationToken ct = default)
     {
-        CaseAccessService.Parent(actor); var phone = NormalizePhone(actor.Phone ?? "");
+        CaseAccessService.Parent(actor); var email = Email(actor.Email);
         var hash = Hash(code); var now = Now;
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        var i = await db.ParentBindingInvitations.AsNoTracking().SingleOrDefaultAsync(x => x.CodeHash == hash && x.ConsumedAtUtc == null && x.RevokedAtUtc == null && (x.ExpiresAtUtc == null || x.ExpiresAtUtc > now) && x.TargetPhone == phone, ct);
+        var i = await db.ParentBindingInvitations.AsNoTracking().SingleOrDefaultAsync(x => x.CodeHash == hash && x.ConsumedAtUtc == null && x.RevokedAtUtc == null && (x.ExpiresAtUtc == null || x.ExpiresAtUtc > now) && x.TargetEmailNormalized == email, ct);
         if (i == null) throw new CaseAccessException("INVITATION_UNAVAILABLE", 400, "邀請碼無法使用，請與醫護確認。");
-        var valid = await (from l in db.CaseGuardians join g in db.Guardians on l.GuardianId equals g.GuardianId join c in db.Cases on l.CaseId equals c.CaseId where l.CaseId == i.CaseId && l.GuardianId == i.GuardianId && l.LinkStatus == "ACTIVE" && l.BoundAtUtc == null && c.OrganizationId == actor.OrganizationId && g.OrganizationId == actor.OrganizationId && g.Phone == phone && (g.ParentUserId == null || g.ParentUserId == actor.UserId) select l).AnyAsync(ct);
+        var valid = await (from l in db.CaseGuardians join g in db.Guardians on l.GuardianId equals g.GuardianId join c in db.Cases on l.CaseId equals c.CaseId where l.CaseId == i.CaseId && l.GuardianId == i.GuardianId && l.LinkStatus == "ACTIVE" && l.BoundAtUtc == null && c.OrganizationId == actor.OrganizationId && g.OrganizationId == actor.OrganizationId && g.Email == email && (g.ParentUserId == null || g.ParentUserId == actor.UserId) select l).AnyAsync(ct);
         if (!valid) throw new CaseAccessException("INVITATION_UNAVAILABLE", 400, "邀請碼無法使用，請與醫護確認。");
-        var consumed = await db.ParentBindingInvitations.Where(x => x.InvitationId == i.InvitationId && x.ConsumedAtUtc == null && x.RevokedAtUtc == null && (x.ExpiresAtUtc == null || x.ExpiresAtUtc > now)).ExecuteUpdateAsync(s => s.SetProperty(x => x.ConsumedAtUtc, now).SetProperty(x => x.ConsumedByUserId, actor.UserId), ct);
-        var bound = await db.Guardians.Where(g => g.GuardianId == i.GuardianId && (g.ParentUserId == null || g.ParentUserId == actor.UserId)).ExecuteUpdateAsync(s => s.SetProperty(g => g.ParentUserId, actor.UserId).SetProperty(g => g.UpdatedAtUtc, now).SetProperty(g => g.Revision, g => g.Revision + 1), ct);
+        var consumed = await db.ParentBindingInvitations.Where(x => x.InvitationId == i.InvitationId && x.ConsumedAtUtc == null && x.RevokedAtUtc == null && (x.ExpiresAtUtc == null || x.ExpiresAtUtc > now)
+            && db.Users.Any(u => u.Id == actor.UserId && u.NormalizedEmail == email && u.EmailVerifiedAtUtc != null && u.Status == "ACTIVE" && u.OrganizationId == actor.OrganizationId
+                && db.Roles.Any(r => r.Id == u.RoleId && r.Name == "PARENT") && db.Organizations.Any(o => o.Id == u.OrganizationId && o.Status == "ACTIVE")))
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.ConsumedAtUtc, now).SetProperty(x => x.ConsumedByUserId, actor.UserId), ct);
+        var bound = await db.Guardians.Where(g => g.GuardianId == i.GuardianId && g.Email == email && (g.ParentUserId == null || g.ParentUserId == actor.UserId)).ExecuteUpdateAsync(s => s.SetProperty(g => g.ParentUserId, actor.UserId).SetProperty(g => g.UpdatedAtUtc, now).SetProperty(g => g.Revision, g => g.Revision + 1), ct);
         var linked = await db.CaseGuardians.Where(l => l.CaseId == i.CaseId && l.GuardianId == i.GuardianId && l.LinkStatus == "ACTIVE" && l.BoundAtUtc == null).ExecuteUpdateAsync(s => s.SetProperty(l => l.BoundAtUtc, now), ct);
         if (consumed != 1 || bound != 1 || linked != 1) throw new CaseAccessException("INVITATION_UNAVAILABLE", 409, "邀請碼已使用，請重新確認。");
         await tx.CommitAsync(ct); return Dto(await ReadAsync(actor, i.CaseId, ct));

@@ -42,3 +42,12 @@
 - 使用者確認尚未申請SMS，先完成架構及介接。正式 /?role=parent&mode=account 使用後端OTP API，預設簡訊adapter回503，不回退瀏覽器示範碼、不寫已驗證手機或發假JWT。
 - OTP provider驗證回傳的手機才是可信來源；verify不得接受前端指定userId/organizationId。首次家長帳號及院所歸屬尚未定案，保持阻擋。
 - 多位照顧者可以並存，active_case_id唯一索引僅限制ACTIVE且is_primary_contact=1的主要聯絡人。
+
+## 家長 Email 登入改版（2026-10-19，使用者最新指示）
+
+- 家長登入改為 Email 驗證碼，取代先前 SMS 計畫；手機仍可作聯絡資料，不把 Email 驗證當作手機已驗證。
+- 使用者已確認 Gmail SMTP TLS／登入與自己收信測試通過。應用程式密碼只存本機 User Secrets，不讀出、顯示或提交 Git。
+- 已有寄信元件與單程序 Email OTP 核心；五分鐘、六十秒重寄、五次錯誤、一次性消耗，網站重啟失效。目前沒有公開 Email 登入 API；家長權限／綁定模型已改用 Email，需 16 Migration 後才能在真實資料庫啟用。
+- 接續須一併確認 User 登入信箱、EmailVerifiedAtUtc、首次帳號／院所、Guardian 邀請及舊手機邀請處理。共用部署／多程序需共享 OTP 狀態。模型改動交 16 統整 Migration；不得藉由停用 Scope 檢查來放行。
+- 新增 User.Email／NormalizedEmail／EmailVerifiedAtUtc 及 invitation.TargetEmailNormalized，保留既有手機欄位。帳號信箱採大小寫不敏感查找，不合併點號／加號別名；重複家長信箱（含跨院所）先拒絕，不猜帳號或院所。改登入信箱時必須清除驗證時間再重新驗證。
+- 舊手機邀請的 TargetEmailNormalized=NULL 時不能兌換；由醫護核對信箱後明確撤銷／重新發行，不從 TargetPhone 或 Guardian 聯絡信箱自動回填可信身分。既有綁定只在可信家長帳號 Email 驗證後恢復 scope，不轉移作者或孩子權限。
