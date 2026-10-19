@@ -148,6 +148,66 @@ namespace EarlyInterventionCare.Api.Data.Migrations
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_unicode_ci");
                 });
 
+            modelBuilder.Entity("EarlyInterventionCare.Api.Data.Entities.CaseStatusHistory", b =>
+                {
+                    b.Property<Guid>("HistoryId")
+                        .HasColumnType("char(36)")
+                        .HasColumnName("history_id")
+                        .UseCollation("ascii_bin");
+
+                    MySqlPropertyBuilderExtensions.HasCharSet(b.Property<Guid>("HistoryId"), "ascii");
+
+                    b.Property<Guid>("CaseId")
+                        .HasColumnType("char(36)")
+                        .HasColumnName("case_id")
+                        .UseCollation("ascii_bin");
+
+                    MySqlPropertyBuilderExtensions.HasCharSet(b.Property<Guid>("CaseId"), "ascii");
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<Guid?>("ChangedByUserId")
+                        .HasColumnType("char(36)")
+                        .HasColumnName("changed_by_user_id")
+                        .UseCollation("ascii_bin");
+
+                    MySqlPropertyBuilderExtensions.HasCharSet(b.Property<Guid?>("ChangedByUserId"), "ascii");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasColumnType("ENUM('NEW', 'TO_CONTACT', 'APPOINTED', 'WAITING_FORM', 'FORM_COMPLETED', 'COMPLETED')")
+                        .HasColumnName("new_status");
+
+                    b.Property<string>("OldStatus")
+                        .IsRequired()
+                        .HasColumnType("ENUM('NEW', 'TO_CONTACT', 'APPOINTED', 'WAITING_FORM', 'FORM_COMPLETED', 'COMPLETED')")
+                        .HasColumnName("old_status");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("TriggerSource")
+                        .IsRequired()
+                        .HasColumnType("ENUM('MANUAL', 'QUESTIONNAIRE_COMPLETION', 'SYSTEM_WORKFLOW')")
+                        .HasColumnName("trigger_source");
+
+                    b.HasKey("HistoryId");
+
+                    b.HasIndex("ChangedByUserId")
+                        .HasDatabaseName("ix_case_status_histories_changed_by_user");
+
+                    b.HasIndex("CaseId", "ChangedAtUtc", "HistoryId")
+                        .HasDatabaseName("ix_case_status_histories_case_time");
+
+                    b.ToTable("case_status_histories", (string)null);
+
+                    MySqlEntityTypeBuilderExtensions.HasCharSet(b, "utf8mb4");
+                    MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_unicode_ci");
+                });
+
             modelBuilder.Entity("EarlyInterventionCare.Api.Data.Entities.Questionnaire", b =>
                 {
                     b.Property<Guid>("QuestionnaireId")
@@ -911,6 +971,24 @@ namespace EarlyInterventionCare.Api.Data.Migrations
 
                     MySqlEntityTypeBuilderExtensions.HasCharSet(b, "utf8mb4");
                     MySqlEntityTypeBuilderExtensions.UseCollation(b, "utf8mb4_unicode_ci");
+                });
+
+            modelBuilder.Entity("EarlyInterventionCare.Api.Data.Entities.CaseStatusHistory", b =>
+                {
+                    b.HasOne("EarlyInterventionCare.Api.Data.Entities.CaseRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_case_status_histories_case");
+
+                    b.HasOne("EarlyInterventionCare.Api.Models.Authentication.User", "ChangedByUser")
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_case_status_histories_changed_by_user");
+
+                    b.Navigation("ChangedByUser");
                 });
 
             modelBuilder.Entity("EarlyInterventionCare.Api.Data.Entities.QuestionnaireDraft", b =>

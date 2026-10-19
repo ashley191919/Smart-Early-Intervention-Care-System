@@ -11,7 +11,7 @@ var expectedTables = new HashSet<string>(StringComparer.Ordinal)
 {
     "cases", "questionnaires", "questionnaire_versions", "case_questionnaires", "teacher_grants",
     "teacher_grant_tasks", "teacher_sessions", "questionnaire_drafts", "questionnaire_responses", "audit_logs",
-    "users", "roles", "permissions", "role_permissions", "organizations"
+    "users", "roles", "permissions", "role_permissions", "organizations", "case_status_histories"
 };
 try
 {
@@ -25,7 +25,45 @@ try
     var database = apply || seed || args.Contains("--database");
     await using var context = new ApplicationDbContextFactory().CreateDbContext(database ? [] : ["--offline"]);
     var tables = context.Model.GetEntityTypes().Select(e => e.GetTableName()!).ToHashSet(StringComparer.Ordinal);
-    if (!tables.SetEquals(expectedTables)) throw new InvalidOperationException("Expected teacher core, audit and five identity tables.");
+    if (!tables.SetEquals(expectedTables)) throw new InvalidOperationException("Expected teacher core, audit, five identity tables and case status histories.");
+    var history = context.Model.FindEntityType(typeof(CaseStatusHistory))!;
+    if (!history.FindPrimaryKey()!.Properties.Select(p => p.Name).SequenceEqual(new[] { "HistoryId" }))
+        throw new InvalidOperationException("History primary key must be HistoryId.");
+    var historyColumns = new (string Property, string Column, string Type, bool Nullable)[]
+    {
+        ("HistoryId", "history_id", "char(36)", false),
+        ("CaseId", "case_id", "char(36)", false),
+        ("OldStatus", "old_status", "ENUM('NEW', 'TO_CONTACT', 'APPOINTED', 'WAITING_FORM', 'FORM_COMPLETED', 'COMPLETED')", false),
+        ("NewStatus", "new_status", "ENUM('NEW', 'TO_CONTACT', 'APPOINTED', 'WAITING_FORM', 'FORM_COMPLETED', 'COMPLETED')", false),
+        ("ChangedAtUtc", "changed_at_utc", "datetime(6)", false),
+        ("ChangedByUserId", "changed_by_user_id", "char(36)", true),
+        ("TriggerSource", "trigger_source", "ENUM('MANUAL', 'QUESTIONNAIRE_COMPLETION', 'SYSTEM_WORKFLOW')", false),
+        ("Reason", "reason", "text", true)
+    };
+    var historyTable = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table("case_status_histories", null);
+    if (history.GetProperties().Count() != historyColumns.Length || historyColumns.Any(expected =>
+        history.FindProperty(expected.Property) is not { } property ||
+        property.GetColumnName(historyTable) != expected.Column || property.GetColumnType() != expected.Type ||
+        property.IsNullable != expected.Nullable))
+        throw new InvalidOperationException("History must preserve all eight mapped columns, types and nullability.");
+    var historyIndexes = history.GetIndexes().ToArray();
+    if (historyIndexes.Length != 2 || historyIndexes.Any(index => index.IsUnique) ||
+        !historyIndexes.Any(index => index.GetDatabaseName() == "ix_case_status_histories_case_time" &&
+            index.Properties.Select(p => p.Name).SequenceEqual(new[] { "CaseId", "ChangedAtUtc", "HistoryId" })) ||
+        !historyIndexes.Any(index => index.GetDatabaseName() == "ix_case_status_histories_changed_by_user" &&
+            index.Properties.Select(p => p.Name).SequenceEqual(new[] { "ChangedByUserId" })))
+        throw new InvalidOperationException("History must preserve the case/time/id and actor indexes.");
+    var historyForeignKeys = history.GetForeignKeys().ToArray();
+    if (historyForeignKeys.Length != 2 || historyForeignKeys.Any(fk => fk.DeleteBehavior != DeleteBehavior.Restrict) ||
+        !historyForeignKeys.Any(fk => fk.PrincipalEntityType.ClrType == typeof(CaseRecord) && fk.IsRequired &&
+            fk.GetConstraintName() == "fk_case_status_histories_case" &&
+            fk.Properties.Select(p => p.Name).SequenceEqual(new[] { "CaseId" }) &&
+            fk.PrincipalKey.Properties.Select(p => p.Name).SequenceEqual(new[] { "CaseId" })) ||
+        !historyForeignKeys.Any(fk => fk.PrincipalEntityType.ClrType == typeof(User) && !fk.IsRequired &&
+            fk.GetConstraintName() == "fk_case_status_histories_changed_by_user" &&
+            fk.Properties.Select(p => p.Name).SequenceEqual(new[] { "ChangedByUserId" }) &&
+            fk.PrincipalKey.Properties.Select(p => p.Name).SequenceEqual(new[] { "Id" })))
+        throw new InvalidOperationException("History must restrict deletes through required Case and optional User foreign keys.");
     foreach (var type in new[] { typeof(User), typeof(Role), typeof(Permission), typeof(Organization) })
     {
         var entity = context.Model.FindEntityType(type)!;
@@ -68,9 +106,9 @@ try
     var audit = context.Model.FindEntityType(typeof(AuditRecord))!;
     if (audit.GetForeignKeys().Any() || !audit.GetIndexes().Any(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { "ResourceType", "ResourceId", "OccurredAtUtc" })))
         throw new InvalidOperationException("Audit evidence must be independent and indexed by resource/time.");
-    Console.WriteLine("PASS: teacher core plus audit and UUID identity tables; optional User issuer, fixed role seeds, required organization, scope/concurrency and restricted deletes.");
-    if ((apply || seed) && context.Database.HasPendingModelChanges())
-        throw new InvalidOperationException("Integrated model needs a reviewed migration before apply/seed; no database changes performed.");
+    if (context.Database.HasPendingModelChanges())
+        throw new InvalidOperationException("Integrated model needs a reviewed migration; no database changes performed.");
+    Console.WriteLine("PASS: 16 tables; history eight columns, primary key, two indexes and two restricted foreign keys; identity, scope/concurrency, restricted deletes and model/snapshot consistency.");
     if (!database) return 0;
 
     await context.Database.OpenConnectionAsync();
