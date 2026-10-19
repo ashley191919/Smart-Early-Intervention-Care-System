@@ -35,7 +35,7 @@
     if(grant?.status==='active')return '<button class="btn" data-action="share">分享入口</button><button class="btn danger" data-action="revoke">撤銷教師授權</button>';
     return '<button class="btn" data-action="grant">建立教師授權</button>';
   }
-  const titles={home:['家長照顧儀表板','把填表與授權集中在這裡，陪伴孩子完成評估前的準備。'],tasks:['我的問卷','只列出醫護為目前孩子指定的表單；提交後不能修改。'],children:['我的孩子','查看已綁定孩子的資料，新增孩子時使用醫護提供的邀請碼。'],teacher:['教師授權與進度','由家長提供指定問卷的授權，邀請教師補充校園觀察。'],consent:['同意與資料使用','了解資料用途與授權範圍；本頁尚未取得正式知情同意。'],help:['使用協助','從綁定孩子、填寫問卷，到邀請老師，一步一步完成。']};
+  const titles={home:['家長照顧工作台','把填表與授權集中在這裡，陪伴孩子完成評估前的準備。'],tasks:['我的問卷','只列出醫護為目前孩子指定的表單；提交後不能修改。'],children:['我的孩子','查看已綁定孩子的資料，新增孩子時使用醫護提供的邀請碼。'],teacher:['教師授權與進度','由家長提供指定問卷的授權，邀請教師補充校園觀察。'],consent:['同意與資料使用','了解資料用途與授權範圍；本頁尚未取得正式知情同意。'],help:['使用協助','從綁定孩子、填寫問卷，到邀請老師，一步一步完成。']};
   const content=document.querySelector('#page-content'), modal=document.querySelector('#modal'), select=document.querySelector('#child-select');
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const current=()=>children.find(c=>c.id===selected);
