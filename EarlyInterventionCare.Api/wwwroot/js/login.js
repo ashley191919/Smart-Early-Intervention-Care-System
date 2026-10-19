@@ -20,7 +20,7 @@ function selectRole(tab, focus = false) {
     form.reset();
     panel.querySelectorAll("[aria-invalid]").forEach(input => input.removeAttribute("aria-invalid"));
   });
-  document.querySelector("#phone-error").hidden = true;
+  document.querySelector("#email-error").hidden = true;
   document.querySelector("#faq-section").hidden = tab.id === "tab-teacher";
   document.dispatchEvent(new CustomEvent("login-role-change", { detail: tab.id }));
   if (focus) tab.focus();
@@ -62,7 +62,7 @@ function openInfo(title, paragraphs) {
 }
 
 document.querySelector("#open-faq").addEventListener("click", () => openInfo("系統操作說明與常見問題", [
-  "家長／照顧者：使用手機號碼與 OTP 登入；第一次使用時，再以醫護提供的一次性邀請碼綁定孩子。",
+  "家長／照顧者：使用電子郵件接收驗證碼登入；第一次使用時，再以醫護提供的一次性邀請碼綁定孩子。",
   "幼兒園教師：使用家長提供的授權碼或 QR Code，進入指定問卷。",
   "醫療行政：使用院方核准的單位代碼、帳號與密碼登入，不開放自行註冊。",
   "請依您的身分選擇登入方式。"

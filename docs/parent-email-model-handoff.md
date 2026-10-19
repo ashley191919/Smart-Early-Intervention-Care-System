@@ -1,6 +1,6 @@
 # 給 16：家長 Email 身分與邀請模型交接
 
-日期：2026-10-19。使用者已確認改 Email OTP、已自行完成 Gmail SMTP 驗證與收信測試。本文件描述本機未提交的實作；Commit 待保存後提供。不表示已合併或已部署。
+日期：2026-10-19。使用者已確認改 Email OTP、已自行完成 Gmail SMTP 驗證與收信測試。模型與核心已推送至 `feature/case-guardian-management`／`c347ba3`；其後接續 Email API 與前端，請以此分支最新交接 Commit 取得完整成果。不表示已合併或已部署。
 
 ## 本輪完成
 
@@ -10,7 +10,7 @@
 - 邀請新增 TargetEmailNormalized，兌換比對已驗證 Email 與指定 Guardian／孩子／院所。保留 TargetPhone 作既有資料相容，不作新邀請的身分依據。
 - 兌換內重新確認 User、院所及 PARENT 角色；沿用邀請一次性消耗與交易。這不是問卷 Submit／Guardian 撤銷的最終共用鎖定協議，該部分仍待整合。
 - Guardian 聯絡 Email 更新不會改 User.Email 或自動轉移帳號。已綁定的 Guardian 不允許直接更改 Email；先保留需要重新核准／驗證的拒絕行為，完整換信箱／跨帳號轉移流程仍待實作。
-- 新增 ParentEmailAuthenticationService 的 DI，但尚無公開 Email 登入路由；原手機 adapter 仍為不可用，既有手機驗證不會開放 Email Scope。前端尚未切換。
+- 已有 ParentEmailAuthenticationService 與 Email API／前端；`ParentEmailLogin:Enabled` 預設 false，未開通時回 503 且不寄信。原手機 adapter 仍為不可用，既有手機驗證不會開放 Email Scope。
 
 ## Schema 差異（請由 16 統整 Migration）
 
@@ -43,12 +43,12 @@ dotnet run --project tests/CaseGuardianHarness.csproj --no-launch-profile
 ```
 
 - Email 寄信與 OTP 核心：60 項離線檢查。
-- Case／Guardian／Email：118 項關聯／HTTP／JWT／模型檢查，涵蓋原有 101 項與 Email 新增情境。既有手機登入的隔離測試保留，但改驗證其不能取得 Email Scope。
+- Case／Guardian／Email：138 項關聯／HTTP／JWT／模型檢查，涵蓋原有規則與 Email 新增情境。既有手機登入的隔離測試保留，但改驗證其不能取得 Email Scope。
 - Email 新增情境：可信 OTP 對應核准帳號、未知／非家長／停用／跨院所重複帳號拒絕、一次性 proof、驗證不自動綁孩子、錯信箱不消耗邀請、舊手機邀請拒絕、手機證明不標記 Email、信箱欄位不一致失去 Scope。
 - 問卷 Phase 2-2 handoff 模式：79 項通過，允許清單只增加已宣告的 Email 欄位與索引；預設部署檢查仍會拒絕尚未產生 Migration 的模型差異，沒有略過檢查或修改 Snapshot。
 
-上述沒有正式 Gmail OTP 登入 API、沒有真實 MySQL／Migration 驗收；不得將此結果當作正式端到端登入完成。
+API／前端已在隔離環境驗證，沒有真實 MySQL／Migration 及 Gmail OTP 登入端到端驗收；不得將此結果當作正式部署完成。
 
 ## 接續順序
 
-核對此模型及資料回填 → 16 統一 Migration → 接 Email request／verify API、IP 限流與前端 → 登入、孩子綁定、重啟與撤銷完整驗收。單程序 OTP 只適用單程序環境，部署多程序前須共用狀態儲存。
+核對此模型及資料回填 → 16 統一 Migration → 確認執行環境與啟用設定 → 真實登入、孩子綁定、重啟與撤銷完整驗收。單程序 OTP 只適用單程序環境，部署多程序前須共用狀態儲存。API 與前端操作說明見 [Email 啟用及驗收](parent-email-api-acceptance.md)。

@@ -8,11 +8,11 @@
   <title>登入｜早療智慧動態照顧系統</title>
   <link rel="stylesheet" href="/css/login.css?v=20261006-hospital-mark">
   <link rel="stylesheet" href="/css/teacher-access.css?v=20261006-invitation">
-  <script src="/js/login.js?v=20261011-product2" defer></script>
+  <script src="/js/login.js?v=20261019-email" defer></script>
   <link rel="stylesheet" href="/css/parent-login.css?v=20261011-shared-style">
   <script src="/js/parent-session.js?v=20261015-account" defer></script>
-  <script src="/js/parent-otp-client.js?v=20261015-account" defer></script>
-  <script src="/js/parent-login.js?v=20261015-account" defer></script>
+  <script src="/js/parent-otp-client.js?v=20261019-email" defer></script>
+  <script src="/js/parent-login.js?v=20261019-email" defer></script>
   <script src="/js/teacher-access.js?v=20261011-product2" defer></script>
 <link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-product2" defer></script>
 <link rel="stylesheet" href="/css/system-interface.css?v=20261011-product3">
@@ -35,30 +35,21 @@
       </div>
 
       <section id="panel-parent" class="role-panel" role="tabpanel" aria-labelledby="tab-parent">
-        <div class="parent-demo-note">前端預覽 · 不會寄送簡訊或建立登入身分</div>
         <form id="parent-form" novalidate>
-          <p class="teacher-intro">家長您好，請使用手機號碼驗證登入。首次使用者登入後，再以醫護提供的邀請碼綁定孩子。</p>
-          <div class="field"><label for="parent-phone">家長手機號碼</label><input id="parent-phone" name="phone" type="tel" placeholder="請輸入 09 開頭的手機號碼" autocomplete="tel" inputmode="tel" maxlength="20" aria-describedby="parent-phone-help phone-error" required><span id="phone-error" class="field-error" role="alert" hidden>請輸入 09 開頭的 10 碼手機號碼。</span><p class="field-help" id="parent-phone-help">請輸入您使用的手機號碼。</p></div>
+          <p class="teacher-intro">家長您好，請使用電子郵件驗證登入。首次使用者登入後，再以醫護提供的邀請碼綁定孩子。</p>
+          <div class="field"><label for="parent-email">家長電子郵件</label><input id="parent-email" name="email" type="email" placeholder="請輸入您的電子郵件地址" autocomplete="email" inputmode="email" maxlength="254" autocapitalize="none" spellcheck="false" aria-describedby="parent-email-help email-error" required><span id="email-error" class="field-error" role="alert" hidden>請輸入有效的電子郵件地址。</span><p class="field-help" id="parent-email-help">請使用提供給醫療團隊的信箱，接收登入驗證碼。</p></div>
           <button class="primary-button" type="submit">取得驗證碼</button>
           <p class="parent-binding-note"><svg class="binding-info-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><circle class="info-dot" cx="12" cy="7.5" r="1"></circle></svg><span>第一次使用？登入後再輸入醫護提供的邀請碼綁定孩子。</span></p>
           <p class="form-status" role="status" hidden></p>
-          <div class="workspace-entry"><a class="secondary-button" href="/parent-workspace.html">前往家長工作台</a></div>
+          <div class="workspace-entry"><a class="secondary-button" href="/parent-workspace.html?mode=account">前往家長工作台</a></div>
         </form>
         <form id="parent-otp-form" novalidate hidden>
-          <h2 class="parent-step-title" id="parent-otp-title" tabindex="-1">輸入手機驗證碼</h2>
-          <p class="parent-step-description">手機號碼：<strong id="parent-masked-phone"></strong></p>
+          <h2 class="parent-step-title" id="parent-otp-title" tabindex="-1">輸入電子郵件驗證碼</h2>
+          <p class="parent-step-description">驗證碼寄送至：<strong id="parent-masked-email"></strong>，請檢查收件匣或垃圾郵件。</p>
           <div class="field"><label for="parent-otp">6 位數驗證碼</label><input id="parent-otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="請輸入 6 位數驗證碼" aria-describedby="parent-otp-error parent-otp-expiry" required><p id="parent-otp-error" class="field-error" role="alert" hidden></p><p class="field-help" id="parent-otp-expiry"></p></div>
-          <div class="parent-demo-code">本次驗證碼：<strong id="parent-demo-code"></strong></div>
           <button class="primary-button" type="submit">驗證並繼續</button>
-          <div class="parent-otp-actions"><button type="button" class="parent-text-button" id="parent-change-phone">更換手機號碼</button><button type="button" class="parent-text-button" id="parent-resend" disabled>重新取得授權碼</button></div>
+          <div class="parent-otp-actions"><button type="button" class="parent-text-button" id="parent-change-email">更換電子郵件</button><button type="button" class="parent-text-button" id="parent-resend" disabled>重新取得驗證碼</button></div>
         </form>
-        <section id="parent-preview-complete" class="parent-preview-complete" hidden aria-labelledby="parent-complete-title">
-          <span class="parent-success-icon" aria-hidden="true">✓</span><h2 class="parent-step-title" id="parent-complete-title" tabindex="-1">手機驗證完成</h2>
-          <p class="parent-step-description">請繼續前往家長工作台。</p>
-          <div class="parent-next-step"><strong>下一步：我的孩子</strong><p>已綁定的孩子會顯示在首頁；首次使用者請使用醫護邀請碼綁定。</p></div>
-          <a class="primary-button parent-dashboard-link" href="/parent-workspace.html">前往家長工作台</a>
-          <button type="button" class="parent-text-button" id="parent-restart">返回登入</button>
-        </section>
       </section>
 
       <section id="panel-teacher" class="role-panel" role="tabpanel" aria-labelledby="tab-teacher" hidden>

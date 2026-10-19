@@ -195,14 +195,21 @@ var jwtOptions=new EarlyInterventionCare.Api.Options.JwtOptions{Issuer="case-tes
 var testKey=new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
 var tokens=new EarlyInterventionCare.Api.Services.Authentication.JwtTokenService(jwtOptions,testKey);
 var testSms=new TestSms();
+var emailBrowserFixture=args.Contains("--serve-email-browser-fixture");
+var emailHttpSender=new EmailTestSender();
+var emailHttpVerifier=new EarlyInterventionCare.Api.Services.Email.ParentEmailVerification(emailHttpSender,emailBrowserFixture?TimeProvider.System:clock);
+var emailHttpSettings=new EarlyInterventionCare.Api.Controllers.ParentEmailLoginOptions();
 var otpParent=await Account("PARENT","otp-parent","0955555555",false,org.Id);
-var jwtBuilder=WebApplication.CreateBuilder(new WebApplicationOptions{EnvironmentName="Development"});
-jwtBuilder.WebHost.UseTestServer();jwtBuilder.Logging.ClearProviders();
+var jwtBuilder=WebApplication.CreateBuilder(new WebApplicationOptions{EnvironmentName="Development",WebRootPath=Path.GetFullPath("EarlyInterventionCare.Api/wwwroot")});
+if(emailBrowserFixture)jwtBuilder.WebHost.UseUrls("http://127.0.0.1:5183");else jwtBuilder.WebHost.UseTestServer();jwtBuilder.Logging.ClearProviders();
 jwtBuilder.Services.AddControllers().AddApplicationPart(typeof(EarlyInterventionCare.Api.Controllers.CasesController).Assembly);
 jwtBuilder.Services.AddScoped(_=>new ApplicationDbContext(options));jwtBuilder.Services.AddScoped<CaseAccessService>();jwtBuilder.Services.AddScoped<CaseGuardianService>();jwtBuilder.Services.AddSingleton<TimeProvider>(clock);
 jwtBuilder.Services.AddScoped<IQuestionnaireStore,EfQuestionnaireStore>();jwtBuilder.Services.AddScoped<QuestionnaireService>();
 jwtBuilder.Services.AddSingleton(tokens);jwtBuilder.Services.AddSingleton<EarlyInterventionCare.Api.Services.Authentication.IParentSmsVerification>(testSms);
 jwtBuilder.Services.AddScoped<EarlyInterventionCare.Api.Services.Authentication.ParentOtpAuthenticationService>();
+jwtBuilder.Services.AddSingleton<EarlyInterventionCare.Api.Services.Email.IParentEmailVerification>(emailHttpVerifier);
+jwtBuilder.Services.AddSingleton<IOptions<EarlyInterventionCare.Api.Controllers.ParentEmailLoginOptions>>(Options.Create(emailHttpSettings));
+jwtBuilder.Services.AddScoped<EarlyInterventionCare.Api.Services.Authentication.ParentEmailAuthenticationService>();
 jwtBuilder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o=>
 {
  o.MapInboundClaims=false;o.IncludeErrorDetails=false;
@@ -211,7 +218,10 @@ jwtBuilder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBea
 jwtBuilder.Services.AddAuthorization();jwtBuilder.Services.AddRateLimiter(o=>{foreach(var name in new[]{"parent-binding","parent-otp-request","parent-otp-verify"})o.AddFixedWindowLimiter(name,l=>{l.PermitLimit=100;l.Window=TimeSpan.FromMinutes(1);});});
 await using(var jwtApp=jwtBuilder.Build())
 {
- jwtApp.UseAuthentication();jwtApp.UseAuthorization();jwtApp.UseRateLimiter();jwtApp.MapControllers();await jwtApp.StartAsync();var jwtClient=jwtApp.GetTestClient();
+ if(emailBrowserFixture){emailHttpSettings.Enabled=true;jwtApp.UseDefaultFiles();jwtApp.UseStaticFiles();jwtApp.MapGet("/fixture-email-code",()=>Results.Text(emailHttpSender.Code));}
+ jwtApp.UseAuthentication();jwtApp.UseAuthorization();jwtApp.UseRateLimiter();jwtApp.MapControllers();await jwtApp.StartAsync();
+ if(emailBrowserFixture){Console.WriteLine("Disposable SQLite/JWT Email fixture: http://127.0.0.1:5183/?role=parent; approved test mailbox otp-parent@example.invalid. Code available only on /fixture-email-code. Test sender, no real email or MySQL.");await jwtApp.WaitForShutdownAsync();return;}
+ var jwtClient=jwtApp.GetTestClient();
  Check((await jwtClient.GetAsync("/api/parent/cases")).StatusCode==HttpStatusCode.Unauthorized,"JWT anonymous denied");
  var requestJson=new StringContent("{\"phone\":\"0955555555\"}",System.Text.Encoding.UTF8,"application/json");
  Check((await jwtClient.PostAsync("/api/parent/auth/otp/request",requestJson)).StatusCode==HttpStatusCode.ServiceUnavailable,"unconfigured SMS never pretends to send code");
@@ -253,6 +263,42 @@ await using(var jwtApp=jwtBuilder.Build())
  jwtClient.DefaultRequestHeaders.Authorization=new("Bearer",parentToken);
  Check((await jwtClient.GetAsync("/api/parent/cases")).StatusCode==HttpStatusCode.Unauthorized,"already issued JWT blocked after account disabled");
  await db.Users.Where(u=>u.Id==parent.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.Status,"ACTIVE"));
+ jwtClient.DefaultRequestHeaders.Authorization=null;
+ StringContent EmailJson(object body)=>new(JsonSerializer.Serialize(body),System.Text.Encoding.UTF8,"application/json");
+ Check((await jwtClient.PostAsync("/api/parent/auth/email/request",EmailJson(new{email="otp-parent@example.invalid"}))).StatusCode==HttpStatusCode.ServiceUnavailable,"Email API disabled before migration sends nothing");
+ Check(emailHttpSender.Count==0,"disabled gate makes zero delivery calls");
+ Check((await jwtClient.PostAsync("/api/parent/auth/email/verify",EmailJson(new{challengeId="fake",code="123456"}))).StatusCode==HttpStatusCode.ServiceUnavailable,"disabled gate cannot issue JWT");
+ emailHttpSettings.Enabled=true;
+ Check((await jwtClient.PostAsync("/api/parent/auth/email/request",EmailJson(new{email="invalid"}))).StatusCode==HttpStatusCode.BadRequest,"Email HTTP validation");
+ jwtClient.DefaultRequestHeaders.Add("Origin","https://untrusted.example");
+ Check((await jwtClient.PostAsync("/api/parent/auth/email/request",EmailJson(new{email="otp-parent@example.invalid"}))).StatusCode==HttpStatusCode.Forbidden,"cross-origin mail request denied");
+ Check(emailHttpSender.Count==0,"cross-origin request sends nothing");
+ jwtClient.DefaultRequestHeaders.Remove("Origin");
+ var httpEmailRequest=await jwtClient.PostAsync("/api/parent/auth/email/request",EmailJson(new{email="otp-parent@example.invalid",userId=parent.UserId,organizationId=otherOrg.Id}));
+ var httpEmailBody=await httpEmailRequest.Content.ReadAsStringAsync();
+ var httpEmailChallenge=JsonSerializer.Deserialize<EarlyInterventionCare.Api.Services.Email.ParentEmailChallenge>(httpEmailBody,new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+ Check(httpEmailRequest.IsSuccessStatusCode&&httpEmailRequest.Headers.CacheControl?.NoStore==true,"Email request no-store response");
+ using(var httpEmailDocument=JsonDocument.Parse(httpEmailBody))Check(httpEmailDocument.RootElement.EnumerateObject().Count()==3&&!httpEmailDocument.RootElement.TryGetProperty("code",out _),"Email HTTP never returns code or account identity");
+ Check((await jwtClient.PostAsync("/api/parent/auth/email/request",EmailJson(new{email="OTP-PARENT@EXAMPLE.INVALID"}))).StatusCode==HttpStatusCode.TooManyRequests,"Email resend throttle over HTTP");
+ Check((await jwtClient.PostAsync("/api/parent/auth/email/verify",EmailJson(new{challengeId=httpEmailChallenge.ChallengeId,code="000000"==emailHttpSender.Code?"999999":"000000"}))).StatusCode==HttpStatusCode.Unauthorized,"wrong Email OTP over HTTP");
+ var httpEmailVerified=await jwtClient.PostAsync("/api/parent/auth/email/verify",EmailJson(new{challengeId=httpEmailChallenge.ChallengeId,code=emailHttpSender.Code,email=parent.Email,userId=parent.UserId,organizationId=otherOrg.Id}));
+ var httpEmailLogin=JsonSerializer.Deserialize<EarlyInterventionCare.Api.Services.Authentication.ParentOtpLoginResponse>(await httpEmailVerified.Content.ReadAsStringAsync(),new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+ Check(httpEmailVerified.IsSuccessStatusCode&&httpEmailLogin.UserId==otpParent.UserId,"Email HTTP trusts proof not forged Email/user/org");
+ jwtClient.DefaultRequestHeaders.Authorization=new("Bearer",httpEmailLogin.AccessToken);
+ Check((await jwtClient.GetAsync("/api/parent/cases")).IsSuccessStatusCode,"Email-issued JWT passes signature and DB scope");
+ Check(await(await jwtClient.GetAsync("/api/parent/cases")).Content.ReadAsStringAsync()=="[]","Email HTTP login does not auto-bind children");
+ var emailBoundCase=await service.CreateAsync(staff,new CaseInput{NationalId="A123456789",Address="隔離驗收地址",ChildName="Email綁定驗收",BirthDate=new(2022,1,1)});
+ var emailGuardian=await service.AddGuardianAsync(staff,emailBoundCase.CaseId,new GuardianInput{DisplayName="Email測試家長",Email="otp-parent@example.invalid",Phone="0955555555",Relationship="GUARDIAN"});
+ var emailInvite=await service.InviteAsync(staff,emailBoundCase.CaseId,emailGuardian.GuardianId);
+ Check((await jwtClient.PostAsync("/api/parent/bindings",EmailJson(new{invitationCode=emailInvite.Code}))).IsSuccessStatusCode,"Email JWT redeems targeted invitation over HTTP");
+ var emailBoundList=await(await jwtClient.GetAsync("/api/parent/cases")).Content.ReadAsStringAsync();
+ Check(emailBoundList.Contains(emailBoundCase.CaseId.ToString())&&!emailBoundList.Contains(second.CaseId.ToString()),"Email login only reads its explicitly bound child");
+ Check((await jwtClient.PostAsync("/api/parent/bindings",EmailJson(new{invitationCode=emailInvite.Code}))).StatusCode==HttpStatusCode.BadRequest,"Email invitation cannot replay over HTTP");
+ await service.RevokeLinkAsync(staff,emailBoundCase.CaseId,emailGuardian.GuardianId);
+ Check(await(await jwtClient.GetAsync("/api/parent/cases")).Content.ReadAsStringAsync()=="[]","Email JWT loses child scope after binding revoked");
+ Check(await db.CaseGuardians.AsNoTracking().AnyAsync(l=>l.CaseId==emailBoundCase.CaseId&&l.LinkStatus=="REVOKED"),"Email revoke retains relationship record");
+ Check((await jwtClient.PostAsync("/api/parent/auth/email/verify",EmailJson(new{challengeId=httpEmailChallenge.ChallengeId,code=emailHttpSender.Code}))).StatusCode==HttpStatusCode.Unauthorized,"Email HTTP proof replay denied");
+ Check((await db.Users.AsNoTracking().SingleAsync(u=>u.Id==otpParent.UserId)).EmailVerifiedAtUtc.HasValue,"Email HTTP saves verified timestamp");
  await jwtApp.StopAsync();
 }
 // Email proof must select an approved account, never infer a child or organization.
@@ -312,8 +358,8 @@ sealed class Clock:TimeProvider{DateTimeOffset now=new(2026,10,13,0,0,0,TimeSpan
 
 sealed class EmailTestSender:EarlyInterventionCare.Api.Services.Email.IParentEmailSender
 {
- public string Code="";
- public Task SendCodeAsync(string email,string code,int validMinutes,CancellationToken ct=default){Code=code;return Task.CompletedTask;}
+ public string Code="";public int Count;
+ public Task SendCodeAsync(string email,string code,int validMinutes,CancellationToken ct=default){Count++;Code=code;return Task.CompletedTask;}
 }
 
 // Provider double exists solely inside this executable; never registered by the application.

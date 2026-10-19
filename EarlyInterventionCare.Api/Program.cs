@@ -128,7 +128,8 @@ builder.Services.AddScoped<AuthenticationService>();
 // No real SMS provider is configured yet. Requests fail closed; no test-code backdoor.
 builder.Services.AddSingleton<IParentSmsVerification, ParentSmsUnavailable>();
 builder.Services.AddScoped<ParentOtpAuthenticationService>();
-// Email delivery/verification core only. Public Email login and binding are not enabled yet.
+// Email login defaults to disabled until the shared migration/deployment is ready.
+builder.Services.Configure<EarlyInterventionCare.Api.Controllers.ParentEmailLoginOptions>(builder.Configuration.GetSection("ParentEmailLogin"));
 builder.Services.Configure<EarlyInterventionCare.Api.Services.Email.ParentEmailOptions>(builder.Configuration.GetSection("Email"));
 builder.Services.AddTransient<EarlyInterventionCare.Api.Services.Email.IParentEmailTransport, EarlyInterventionCare.Api.Services.Email.MailKitParentEmailTransport>();
 builder.Services.AddTransient<EarlyInterventionCare.Api.Services.Email.IParentEmailSender, EarlyInterventionCare.Api.Services.Email.ParentEmailSender>();
