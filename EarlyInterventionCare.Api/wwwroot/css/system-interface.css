@@ -46,6 +46,11 @@
 /* Login entry and aligned information icon. */
 .workspace-entry { margin-top:16px; }
 .workspace-entry .secondary-button { display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:14px; min-height:44px; }
+.login-page #panel-medical .workspace-entry .secondary-button { width:100%; border:1px solid #719b96; border-radius:9px; padding:11px 16px; background:white; color:#719b96; font-weight:700; }
+.login-page #panel-medical .workspace-entry .secondary-button:hover { background:#f0f6f5; }
+.medical-forgot-password { display:block; width:fit-content; margin:14px auto 0; color:#567f7a; font-size:14px; line-height:1.6; text-decoration:none; }
+.medical-forgot-password:hover { text-decoration:underline; }
+.medical-forgot-password:focus-visible { outline:3px solid #476f6b; outline-offset:3px; }
 .parent-binding-note .binding-info-icon { flex:0 0 16px; width:16px; height:16px; margin-top:3px; fill:none; stroke:currentColor; stroke-width:1.7; }
 .parent-binding-note .binding-info-icon .info-dot { fill:currentColor; stroke:none; }
 
