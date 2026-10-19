@@ -33,7 +33,7 @@ public class AuthController : ControllerBase
         {
             var response = await _authenticationService.LoginAsync(request, cancellationToken);
             return response is null
-                ? Unauthorized(new { Message = "帳號或密碼錯誤" })
+                ? Unauthorized(new { code = "LOGIN_FAILED", message = "登入資料有誤，請確認後重新輸入。" })
                 : Ok(response);
         }
         catch (DbException)

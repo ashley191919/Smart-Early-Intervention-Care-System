@@ -5,6 +5,10 @@ namespace EarlyInterventionCare.Api.DTOs.Authentication;
 
 public class LoginRequest : IValidatableObject
 {
+    // Optional for non-medical JWT login; medical roles are checked by the service.
+    [StringLength(50)]
+    public virtual string? OrganizationCode { get; set; }
+
     [Required]
     [StringLength(100)]
     public string Username { get; set; } = string.Empty;

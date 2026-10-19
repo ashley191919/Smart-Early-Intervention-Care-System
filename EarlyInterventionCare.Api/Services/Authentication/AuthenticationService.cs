@@ -16,10 +16,18 @@ public class AuthenticationService : IAuthenticationService
         _tokens = tokens;
     }
 
-    public async Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    public Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default) =>
+        LoginCoreAsync(request, staffOnly: false, cancellationToken);
+
+    public Task<LoginResponse?> LoginStaffAsync(StaffLoginRequest request, CancellationToken cancellationToken = default) =>
+        LoginCoreAsync(request, staffOnly: true, cancellationToken);
+
+    private async Task<LoginResponse?> LoginCoreAsync(LoginRequest request, bool staffOnly,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length > 100 ||
-            string.IsNullOrWhiteSpace(request.Password) || Encoding.UTF8.GetByteCount(request.Password) > 72)
+            string.IsNullOrWhiteSpace(request.Password) || Encoding.UTF8.GetByteCount(request.Password) > 72 ||
+            request.OrganizationCode?.Length > 50)
         {
             return null;
         }
@@ -56,6 +64,29 @@ public class AuthenticationService : IAuthenticationService
             .SingleOrDefaultAsync(r => r.Id == user.RoleId, cancellationToken);
         if (role is null)
             return null;
+
+        // Decide from the current persisted role, never from a caller-supplied role or flag.
+        var medicalRole = StaffSessionAuthorization.CanCreateStaffSession(role.Name);
+        if (staffOnly && !medicalRole)
+            return null;
+
+        // Medical users cannot bypass the organization gate via the generic JWT endpoint.
+        // Other roles retain code-less login, but a supplied code must never be ignored.
+        if (staffOnly || medicalRole || request.OrganizationCode is not null)
+        {
+            var code = request.OrganizationCode?.Trim();
+            if (string.IsNullOrWhiteSpace(code))
+                return null;
+
+            var organization = await _db.Organizations.AsNoTracking()
+                .Where(o => o.Id == user.OrganizationId)
+                .Select(o => new { o.Code, o.Status })
+                .SingleOrDefaultAsync(cancellationToken);
+            // Explicit comparisons avoid relying on the database's case/accent-insensitive collation.
+            if (organization is null || !string.Equals(organization.Status, "ACTIVE", StringComparison.Ordinal) ||
+                !string.Equals(organization.Code, code, StringComparison.OrdinalIgnoreCase))
+                return null;
+        }
 
         var permissions = await _db.RolePermissions.AsNoTracking()
             .Where(rp => rp.RoleId == role.Id)

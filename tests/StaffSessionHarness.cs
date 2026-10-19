@@ -47,7 +47,7 @@ LoginResponse MedicalLogin(string role = StaffSessionAuthorization.MedicalStaffR
 
 {
     var controller = Controller(MedicalLogin());
-    var result = await controller.Create(new LoginRequest { Username = "staff", Password = "correct" }, default) as OkObjectResult;
+    var result = await controller.Create(new StaffLoginRequest { OrganizationCode = "OFFLINE_ORG", Username = "staff", Password = "correct" }, default) as OkObjectResult;
     var body = result?.Value as StaffSessionResponse;
     var cookie = controller.HttpContext.Response.Headers.SetCookie.ToString();
     Check(result?.StatusCode == StatusCodes.Status200OK && body?.Role == StaffSessionAuthorization.MedicalStaffRole,
@@ -64,37 +64,37 @@ LoginResponse MedicalLogin(string role = StaffSessionAuthorization.MedicalStaffR
 
 {
     var controller = Controller(null);
-    var result = await controller.Create(new LoginRequest { Username = "staff", Password = "wrong" }, default) as UnauthorizedObjectResult;
+    var result = await controller.Create(new StaffLoginRequest { OrganizationCode = "OFFLINE_ORG", Username = "staff", Password = "wrong" }, default) as UnauthorizedObjectResult;
     Check(result?.StatusCode == StatusCodes.Status401Unauthorized, "invalid credentials are rejected without revealing the reason");
 }
 
 {
     var controller = Controller(MedicalLogin("PARENT"));
-    var result = await controller.Create(new LoginRequest { Username = "parent", Password = "correct" }, default) as UnauthorizedObjectResult;
+    var result = await controller.Create(new StaffLoginRequest { OrganizationCode = "OFFLINE_ORG", Username = "parent", Password = "correct" }, default) as UnauthorizedObjectResult;
     Check(result?.StatusCode == StatusCodes.Status401Unauthorized, "non-medical role cannot create a staff session");
 }
 
 {
     var controller = Controller(MedicalLogin(StaffSessionAuthorization.CaseManagerRole));
-    var result = await controller.Create(new LoginRequest { Username = "manager", Password = "correct" }, default) as OkObjectResult;
+    var result = await controller.Create(new StaffLoginRequest { OrganizationCode = "OFFLINE_ORG", Username = "manager", Password = "correct" }, default) as OkObjectResult;
     Check(result?.StatusCode == StatusCodes.Status200OK, "case manager role can create a staff session");
 }
 
 {
     var controller = Controller(MedicalLogin("ADMIN"));
-    var result = await controller.Create(new LoginRequest { Username = "admin", Password = "correct" }, default) as UnauthorizedObjectResult;
+    var result = await controller.Create(new StaffLoginRequest { OrganizationCode = "OFFLINE_ORG", Username = "admin", Password = "correct" }, default) as UnauthorizedObjectResult;
     Check(result?.StatusCode == StatusCodes.Status401Unauthorized, "ADMIN remains denied until its medical workspace access is confirmed");
 }
 
 {
     var controller = Controller(MedicalLogin(), origin: "https://untrusted.example");
-    var result = await controller.Create(new LoginRequest { Username = "staff", Password = "correct" }, default) as ObjectResult;
+    var result = await controller.Create(new StaffLoginRequest { OrganizationCode = "OFFLINE_ORG", Username = "staff", Password = "correct" }, default) as ObjectResult;
     Check(result?.StatusCode == StatusCodes.Status403Forbidden, "untrusted login origin is rejected");
 }
 
 {
     var controller = Controller(MedicalLogin(), scheme: "http");
-    var result = await controller.Create(new LoginRequest { Username = "staff", Password = "correct" }, default) as ObjectResult;
+    var result = await controller.Create(new StaffLoginRequest { OrganizationCode = "OFFLINE_ORG", Username = "staff", Password = "correct" }, default) as ObjectResult;
     Check(result?.StatusCode == StatusCodes.Status400BadRequest, "HTTP cannot create a Secure staff cookie");
 }
 
@@ -174,6 +174,7 @@ Console.WriteLine($"PASS: {checks} offline staff session checks; role gate, secu
 sealed class FakeAuthenticationService(LoginResponse? response) : IAuthenticationService
 {
     public Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default) => Task.FromResult(response);
+    public Task<LoginResponse?> LoginStaffAsync(StaffLoginRequest request, CancellationToken cancellationToken = default) => Task.FromResult(response);
     public Task<CurrentUserResponse?> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken = default) =>
         Task.FromResult<CurrentUserResponse?>(null);
 }

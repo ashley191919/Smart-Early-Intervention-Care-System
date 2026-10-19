@@ -35,17 +35,17 @@
             <form class="login-form" novalidate>
                 <div class="form-field">
                     <label for="organization-code">單位代碼</label>
-                    <input id="organization-code" name="organization-code" type="text" placeholder="請輸入單位代碼" autocomplete="organization">
+                    <input id="organization-code" name="organization-code" type="text" placeholder="請輸入單位代碼" autocomplete="organization" required maxlength="50">
                 </div>
 
                 <div class="form-field">
                     <label for="staff-account">醫療人員帳號</label>
-                    <input id="staff-account" name="staff-account" type="text" placeholder="請輸入醫療人員帳號" autocomplete="username">
+                    <input id="staff-account" name="staff-account" type="text" placeholder="請輸入醫療人員帳號" autocomplete="username" required maxlength="100">
                 </div>
 
                 <div class="form-field">
                     <label for="staff-password">登入密碼</label>
-                    <input id="staff-password" name="staff-password" type="password" placeholder="請輸入登入密碼" autocomplete="current-password">
+                    <input id="staff-password" name="staff-password" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" required>
                 </div>
 
                 <button class="login-button" type="submit">安全登入</button>
@@ -61,7 +61,7 @@
             <section class="login-error-state" aria-live="polite" aria-labelledby="login-error-title" hidden>
                 <div class="login-error-icon" aria-hidden="true">!</div>
                 <h2 id="login-error-title">登入失敗</h2>
-                <p>帳號或密碼有誤，請確認後重新輸入。</p>
+                <p>登入資料有誤，請確認後重新輸入。</p>
                 <button class="retry-login-button" type="button">重新登入</button>
             </section>
 

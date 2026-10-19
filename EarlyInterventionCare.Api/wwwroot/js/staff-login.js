@@ -4,6 +4,7 @@ const loginForm = document.querySelector(".login-form");
 const verificationState = document.querySelector(".verification-state");
 const loginErrorState = document.querySelector(".login-error-state");
 const retryLoginButton = document.querySelector(".retry-login-button");
+const organizationCodeInput = document.querySelector("#organization-code");
 const staffAccountInput = document.querySelector("#staff-account");
 const staffPasswordInput = document.querySelector("#staff-password");
 const loginErrorMessage = loginErrorState?.querySelector("p");
@@ -40,8 +41,8 @@ function showLoginForm() {
 
 function getErrorMessage(response, body) {
     if (response.status === 401) {
-        // The API intentionally returns the same message for unknown, inactive and invalid-password users.
-        return "帳號或密碼有誤，請確認後重新輸入。";
+        // Organization, account, role and password failures intentionally share one message.
+        return "登入資料有誤，請確認後重新輸入。";
     }
 
     if (response.status === 403) {
@@ -98,11 +99,16 @@ async function addCsrfForExistingSession(headers) {
 async function submitLogin() {
     if (isSubmitting) return;
 
+    const organizationCode = organizationCodeInput?.value.trim() ?? "";
     const username = staffAccountInput?.value.trim() ?? "";
     const password = staffPasswordInput?.value ?? "";
 
-    if (!username || !password) {
-        showLoginErrorState("請輸入醫療人員帳號與登入密碼。");
+    if (!organizationCode || !username || !password) {
+        showLoginErrorState("請輸入單位代碼、醫療人員帳號與登入密碼。");
+        return;
+    }
+    if (organizationCode.length > 50 || username.length > 100) {
+        showLoginErrorState("單位代碼不得超過 50 字元，帳號不得超過 100 字元。");
         return;
     }
 
@@ -120,7 +126,7 @@ async function submitLogin() {
             method: "POST",
             headers,
             credentials: "same-origin",
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ organizationCode, username, password })
         });
 
         let body = null;

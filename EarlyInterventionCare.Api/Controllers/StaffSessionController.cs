@@ -25,7 +25,7 @@ public sealed class StaffSessionController(IAuthenticationService authentication
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> Create([FromBody] LoginRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] StaffLoginRequest request, CancellationToken cancellationToken)
     {
         if (!options.IsEnabled)
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
@@ -48,9 +48,9 @@ public sealed class StaffSessionController(IAuthenticationService authentication
 
         try
         {
-            var login = await authenticationService.LoginAsync(request, cancellationToken);
+            var login = await authenticationService.LoginStaffAsync(request, cancellationToken);
             if (login is null || !StaffSessionAuthorization.CanCreateStaffSession(login.Role))
-                return Unauthorized(new { Message = "帳號或密碼錯誤" });
+                return Unauthorized(new { code = "LOGIN_FAILED", message = "登入資料有誤，請確認後重新輸入。" });
 
             cookies.Set(Response, login.AccessToken, login.ExpiresAt);
             return Ok(new StaffSessionResponse

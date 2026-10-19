@@ -38,7 +38,7 @@ async function loadStaffAuth(responses) {
     return { protectedArea, errorArea, redirects, calls, auth: window.StaffAuth };
 }
 
-async function submitStaffLogin(responses) {
+async function submitStaffLogin(responses, input = {}) {
     const handlers = {};
     const makeElement = () => ({
         hidden: false,
@@ -56,12 +56,14 @@ async function submitStaffLogin(responses) {
     const errorMessage = makeElement();
     loginErrorState.querySelector = () => errorMessage;
     const retryLoginButton = makeElement(); retryLoginButton.name = 'retryLoginButton';
-    const staffAccountInput = makeElement(); staffAccountInput.name = 'staffAccountInput'; staffAccountInput.value = 'staff';
-    const staffPasswordInput = makeElement(); staffPasswordInput.name = 'staffPasswordInput'; staffPasswordInput.value = 'correct-password';
+    const organizationCodeInput = makeElement(); organizationCodeInput.value = input.organizationCode ?? 'OFFLINE_ORG';
+    const staffAccountInput = makeElement(); staffAccountInput.name = 'staffAccountInput'; staffAccountInput.value = input.username ?? 'staff';
+    const staffPasswordInput = makeElement(); staffPasswordInput.name = 'staffPasswordInput'; staffPasswordInput.value = input.password ?? 'correct-password';
     const selectors = new Map([
         ['.login-card', loginCard], ['.login-button', loginButton], ['.login-form', loginForm],
         ['.verification-state', verificationState], ['.login-error-state', loginErrorState],
-        ['.retry-login-button', retryLoginButton], ['#staff-account', staffAccountInput], ['#staff-password', staffPasswordInput]
+        ['.retry-login-button', retryLoginButton], ['#organization-code', organizationCodeInput],
+        ['#staff-account', staffAccountInput], ['#staff-password', staffPasswordInput]
     ]);
     const calls = [];
     const redirects = [];
@@ -78,7 +80,7 @@ async function submitStaffLogin(responses) {
     vm.runInNewContext(read('js', 'staff-login.js'), context, { filename: 'staff-login.js' });
     handlers['loginForm:submit']({ preventDefault() {} });
     await new Promise((resolve) => setImmediate(resolve));
-    return { calls, redirects };
+    return { calls, redirects, errorMessage, loginErrorState, staffPasswordInput };
 }
 
 const activeUser = { userId: '10000000-0000-4000-8000-000000000001', username: 'staff', role: 'MEDICAL_STAFF' };
@@ -90,6 +92,48 @@ test('staff login uses the cookie session endpoint without exposing a JWT', () =
     assert.doesNotMatch(source, /accessTokenInMemory|body\.accessToken|localStorage|sessionStorage|console\s*\./);
     assert.match(source, /credentials:\s*"same-origin"/);
     assert.match(source, /location\.assign\("\/staff-dashboard\.html"\)/);
+});
+
+test('單位代碼與帳號保留既有欄位並具有必填與最大長度', () => {
+    const page = read('staff-login.html');
+    assert.match(page, /<input[^>]+id="organization-code"[^>]+required[^>]+maxlength="50"/);
+    assert.match(page, /<input[^>]+id="staff-account"[^>]+required[^>]+maxlength="100"/);
+    assert.match(page, /href="staff-forgot-password\.html"/);
+});
+
+test('送出三個欄位：代碼與帳號去頭尾空白，密碼完全保留', async () => {
+    const password = '  synthetic pass phrase  ';
+    const state = await submitStaffLogin([
+        { status: 401 },
+        { status: 200, body: { ...activeUser, expiresAt: '2026-10-20T00:30:00Z' } }
+    ], { organizationCode: '  offline_ORG  ', username: '  staff  ', password });
+    assert.deepEqual(JSON.parse(state.calls[1].options.body), { organizationCode: 'offline_ORG', username: 'staff', password });
+    assert.deepEqual(state.redirects, ['/staff-dashboard.html']);
+});
+
+for (const [label, input] of [
+    ['缺少代碼', { organizationCode: '' }],
+    ['空白代碼', { organizationCode: '   ' }],
+    ['缺少帳號', { username: '' }],
+    ['缺少密碼', { password: '' }],
+    ['代碼超長', { organizationCode: 'a'.repeat(51) }],
+    ['帳號超長', { username: 'a'.repeat(101) }]
+]) {
+    test(`登入欄位驗證阻止送出：${label}`, async () => {
+        const state = await submitStaffLogin([], input);
+        assert.equal(state.calls.length, 0);
+        assert.equal(state.loginErrorState.hidden, false);
+        assert.deepEqual(state.redirects, []);
+    });
+}
+
+test('401 統一顯示登入失敗，不呈現後端院所或帳號細節，並清除密碼', async () => {
+    const state = await submitStaffLogin([
+        { status: 401 }, { status: 401, body: { message: 'synthetic internal organization detail' } }
+    ]);
+    assert.equal(state.errorMessage.textContent, '登入資料有誤，請確認後重新輸入。');
+    assert.equal(state.staffPasswordInput.value, '');
+    assert.deepEqual(state.redirects, []);
 });
 
 test('dashboard loads the common cookie authentication guard before exposing its workspace', () => {
