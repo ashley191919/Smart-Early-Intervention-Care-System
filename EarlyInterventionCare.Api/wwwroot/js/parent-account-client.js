@@ -48,7 +48,21 @@
   }
   throw new Error("孩子資料過多，請聯絡承辦窗口。");
  }
- const api = Object.freeze({createClient, summarize, latestRequest,loadChildren});
+ async function loadDefinition(api, taskId) {
+  const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!guid.test(taskId)) throw new Error("問卷任務識別有誤，請重新載入任務清單。");
+  const definition = await api(`/api/parent/tasks/${taskId}/questionnaire`);
+  if (!definition || typeof definition.taskId !== "string" || definition.taskId.toLowerCase() !== taskId.toLowerCase() ||
+      !guid.test(definition.questionnaireVersionId) || typeof definition.title !== "string" || typeof definition.versionNumber !== "string" ||
+      (definition.instructions != null && typeof definition.instructions !== "string") ||
+      !Array.isArray(definition.questions) || !definition.questions.length || definition.questions.some(q =>
+       !q || typeof q.questionId !== "string" || typeof q.text !== "string" || q.type !== "singleChoice" ||
+       !Number.isInteger(q.order) || q.order < 1 || typeof q.requiredOnSubmit !== "boolean" ||
+       !Array.isArray(q.options) || !q.options.length || q.options.some(o => !o || typeof o.value !== "string" || typeof o.label !== "string")))
+   throw new Error("問卷內容格式有誤，請重新載入或聯絡醫療團隊。");
+  return definition;
+ }
+ const api = Object.freeze({createClient, summarize, latestRequest,loadChildren,loadDefinition});
  if (typeof module !== "undefined" && module.exports) module.exports = api;
  else root.EarlyCareParentClient = api;
 })(typeof window === "undefined" ? globalThis : window);

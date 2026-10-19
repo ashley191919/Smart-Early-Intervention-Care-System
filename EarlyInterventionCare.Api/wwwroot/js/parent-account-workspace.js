@@ -4,6 +4,7 @@
  if (new URLSearchParams(location.search).get("mode") !== "account" && !session.token()) return;
  const api = EarlyCareParentClient.createClient(session, window.fetch.bind(window));
  const renderGate = EarlyCareParentClient.latestRequest(), loadGate = EarlyCareParentClient.latestRequest();
+ const definitionGate = EarlyCareParentClient.latestRequest();
  const root = document.querySelector("#page-content"), select = document.querySelector("#child-select"), modal = document.querySelector("#modal");
  const count = document.querySelector(".nav-count"), bind = document.querySelector('[data-action="bind"]');
  let children = [], profiles = [], currentId = "", page = "home", loaded = false;
@@ -29,14 +30,14 @@
     prompt.showModal();prompt.querySelector('[data-keep]').focus();
    });return discardPrompt;
   }
-  modal.close();return true;
+  definitionGate.begin();modal.close();document.querySelector("#modal-body").replaceChildren();return true;
  }
  window.addEventListener("beforeunload",event=>{if(accountFormDirty()){event.preventDefault();event.returnValue="";}});
  modal.addEventListener("cancel",event=>{event.preventDefault();closeAccountDialog();});
  window.EarlyCareParentWorkspace=Object.freeze({beforeLogout:closeAccountDialog});
  // A history restore can reuse the old DOM without rerunning scripts or making requests.
  window.addEventListener("pagehide",()=>{
-  loadGate.begin();renderGate.begin();clearData();root.replaceChildren();
+  loadGate.begin();renderGate.begin();definitionGate.begin();clearData();root.replaceChildren();
   if(modal.open)modal.close();document.querySelector("#modal-body").replaceChildren();
  });
  window.addEventListener("pageshow",event=>{if(event.persisted)load();});
@@ -52,6 +53,7 @@
   loaded = false; children = []; profiles = []; select.replaceChildren(); select.disabled = true; count.textContent = "—"; bind.disabled = true;
  }
  function dialog(title, html) {
+  modal.classList.remove("definition-dialog");
   document.querySelector("#modal-title").textContent = title;
   document.querySelector("#modal-body").innerHTML = html;
   modal.showModal();
@@ -67,7 +69,30 @@
  }
  function tasksPanel(tasks, compact = false) {
   const rows = compact ? tasks.filter(t => ["PENDING","IN_PROGRESS"].includes(t.taskStatus)).slice(0,3) : tasks;
-  return `<section class="panel account-card"><div class="account-card-heading"><h2>${compact ? "待填問卷" : "家長問卷"}</h2>${compact ? '<button class="text-button" data-page="tasks">查看全部 →</button>' : ""}</div>${rows.length ? rows.map(t => `<div class="account-task-row"><div><strong>${esc(t.questionnaireTitle)}</strong><p>第 ${esc(t.assignmentRound)} 輪 · 版本 ${esc(t.versionNumber)} · ${t.isRequired ? "必填" : "選填"}</p></div><span class="tag">${esc(taskNames[t.taskStatus] || t.taskStatus)}</span></div>`).join("") : "<p>目前沒有待填問卷。</p>"}</section>`;
+  return `<section class="panel account-card"><div class="account-card-heading"><h2>${compact ? "待填問卷" : "家長問卷"}</h2>${compact ? '<button class="text-button" data-page="tasks">查看全部 →</button>' : ""}</div>${rows.length ? rows.map(t => `<div class="account-task-row"><div><strong>${esc(t.questionnaireTitle)}</strong><p>第 ${esc(t.assignmentRound)} 輪 · 版本 ${esc(t.versionNumber)} · ${t.isRequired ? "必填" : "選填"}</p></div><div class="account-task-actions"><span class="tag">${esc(taskNames[t.taskStatus] || t.taskStatus)}</span><button class="btn secondary" type="button" data-definition-task="${esc(t.taskId)}" aria-label="查看${esc(t.questionnaireTitle)}題目">查看題目</button></div></div>`).join("") : "<p>目前沒有待填問卷。</p>"}</section>`;
+ }
+ async function showDefinition(taskId) {
+  if (!await closeAccountDialog()) return;
+  const request = definitionGate.begin();
+  dialog("問卷內容", '<p role="status">正在載入問卷內容…</p>');
+  modal.classList.add("definition-dialog");
+  const body = document.querySelector("#modal-body");
+  try {
+   const definition = await EarlyCareParentClient.loadDefinition(api, taskId);
+   if (!definitionGate.current(request) || !modal.open) return;
+   document.querySelector("#modal-title").textContent = definition.title;
+   body.innerHTML = `<p class="definition-version">版本 ${esc(definition.versionNumber)} · 共 ${definition.questions.length} 題</p>${definition.instructions ? `<p class="definition-instructions">${esc(definition.instructions)}</p>` : ""}<ol class="definition-questions">${definition.questions.map(q => `<li class="definition-question"><h3><span>${esc(q.order)}. ${esc(q.text)}</span><small>${q.requiredOnSubmit ? "必答" : "選答"}</small></h3><ul class="definition-options" aria-label="題目選項">${q.options.map(o => `<li>${esc(o.label)}</li>`).join("")}</ul></li>`).join("")}</ol><div class="actions"><button class="btn secondary" type="button" data-close-definition>返回任務清單</button></div>`;
+   document.querySelector("#modal-title").tabIndex = -1;document.querySelector("#modal-title").focus();
+   modal.scrollTop = 0;
+  } catch (error) {
+   if (!definitionGate.current(request) || !modal.open) return;
+   if ([401,403,404].includes(error.status)) {
+    await closeAccountDialog();loadGate.begin();renderGate.begin();clearData();root.innerHTML = errorPanel(error);
+   } else {
+    body.innerHTML = `<p role="alert" tabindex="-1">${esc(error.message)}</p><div class="actions"><button class="btn secondary" type="button" data-definition-task="${esc(taskId)}">重新載入問卷</button><button class="btn secondary" type="button" data-close-definition>返回任務清單</button></div>`;
+    body.querySelector('[role="alert"]').focus();
+   }
+  }
  }
  async function render() {
   const request = renderGate.begin(), selectedId = currentId, selectedPage = page;
@@ -127,6 +152,9 @@
  select.addEventListener("change", () => { currentId = select.value; render(); });
  document.querySelector("#close-modal").addEventListener("click", closeAccountDialog);
  document.addEventListener("click", async event => {
+  const definitionButton = event.target.closest("[data-definition-task]");
+  if (definitionButton && loaded) { showDefinition(definitionButton.dataset.definitionTask); return; }
+  if (event.target.closest("[data-close-definition]")) { await closeAccountDialog(); return; }
   const nav = event.target.closest("[data-page]");
   if (nav) {
    if(!await closeAccountDialog())return;

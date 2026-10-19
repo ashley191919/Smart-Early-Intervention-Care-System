@@ -75,4 +75,16 @@ dotnet run --project tests/QuestionnairePhase22Harness.csproj --no-launch-profil
 
 11 已完成這批 Adapter／正式讀題 API／DI／隔離整合驗證。請 16 核對來源版本與路由，接續提供 Parent Draft／Submit／本人 Response 的共用核心、作者資料模型及交易契約，避免重做儲存流程。
 
-仍待完成：作者隔離與共用寫入服務、正式前端讀題／填答介接、MySQL 8.4.11 整合驗收、撤銷並發協定、三端 Session／錯誤格式統一。Schema／Migration 仍由 16 統整；ParentEmailLogin:Enabled 保持預設 false，未啟用正式寄碼，不代表現在能用真實帳號跑完整問卷。
+仍待完成：作者隔離與共用寫入服務、正式前端填答／暫存／提交介接、MySQL 8.4.11 整合驗收、撤銷並發協定、三端 Session／錯誤格式統一。Schema／Migration 仍由 16 統整；ParentEmailLogin:Enabled 保持預設 false，未啟用正式寄碼，不代表現在能用真實帳號跑完整問卷。
+
+## 前端讀題後續完成項目（2026-10-19）
+
+- Account 家長首頁與「我的問卷」新增「查看題目」，直接呼叫正式 Definition API；沿用現有對話框、醫院識別、字體與配色。
+- 顯示 Task 固定版本的標題、說明、全部題目、選項及後端 RequiredOnSubmit 規則。僅閱讀，沒有輸入、暫存或送出操作；不另用既有示範問卷替代正式資料。
+- 載入先清除上一份內容；成功後焦點移至問卷標題；失敗提供手動重新載入與返回。401 清除登入，403／404 清除孩子與題目資料；503 不自動重試。
+- 關閉、離開／歷史還原及登入變更會捨棄過期請求，避免較晚的結果重新顯示舊題目。所有 API 文字以 textContent 或 HTML escaping 顯示，不插入原始 HTML。
+- Node 前端測試共 39 項通過（新增 5 項讀題 client 測試）；CaseGuardianHarness 209 項再驗通過。
+- 瀏覽器隔離驗收：1440×900、390×844；12 題／48 個選項完整保留，對話框內垂直捲動，文件與對話框均無橫向溢出。驗證重新載入、返回、Escape、慢速載入後關閉、503→重試成功、404 清除資料及 401 過期處理。
+- 驗收使用測試執行檔中的 SQLite、合成帳號與 JWT，未寄真實郵件、未連接本機／雲端 MySQL。測試旗標：`--serve-email-browser-fixture --definition-browser-data`；fixture 登入與情境路由只存在測試專案，不註冊到正式網站。
+
+雲端狀態：依團隊回報，VM MySQL／SSH Tunnel 與唯讀工具已可連線，之前為 0 applied／4 pending Migration。尚無這批 Email／Guardian／Definition 模型已部署及網站已接雲端的驗收結果；不能僅依 localhost 頁面判定資料來源。需 16 統整 Migration 後，再明確確認網站使用的連線目標、執行唯讀辨識與完整跨角色流程。這次不變更 ConnectionString、不自行套用 Migration。

@@ -4,6 +4,31 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const {createClient,summarize,latestRequest}=require('../EarlyInterventionCare.Api/wwwroot/js/parent-account-client.js');
 const {loadChildren}=require('../EarlyInterventionCare.Api/wwwroot/js/parent-account-client.js');
+const {loadDefinition}=require('../EarlyInterventionCare.Api/wwwroot/js/parent-account-client.js');
+
+const definitionTaskId='a0000000-0000-4000-8000-000000000001';
+function definition(){return {taskId:definitionTaskId,questionnaireVersionId:'b0000000-0000-4000-8000-000000000002',title:'原指派問卷',versionNumber:'1',instructions:'說明',questions:[{questionId:'q1',order:1,text:'題目',type:'singleChoice',requiredOnSubmit:true,options:[{value:'0',label:'沒有'}]}]};}
+test('definition GET trusts task route only, with no user/version/case supplied by frontend',async()=>{
+ const expected=definition();let calls=0;
+ const actual=await loadDefinition(async path=>{calls++;assert.equal(path,`/api/parent/tasks/${definitionTaskId}/questionnaire`);return expected;},definitionTaskId);
+ assert.equal(actual,expected);assert.equal(calls,1);
+});
+test('invalid task identifiers never initiate requests',async()=>{
+ let calls=0;await assert.rejects(loadDefinition(async()=>{calls++;},'../cases/other'),/識別/);assert.equal(calls,0);
+});
+test('definition rejects wrong task and malformed questions rather than displaying cached/fallback forms',async()=>{
+ for(const change of [d=>{d.taskId='other';},d=>{d.questions=[];},d=>{d.questions[0].options=null;},d=>{d.questions[0].type='unsupported';},d=>{d.instructions={text:'wrong'};}]){
+  const body=definition();change(body);await assert.rejects(loadDefinition(async()=>body,definitionTaskId),/格式/);
+ }
+});
+test('definition authorization errors propagate without fallback or retry',async()=>{
+ for(const status of [401,403,404,503]){let calls=0;await assert.rejects(loadDefinition(async()=>{calls++;throw Object.assign(new Error('denied'),{status});},definitionTaskId),e=>e.status===status);assert.equal(calls,1);}
+});
+test('definition loaded after logout is discarded by authenticated client',async()=>{
+ const state=session();let reply;const api=createClient(state,()=>new Promise(resolve=>{reply=resolve;}));
+ const pending=loadDefinition(api,definitionTaskId);state.signOut();reply({status:200,ok:true,json:async()=>definition()});
+ await assert.rejects(pending,e=>e.code==='SESSION_CHANGED');
+});
 test('refreshing paginated child scope excludes revoked children from previous response',async()=>{
  const old=Array.from({length:100},(_,i)=>({caseId:'old-'+i}));let phase=0;
  const api=async path=>phase===0?(path.includes('page=1&')?old:[{caseId:'revoked'}]):[{caseId:'still-bound'}];

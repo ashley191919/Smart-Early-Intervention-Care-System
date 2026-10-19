@@ -219,7 +219,35 @@ jwtBuilder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBea
 jwtBuilder.Services.AddAuthorization();jwtBuilder.Services.AddRateLimiter(o=>{foreach(var name in new[]{"parent-binding","parent-otp-request","parent-otp-verify"})o.AddFixedWindowLimiter(name,l=>{l.PermitLimit=100;l.Window=TimeSpan.FromMinutes(1);});});
 await using(var jwtApp=jwtBuilder.Build())
 {
- if(emailBrowserFixture){emailHttpSettings.Enabled=true;jwtApp.UseDefaultFiles();jwtApp.UseStaticFiles();jwtApp.MapGet("/fixture-email-code",()=>Results.Text(emailHttpSender.Code));}
+ if(emailBrowserFixture){
+  emailHttpSettings.Enabled=true;jwtApp.UseDefaultFiles();jwtApp.UseStaticFiles();jwtApp.MapGet("/fixture-email-code",()=>Results.Text(emailHttpSender.Code));
+  if(args.Contains("--definition-browser-data")){
+   // Synthetic fixture only: no routes or authentication shortcuts in the actual application.
+   await db.Users.Where(u=>u.Id==otpParent.UserId).ExecuteUpdateAsync(s=>s.SetProperty(u=>u.EmailVerifiedAtUtc,DateTime.UtcNow));
+   var definitionCase=await service.CreateAsync(staff,new CaseInput{NationalId="A123456789",Address="隔離驗收地址",ChildName="讀題驗收孩子",BirthDate=new(2022,1,1)});
+   var definitionGuardian=await service.AddGuardianAsync(staff,definitionCase.CaseId,new GuardianInput{DisplayName="隔離驗收家長",Email="otp-parent@example.invalid",Phone="0955555555",Relationship="GUARDIAN"});
+   var definitionInvite=await service.InviteAsync(staff,definitionCase.CaseId,definitionGuardian.GuardianId);
+   await service.BindAsync(await access.ActorAsync(Principal(otpParent.UserId)),definitionInvite.Code);
+   var definitionForm=new Questionnaire{QuestionnaireId=Guid.NewGuid(),QuestionnaireCode="BROWSER_DEFINITION",Title="家長觀察問卷"};
+   var definitionVersion=new QuestionnaireVersion{QuestionnaireVersionId=Guid.NewGuid(),QuestionnaireId=definitionForm.QuestionnaireId,RespondentRole="PARENT",VersionNumber="1.0",VersionStatus="RETIRED",DefinitionSnapshot=JsonSerializer.Serialize(new{title="家長觀察問卷",instructions="請依孩子過去一星期的日常情況，閱讀各題目與選項。",questions=Enumerable.Range(1,12).Select(i=>new{questionId="q"+i,order=i,text="孩子在日常活動中能夠專注參與並完成活動（第 "+i+" 題）",type="singleChoice",required=true,options=new[]{new{value="0",label="完全沒有"},new{value="1",label="有一點"},new{value="2",label="還算不少"},new{value="3",label="非常多"}}})})};
+   var definitionTask=new QuestionnaireTask{TaskId=Guid.NewGuid(),CaseId=definitionCase.CaseId,QuestionnaireId=definitionForm.QuestionnaireId,QuestionnaireVersionId=definitionVersion.QuestionnaireVersionId,RespondentRole="PARENT",AssignmentRound=1,TaskStatus="PENDING"};
+   db.Questionnaires.Add(definitionForm);db.QuestionnaireVersions.Add(definitionVersion);db.QuestionnaireTasks.Add(definitionTask);await db.SaveChangesAsync();
+   var definitionToken=tokens.CreateToken(otpParent.UserId,"fixture-parent","PARENT").AccessToken;
+   jwtApp.MapGet("/fixture-parent-login",()=>Results.Content("<script>sessionStorage.setItem('earlycare.parent.accessToken',"+JsonSerializer.Serialize(definitionToken)+");location.replace('/parent-workspace.html?mode=account');</script>","text/html"));
+   string definitionScenario="normal";
+   jwtApp.MapGet("/fixture-definition-state/{state}",(string state)=>{definitionScenario=state;return Results.Text(state);});
+   jwtApp.Use(async(context,next)=>{
+    if(context.Request.Path.StartsWithSegments("/api/parent/tasks")&&context.Request.Path.Value!.EndsWith("/questionnaire")){
+     if(definitionScenario=="slow")await Task.Delay(1500);
+     if(definitionScenario is "unavailable" or "revoked" or "expired"){
+      context.Response.StatusCode=definitionScenario=="unavailable"?503:definitionScenario=="revoked"?404:401;
+      await context.Response.WriteAsJsonAsync(new{code="FIXTURE_UNAVAILABLE",message="問卷目前無法載入，請重新載入確認。"});return;
+     }
+    }
+    await next();
+   });
+  }
+ }
  jwtApp.UseAuthentication();jwtApp.UseAuthorization();jwtApp.UseRateLimiter();jwtApp.MapControllers();await jwtApp.StartAsync();
  if(emailBrowserFixture){Console.WriteLine("Disposable SQLite/JWT Email fixture: http://127.0.0.1:5183/?role=parent; approved test mailbox otp-parent@example.invalid. Code available only on /fixture-email-code. Test sender, no real email or MySQL.");await jwtApp.WaitForShutdownAsync();return;}
  var jwtClient=jwtApp.GetTestClient();
