@@ -7,7 +7,7 @@
  const definitionGate = EarlyCareParentClient.latestRequest();
  const root = document.querySelector("#page-content"), select = document.querySelector("#child-select"), modal = document.querySelector("#modal");
  const count = document.querySelector(".nav-count"), bind = document.querySelector('[data-action="bind"]');
- let children = [], profiles = [], currentId = "", page = "home", loaded = false;
+ let children = [], profiles = [], currentId = "", page = ["home","tasks","children","teacher","consent","help"].includes(new URLSearchParams(location.search).get("page")) ? new URLSearchParams(location.search).get("page") : "home", loaded = false;
  function accountFormDirty() {
   if(!modal.open)return false;
   const form = modal.querySelector("form");
@@ -196,5 +196,6 @@
    if ([401,403,404].includes(reason.status)) { modal.close(); loadGate.begin(); renderGate.begin(); clearData(); root.innerHTML = errorPanel(reason); }
   } finally { delete form.dataset.submitting; button.disabled = conflict; }
  });
+ document.querySelectorAll(".nav [data-page]").forEach(button=>{const active=button.dataset.page===page;button.classList.toggle("active",active);if(active)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");});
  load();
 })();

@@ -15,7 +15,8 @@
     {taskId:'teacher-snap-r2',name:'SNAP-IV 教師版',round:2,isCompleted:false},
     {taskId:'teacher-clancy-r2',name:'克氏行為量表教師版',round:2,isCompleted:false}
   ]}]]);
-  let selected=children[0].id, page='home', filter='all', taskScope='current', toastTimer;
+  function initialPage(){const page=new URLSearchParams(location.search).get('page');return ['home','tasks','children','teacher','consent','help'].includes(page)?page:'home';}
+  let selected=children[0].id, page=initialPage(), filter='all', taskScope='current', toastTimer;
   let previewState='normal';
   const teacherPreviewUrl=new URL('/?role=teacher',location.origin).href;
   function showShare(){

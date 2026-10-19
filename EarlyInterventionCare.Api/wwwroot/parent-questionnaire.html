@@ -4,17 +4,18 @@
 <script src="/js/shared-demo.js?v=20261019-parent-flow" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>家長填答工作台｜早療智慧動態照顧系統</title>
+<title>家長照顧工作台｜早療智慧動態照顧系統</title>
 <link rel="stylesheet" href="/css/teacher-workspace.css?v=20261011-integration">
 <link rel="stylesheet" href="/css/workspace-theme.css?v=20261011-spacing">
 <meta name="referrer" content="no-referrer">
 <script src="/js/teacher-draft.js?v=20261018-access-guard" defer></script>
-<script src="/js/teacher-workspace.js?v=20261019-parent-flow" defer></script>
+<script src="/js/teacher-workspace.js?v=20261019-parent-shell" defer></script>
 <link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-product1" defer></script>
 <link rel="stylesheet" href="/css/system-interface.css?v=20261011-product3">
 <script src="/js/workspace-user-menu.js?v=20261018-unsaved-guard" defer></script>
+<link rel="stylesheet" href="/css/parent-shell.css?v=20261019-parent-shell">
 </head>
-<body>
+<body class="parent-shell parent-fill">
 <svg class="sprite" aria-hidden="true"><defs>
 <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M12 21v-9M12 14C4 14 3 8 4 3c7 0 10 5 8 11ZM12 17c0-7 4-10 9-9 0 6-3 10-9 9Z"/></symbol>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></symbol>
@@ -26,17 +27,9 @@
 <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
 <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 12H4m6-6-6 6 6 6"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
-</defs></svg>
+<symbol id="leaf" viewBox="0 0 24 24"><path d="M12 21v-9M12 14C4 14 3 8 4 3c7 0 10 5 8 11ZM12 17c0-7 4-10 9-9 0 6-3 10-9 9Z"/></symbol><symbol id="home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z M9 20v-7h6v7"/></symbol><symbol id="form" viewBox="0 0 24 24"><path d="M8 4H4v17h16V4h-4 M8 2h8v5H8Z M8 11h8 M8 15h6"/></symbol><symbol id="child" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol><symbol id="shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9S4 17 4 12V6Z M8 12l3 3 5-6"/></symbol><symbol id="help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4 M12 17h.01"/></symbol></defs></svg>
 <div class="app">
-<aside class="sidebar">
- <div class="brand"><span class="brandmark"><svg><use href="#i-leaf"/></svg></span><div><strong>早療智慧動態照顧</strong><small>家長填答工作台</small></div></div>
- <div><p class="side-label">家長填答工作台</p><nav class="nav" aria-label="主選單">
- <button type="button" data-nav="home" class="active" aria-current="page"><svg><use href="#i-home"/></svg>家長儀表板</button>
- <button type="button" data-nav="tasks"><svg><use href="#i-form"/></svg>本次問卷<span class="badge" id="nav-count">2</span></button>
- <button type="button" data-nav="help"><svg><use href="#i-help"/></svg>填寫協助</button>
- </nav></div>
- <div class="side-note" hidden><strong><svg><use href="#i-shield"/></svg>指定問卷授權規則</strong><p>僅提供本次指定問卷。授權不限時；本次指定問卷全部提交成功或家長撤銷授權後失效。</p><button type="button" class="demo-reset" id="reset-demo">重新體驗示範</button><a class="return-login" href="/parent-workspace.html">返回家長儀表板</a></div><div class="sidebar-footer"><p>輔仁大學附設醫院</p><small>兒童發展聯合評估中心</small></div>
-</aside>
+<aside class="sidebar"><div class="brand"><span class="brand-icon"><svg><use href="#leaf"/></svg></span><div><strong>早療智慧動態照顧</strong><small>家長照顧工作台</small></div></div><div class="sidebar-menu"><p class="side-label nav-label">陪伴孩子的每一步</p><nav class="nav" aria-label="家長主選單"><button data-parent-page="home" ><svg><use href="#home"/></svg>我的首頁</button><button data-parent-page="tasks" class="active" aria-current="page"><svg><use href="#form"/></svg>我的問卷<span class="nav-count" id="nav-count">0</span></button><button data-parent-page="children"><svg><use href="#child"/></svg>我的孩子</button><button data-parent-page="teacher"><svg><use href="#shield"/></svg>教師授權與進度</button><button data-parent-page="consent"><svg><use href="#form"/></svg>同意與資料使用</button><button data-parent-page="help"><svg><use href="#help"/></svg>使用協助</button></nav></div><div class="sidebar-footer"><p>輔仁大學附設醫院</p><small>兒童發展聯合評估中心</small></div><button type="button" id="reset-demo" hidden>重新開始</button></aside>
 <div class="workspace">
  <header class="topbar"><div class="hospital-brand"><img class="hospital-mark" src="/images/hospital-logo.png" alt="" width="325" height="247"><div><p class="hospital-name">天主教輔仁大學附設醫院</p><p class="hospital-english" lang="en">FU JEN CATHOLIC UNIVERSITY HOSPITAL</p></div></div><div class="breadcrumb">家長端 <span aria-hidden="true">／</span><b id="crumb">任務首頁</b></div><div class="session"><span class="session-dot"></span><span class="session-label" id="session-label">家長端畫面預覽</span><span class="demo">互動示範</span><span class="avatar" aria-label="家長身分">家</span></div></header>
  <main class="content">

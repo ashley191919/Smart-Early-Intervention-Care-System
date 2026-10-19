@@ -4,6 +4,10 @@ const $=id=>document.getElementById(id);
 const authorizedMode=new URLSearchParams(location.search).get('mode')==='authorized';
 const sharedMode=new URLSearchParams(location.search).get('mode')==='demo';
 const sharedRole=location.pathname.includes('parent-questionnaire')?'parent':'teacher';
+document.querySelectorAll('[data-parent-page]').forEach(button=>button.addEventListener('click',async()=>{
+  if(draftBusy||submissionBusy||!await saveDraft(true))return;
+  location.assign('/parent-workspace.html?page='+encodeURIComponent(button.dataset.parentPage));
+}));
 if(sharedMode)window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 const sharedCode=sessionStorage.getItem('earlycare.demo.teacher');
 let sharedTasks=[],sharedRevisions={};

@@ -1,0 +1,36 @@
+/* One parent navigation shell for the dashboard and questionnaire pages. */
+.parent-shell .app { display:flex; height:100svh; min-height:0; }
+.parent-shell .sidebar { width:232px; flex:0 0 232px; display:flex; flex-direction:column; gap:0; padding:25px 20px; background:white; border-top:8px solid var(--green); border-right:1px solid var(--line); overflow-y:auto; }
+.parent-shell .sidebar .brand { display:flex; align-items:center; gap:11px; margin:0; }
+.parent-shell .sidebar .brand-icon { display:grid; place-items:center; flex:none; width:36px; height:36px; border-radius:10px; background:var(--pale); color:var(--green); }
+.parent-shell .sidebar .brand strong { display:block; font-size:15px; line-height:1.75; color:var(--dark); }
+.parent-shell .sidebar .brand small { display:block; font-size:10px; line-height:1.75; margin:0; color:var(--muted); }
+.parent-shell .sidebar-menu { margin-top:28px; }
+.parent-shell .sidebar .nav-label { display:block; margin:0 13px 13px; font-size:11px; color:var(--muted); }
+.parent-shell .sidebar .nav { display:grid; gap:8px; }
+.parent-shell .sidebar .nav button { display:flex; align-items:center; gap:11px; min-width:0; min-height:48px; margin:0; padding:13px; border:0; border-radius:9px; background:transparent; color:#87919b; font:inherit; font-size:14px; text-align:left; }
+.parent-shell .sidebar .nav button.active { background:var(--pale); color:var(--dark); font-weight:700; }
+.parent-shell .sidebar .nav button:hover { background:#f8fafc; }
+.parent-shell .sidebar svg { width:20px; height:20px; flex:none; }
+.parent-shell .sidebar .nav-count { margin-left:auto; border-radius:5px; padding:0 7px; font-size:12px; background:#e5eeec; }
+.parent-shell .sidebar .sidebar-footer { margin-top:auto; }
+.parent-shell .workspace { display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; }
+.parent-shell .content { flex:1; min-height:0; overflow:auto; }
+/* Headings receive programmatic focus for screen readers, not an input-like border. */
+.parent-shell h1[tabindex="-1"]:focus { outline:none; }
+.parent-shell .nav button:focus-visible { outline:3px solid #476f6b; outline-offset:3px; }
+@media(max-width:1100px) and (min-width:801px) {
+ .parent-shell .sidebar { width:200px; flex-basis:200px; padding:25px 14px; }
+ .parent-shell .sidebar .brand strong { font-size:13px; }
+}
+@media(max-width:800px) {
+ .parent-shell .app { display:block; height:auto; min-height:100svh; }
+ .parent-shell .sidebar { width:auto; padding:16px 23px; border-top-width:6px; border-right:0; border-bottom:1px solid var(--line); }
+ .parent-shell .sidebar-menu { margin-top:16px; }
+ .parent-shell .sidebar .nav-label { display:none; }
+ .parent-shell .sidebar .nav { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+ .parent-shell .sidebar .nav button { font-size:12px; padding:8px; gap:7px; flex-wrap:wrap; }
+ .parent-shell .sidebar .nav-count { margin-left:0; }
+ .parent-shell .workspace { min-height:0; }
+ .parent-shell .content { overflow:visible; }
+}
