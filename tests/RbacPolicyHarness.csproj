@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IntermediateOutputPath>obj/RbacPolicyHarness/</IntermediateOutputPath>
+    <OutputPath>bin/RbacPolicyHarness/</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RbacPolicyHarness.cs" />
+    <ProjectReference Include="../EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj" />
+  </ItemGroup>
+</Project>
