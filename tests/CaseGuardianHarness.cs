@@ -205,6 +205,7 @@ if(emailBrowserFixture)jwtBuilder.WebHost.UseUrls("http://127.0.0.1:5183");else 
 jwtBuilder.Services.AddControllers().AddApplicationPart(typeof(EarlyInterventionCare.Api.Controllers.CasesController).Assembly);
 jwtBuilder.Services.AddScoped(_=>new ApplicationDbContext(options));jwtBuilder.Services.AddScoped<CaseAccessService>();jwtBuilder.Services.AddScoped<CaseGuardianService>();jwtBuilder.Services.AddSingleton<TimeProvider>(clock);
 jwtBuilder.Services.AddScoped<IQuestionnaireStore,EfQuestionnaireStore>();jwtBuilder.Services.AddScoped<QuestionnaireService>();
+jwtBuilder.Services.AddParentQuestionnaireDefinitions();
 jwtBuilder.Services.AddSingleton(tokens);jwtBuilder.Services.AddSingleton<EarlyInterventionCare.Api.Services.Authentication.IParentSmsVerification>(testSms);
 jwtBuilder.Services.AddScoped<EarlyInterventionCare.Api.Services.Authentication.ParentOtpAuthenticationService>();
 jwtBuilder.Services.AddSingleton<EarlyInterventionCare.Api.Services.Email.IParentEmailVerification>(emailHttpVerifier);
@@ -294,6 +295,7 @@ await using(var jwtApp=jwtBuilder.Build())
  var emailBoundList=await(await jwtClient.GetAsync("/api/parent/cases")).Content.ReadAsStringAsync();
  Check(emailBoundList.Contains(emailBoundCase.CaseId.ToString())&&!emailBoundList.Contains(second.CaseId.ToString()),"Email login only reads its explicitly bound child");
  Check((await jwtClient.PostAsync("/api/parent/bindings",EmailJson(new{invitationCode=emailInvite.Code}))).StatusCode==HttpStatusCode.BadRequest,"Email invitation cannot replay over HTTP");
+ checks += await ParentDefinitionIntegrationChecks.RunAsync(jwtClient, options, otpParent.UserId, emailBoundCase.CaseId, emailGuardian.GuardianId, tokens);
  await service.RevokeLinkAsync(staff,emailBoundCase.CaseId,emailGuardian.GuardianId);
  Check(await(await jwtClient.GetAsync("/api/parent/cases")).Content.ReadAsStringAsync()=="[]","Email JWT loses child scope after binding revoked");
  Check(await db.CaseGuardians.AsNoTracking().AnyAsync(l=>l.CaseId==emailBoundCase.CaseId&&l.LinkStatus=="REVOKED"),"Email revoke retains relationship record");

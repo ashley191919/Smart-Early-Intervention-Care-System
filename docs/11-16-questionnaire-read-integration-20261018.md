@@ -2,6 +2,8 @@
 
 日期：2026-10-18。這份文件是程式比對、接口提案及待驗收清單，沒有新增正式 API、合併分支或套用 Migration。
 
+2026-10-19 更新：本文件保留原版本比對紀錄。後續已接入 `5078565` 共用 Definition 核心與 Guardian／Email 授權，新增正式讀題 API，最新結果及仍待完成項目見 [家長讀題 API 整合](parent-definition-api-integration.md)。以下舊版 PhoneVerified 條件已由 Email 規則取代。
+
 ## 1. 固定比對版本與結論
 
 | 項目 | 版本 |

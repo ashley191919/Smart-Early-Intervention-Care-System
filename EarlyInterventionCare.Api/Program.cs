@@ -41,7 +41,6 @@ if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddSingleton<ITeacherGrantService, InMemoryTeacherGrantService>();
     builder.Services.AddScoped<TeacherWorkspaceService>();
-    builder.Services.AddSingleton<EarlyInterventionCare.Api.Services.Questionnaires.QuestionnaireAnswerValidator>();
     builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.ITeacherQuestionnaireStore,
         EarlyInterventionCare.Api.Services.Questionnaires.EfTeacherQuestionnaireStore>();
     builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.TeacherQuestionnaireWorkflowService>();
@@ -138,6 +137,7 @@ builder.Services.AddScoped<ParentEmailAuthenticationService>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.IQuestionnaireStore,
     EarlyInterventionCare.Api.Services.Questionnaires.EfQuestionnaireStore>();
 builder.Services.AddScoped<EarlyInterventionCare.Api.Services.Questionnaires.QuestionnaireService>();
+EarlyInterventionCare.Api.Services.Questionnaires.ParentQuestionnaireDefinitionRegistration.AddParentQuestionnaireDefinitions(builder.Services);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
