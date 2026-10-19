@@ -14,6 +14,7 @@ public sealed class CaseStatusHistoryController(CaseStatusHistoryQueryService se
     ICaseStatusHistoryAccessAuthorizer accessAuthorizer) : ControllerBase
 {
     [HttpGet("{caseId}/status-history")]
+    [Authorize(Policy = "Permission:case.status_history.read")]
     [ProducesResponseType(typeof(CaseStatusHistoryPageResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

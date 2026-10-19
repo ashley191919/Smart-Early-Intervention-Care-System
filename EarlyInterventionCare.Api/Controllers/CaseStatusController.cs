@@ -37,6 +37,7 @@ public sealed class CaseStatusController(CaseStatusService service,
     ICaseStatusAccessAuthorizer accessAuthorizer) : ControllerBase
 {
     [HttpPatch("{caseId:guid}/status")]
+    [Authorize(Policy = "Permission:case.status.update")]
     [ProducesResponseType(typeof(ChangeCaseStatusResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

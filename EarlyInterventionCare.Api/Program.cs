@@ -13,6 +13,7 @@ using Microsoft.OpenApi.Models;
 using EarlyInterventionCare.Api.Services.Authentication;
 using EarlyInterventionCare.Api.Services.Cases;
 using EarlyInterventionCare.Api.Security;
+using EarlyInterventionCare.Api.Services.Authorization;
 // EF tooling uses the offline factory; do not initialize the runtime host or its secrets.
 if (EF.IsDesignTime)
 {
@@ -138,7 +139,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddPermissionAuthorization();
+builder.Services.AddAuthorization(options => options.AddFirstBatchPermissionPolicies());
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
@@ -204,6 +206,7 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+app.UseMiddleware<PermissionLookupExceptionMiddleware>();
 app.UseAuthentication();
 app.UseMiddleware<StaffCookieCsrfMiddleware>();
 app.UseAuthorization();
