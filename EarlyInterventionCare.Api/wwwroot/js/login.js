@@ -6,7 +6,30 @@ const tabs = Array.from(document.querySelectorAll(".role-tab"));
 const panels = Array.from(document.querySelectorAll(".role-panel"));
 const dialog = document.querySelector("#info-dialog");
 
+function clearLegacyMedicalPassword() {
+  const password = document.querySelector("#medical-form #staff-password");
+  if (password) password.value = "";
+}
+
+function redirectToStaffLogin() {
+  clearLegacyMedicalPassword();
+  window.location.assign("/staff-login.html");
+}
+
+// Also clear restored form values when returning through the browser's page cache.
+clearLegacyMedicalPassword();
+window.addEventListener("pagehide", clearLegacyMedicalPassword);
+window.addEventListener("pageshow", clearLegacyMedicalPassword);
+
 function selectRole(tab, focus = false) {
+  // The medical workspace has a dedicated authenticated login page.  Keep the
+  // shared page for the parent and teacher flows only, so every medical entry
+  // uses the staff session API instead of the legacy prototype form below.
+  if (tab.id === "tab-medical") {
+    redirectToStaffLogin();
+    return;
+  }
+
   tabs.forEach(item => {
     const selected = item === tab;
     item.setAttribute("aria-selected", String(selected));
@@ -44,11 +67,12 @@ function showStatus(form, message) {
   status.hidden = false;
 }
 
-document.querySelector("#medical-form").addEventListener("submit", event => {
+const legacyMedicalForm = document.querySelector("#medical-form");
+legacyMedicalForm.addEventListener("submit", event => {
   event.preventDefault();
-  document.querySelector("#staff-password").value = "";
-  showStatus(event.target, "暫時無法登入，請稍後重試。");
+  redirectToStaffLogin();
 });
+legacyMedicalForm.querySelector('a[href="/staff-login.html"]')?.addEventListener("click", clearLegacyMedicalPassword);
 
 function openInfo(title, paragraphs) {
   document.querySelector("#dialog-title").textContent = title;

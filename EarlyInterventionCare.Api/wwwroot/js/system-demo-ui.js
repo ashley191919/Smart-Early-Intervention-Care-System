@@ -1,17 +1,7 @@
 'use strict';
 (() => {
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function medicalLogin(event){
-    event.preventDefault();event.stopImmediatePropagation();
-    const host=document.querySelector('#medical-form')||document.querySelector('.login-form');
-    const unit=host.querySelector('#unit-code,#organization-code'),account=host.querySelector('#staff-account'),password=host.querySelector('#staff-password');
-    let status=host.querySelector('.form-status');if(!status){status=document.createElement('p');status.className='form-status';host.append(status);}
-    if(!unit.value.trim()||!account.value.trim()||!password.value){status.textContent='請填寫單位代碼、帳號與密碼。';status.hidden=false;return;}
-    if(unit.value.trim().toUpperCase()!=='DEMO'||account.value.trim()!=='demo'||password.value!=='demo'){password.value='';status.textContent='單位代碼、帳號或密碼不正確，請重新輸入。';status.hidden=false;return;}
-    password.value='';location.assign('/staff-dashboard.html');
-  }
-  document.addEventListener('submit',e=>{if(e.target.id==='medical-form')medicalLogin(e);},true);
-  document.addEventListener('click',e=>{if(e.target.closest('.login-button'))medicalLogin(e);},true);
+  // Legacy medical entry events belong to login.js, never to the fixture UI.
   const main=document.querySelector('#main-content');
   if(main&&['/case-detail.html','/staff-dashboard.html'].includes(location.pathname)){
     const panel=document.createElement('section');panel.id='shared-tasks';panel.className='system-demo-panel';
@@ -24,5 +14,5 @@
       const dialog=document.createElement('dialog');dialog.innerHTML=`<h2>${esc(t.name)} · ${t.role==='parent'?'家長':'教師'}原始答案</h2><p>問卷版本 ${esc(t.version)} · 提交後不能修改</p><p>提交時間：${esc(new Date(t.draft.submittedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}))}</p><ol>${Object.keys(t.draft.answers).sort((a,b)=>Number(a)-Number(b)).map(i=>`<li>${esc(t.draft.questions?.[i]||`第 ${Number(i)+1} 題`)}：<strong>${esc(t.draft.options?.[t.draft.answers[i]]??`選項代碼 ${t.draft.answers[i]}`)}</strong></li>`).join('')}</ol><p>補充觀察：${esc(t.draft.note)}</p><button>關閉</button>`;dialog.querySelector('button').onclick=()=>{dialog.close();dialog.remove();};dialog.addEventListener('cancel',()=>dialog.remove());document.body.append(dialog);dialog.showModal();});
     if(location.hash==='#shared-tasks')document.addEventListener('DOMContentLoaded',()=>{document.querySelector('#detail-tab-forms')?.click();panel.scrollIntoView();});
   }
-  if(location.pathname==='/frontend-preview.html')location.replace('/?role=medical');
+  if(location.pathname==='/frontend-preview.html')location.replace('/staff-login.html');
 })();
