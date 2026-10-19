@@ -98,6 +98,7 @@
     s.grant=SharedDemo.read().grant;
   }
   window.addEventListener('storage',()=>render());window.addEventListener('focus',()=>render());
+  window.addEventListener('pageshow',event=>{if(event.persisted)render();});
   function render(){syncShared();
     document.querySelector('.child-switch').hidden=previewState!=='normal';
     document.querySelector('#crumb').textContent=page==='home'?'我的首頁':titles[page][0];document.querySelector('#page-title').textContent=titles[page][0];document.querySelector('#page-subtitle').textContent=titles[page][1];
@@ -142,7 +143,16 @@
       render();toast(grant.status==='used'?'全部授權問卷已完成，這組授權已結束。':'此份已完成；其他指定問卷未完成，授權仍有效。');return;
     }
     const f=event.target.closest('[data-filter]');if(f){filter=f.dataset.filter;render();return;}
-    const task=event.target.closest('[data-task]');if(task&&SharedDemo.tasks('parent').some(t=>t.id===task.dataset.task)){location.assign('/parent-questionnaire.html?mode=demo&task='+encodeURIComponent(task.dataset.task));return;}if(task){const t=state().tasks.find(x=>x.id===task.dataset.task);dialog(t.status==='done'?'提交紀錄':t.name,`<button class="btn" data-action="close">我知道了</button>`);return;}
+    const task=event.target.closest('[data-task]');
+    const sharedTask=task&&SharedDemo.tasks('parent').find(t=>t.id===task.dataset.task);
+    if(sharedTask){
+      if(sharedTask.status==='done'){
+        const saved=sharedTask.draft;
+        dialog('提交紀錄',`<h3>${esc(sharedTask.name)}</h3><p>第 ${esc(sharedTask.round)} 輪 · 已提交</p><p>填表人：${esc(saved?.respondent)}</p><p>填表日期：${esc(saved?.date)}</p><p>提交時間：${saved?.submittedAt?esc(new Date(saved.submittedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})):'未提供'}</p><p>提交後不能修改原始答案。</p><button class="btn" data-action="close">返回問卷清單</button>`);return;
+      }
+      location.assign('/parent-questionnaire.html?mode=demo&task='+encodeURIComponent(sharedTask.id));return;
+    }
+    if(task){const t=state().tasks.find(x=>x.id===task.dataset.task);dialog(t.status==='done'?'提交紀錄':t.name,`<button class="btn" data-action="close">我知道了</button>`);return;}
     const action=event.target.closest('[data-action]')?.dataset.action;if(!action)return;
     if(action==='close')modal.close();
     if(action==='share')showShare();

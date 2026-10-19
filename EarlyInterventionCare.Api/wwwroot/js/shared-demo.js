@@ -7,6 +7,10 @@
   const read=()=>{try{return JSON.parse(localStorage.getItem(key))||seed();}catch{return seed();}};
   function write(data){localStorage.setItem(key,JSON.stringify(data));window.dispatchEvent(new Event('demo-data-change'));}
   const tasks=role=>read().tasks.filter(t=>!role||t.role===role);
+  function parentTaskScope(taskId){
+    const rows=tasks('parent'),requested=rows.find(t=>t.id===taskId);
+    return requested?rows.filter(t=>t.caseId===requested.caseId&&t.round===requested.round):[];
+  }
   function assign(items,deadline){
     if(items.some(i=>!names[i.formId]))throw new Error('目前共用填答已接上 SNAP-IV 與克氏量表；其他表單仍待提供題目。');
     const data=read();let added=0;
@@ -30,5 +34,5 @@
     if(data.grant?.status==='active'&&data.grant.taskIds.every(id=>data.tasks.find(t=>t.id===id)?.status==='done'))data.grant.status='used';
     write(data);return t.revision;
   }
-  window.SharedDemo={read,tasks,assign,grant,verify,revoke,save,key,reset:()=>write(seed())};
+  window.SharedDemo={read,tasks,parentTaskScope,assign,grant,verify,revoke,save,key,reset:()=>write(seed())};
 })();
