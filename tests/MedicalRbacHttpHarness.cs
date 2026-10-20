@@ -28,7 +28,8 @@ builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddSingleton<FakeStore>();
 builder.Services.AddSingleton<ICaseStatusStore>(s => s.GetRequiredService<FakeStore>());
 builder.Services.AddSingleton<ICaseStatusHistoryStore>(s => s.GetRequiredService<FakeStore>());
-builder.Services.AddSingleton<ICaseStatusActorContext, FakeActor>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICaseStatusActorContext, HttpContextCaseStatusActorContext>();
 builder.Services.AddSingleton<ICaseStatusAccessAuthorizer, FakeCaseAccess>();
 builder.Services.AddSingleton<ICaseStatusHistoryAccessAuthorizer, FakeCaseAccess>();
 builder.Services.AddScoped<CaseStatusService>();
@@ -67,17 +68,19 @@ try
     {
         await Check($"{method} anonymous", method, allowed, null, HttpStatusCode.Unauthorized);
         await Check($"{method} missing permission", method, allowed, "none", HttpStatusCode.Forbidden);
-        await Check($"{method} read only", method, allowed, "read", method == HttpMethod.Get ? HttpStatusCode.OK : HttpStatusCode.Forbidden);
-        await Check($"{method} case denied", method, denied, "all", HttpStatusCode.Forbidden);
+        await Check($"{method} identity A history-read only", method, allowed, "A", method == HttpMethod.Get ? HttpStatusCode.OK : HttpStatusCode.Forbidden);
+        await Check($"{method} identity B case denied", method, denied, "B", HttpStatusCode.Forbidden);
         await Check($"{method} permission failure", method, allowed, "fault", HttpStatusCode.ServiceUnavailable, expectedCode: "AUTHORIZATION_UNAVAILABLE");
     }
-    await Check("PATCH test scope allowed", HttpMethod.Patch, allowed, "all", HttpStatusCode.OK);
+    if (store.Case.CaseStatus != "NEW" || store.Writes != 0) throw new Exception("Denied PATCH must not write case or history");
+    checks++;
+    await Check("PATCH identity B test scope allowed", HttpMethod.Patch, allowed, "B", HttpStatusCode.OK);
     if (store.Case.CaseStatus != "TO_CONTACT" || store.Writes != 1) throw new Exception("Expected exactly one authorized write");
     checks++;
-    await Check("cookie missing origin", HttpMethod.Patch, allowed, "all", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", expectedCode: "ORIGIN_REQUIRED");
-    await Check("cookie wrong origin", HttpMethod.Patch, allowed, "all", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", "https://evil.example", expectedCode: "INVALID_ORIGIN");
-    await Check("cookie missing csrf", HttpMethod.Patch, allowed, "all", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", "https://trusted.example", expectedCode: "CSRF_VALIDATION_FAILED");
-    await Check("cookie invalid csrf", HttpMethod.Patch, allowed, "all", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", "https://trusted.example", "invalid", "CSRF_VALIDATION_FAILED");
+    await Check("cookie missing origin", HttpMethod.Patch, allowed, "B", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", expectedCode: "ORIGIN_REQUIRED");
+    await Check("cookie wrong origin", HttpMethod.Patch, allowed, "B", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", "https://evil.example", expectedCode: "INVALID_ORIGIN");
+    await Check("cookie missing csrf", HttpMethod.Patch, allowed, "B", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", "https://trusted.example", expectedCode: "CSRF_VALIDATION_FAILED");
+    await Check("cookie invalid csrf", HttpMethod.Patch, allowed, "B", HttpStatusCode.Forbidden, "__Host-earlycare-staff=test", "https://trusted.example", "invalid", "CSRF_VALIDATION_FAILED");
     Console.WriteLine($"PASS: {checks} medical RBAC HTTP checks; no database.");
 }
 finally { await app.StopAsync(); await app.DisposeAsync(); }
@@ -95,12 +98,13 @@ sealed class TestAuthentication(IOptionsMonitor<AuthenticationSchemeOptions> opt
 }
 sealed class FakePermission : IPermissionService
 {
-    public static Guid Id(string value) => value switch { "read" => Guid.Parse("00000000-0000-0000-0000-000000000001"), "all" => Guid.Parse("00000000-0000-0000-0000-000000000002"), "fault" => Guid.Parse("00000000-0000-0000-0000-000000000003"), _ => Guid.Parse("00000000-0000-0000-0000-000000000004") };
+    public static Guid Id(string value) => value switch { "A" => Guid.Parse("00000000-0000-0000-0000-000000000001"), "B" => Guid.Parse("00000000-0000-0000-0000-000000000002"), "fault" => Guid.Parse("00000000-0000-0000-0000-000000000003"), _ => Guid.Parse("00000000-0000-0000-0000-000000000004") };
     public Task<IReadOnlyList<string>> GetPermissionsAsync(Guid id, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
     public Task<bool> HasPermissionAsync(Guid id, string permission, CancellationToken ct = default)
     {
         if (id == Id("fault")) throw new PermissionLookupException();
-        return Task.FromResult(id == Id("all") || (id == Id("read") && permission == "case.status_history.read"));
+        return Task.FromResult((id == Id("A") && permission == "case.status_history.read") ||
+            (id == Id("B") && permission is "case.status_history.read" or "case.status.update"));
     }
 }
 sealed class FakeCaseAccess : ICaseStatusAccessAuthorizer, ICaseStatusHistoryAccessAuthorizer
@@ -109,7 +113,6 @@ sealed class FakeCaseAccess : ICaseStatusAccessAuthorizer, ICaseStatusHistoryAcc
     public Task<CaseStatusAccessDecision> AuthorizeChangeAsync(ClaimsPrincipal user, Guid caseId, CancellationToken ct) => Task.FromResult(caseId == Allowed ? CaseStatusAccessDecision.Granted() : CaseStatusAccessDecision.Denied("DENIED", "Denied"));
     public Task<CaseStatusHistoryAccessDecision> AuthorizeReadAsync(ClaimsPrincipal user, Guid caseId, CancellationToken ct) => Task.FromResult(caseId == Allowed ? CaseStatusHistoryAccessDecision.Granted(false) : CaseStatusHistoryAccessDecision.Denied("DENIED", "Denied"));
 }
-sealed class FakeActor : ICaseStatusActorContext { public Guid? GetAuthenticatedUserId() => FakePermission.Id("all"); }
 sealed class FakeStore : ICaseStatusStore, ICaseStatusHistoryStore
 {
     public CaseRecord Case { get; } = new() { CaseId = FakeCaseAccess.Allowed, CaseStatus = "NEW" };
