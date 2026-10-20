@@ -18,6 +18,7 @@ async function loadStaffAuth(responses) {
         dispatchEvent() {}
     };
     const window = {
+        addEventListener() {},
         location: { origin: 'https://localhost:7127', replace: (url) => redirects.push(url) }
     };
     const context = {

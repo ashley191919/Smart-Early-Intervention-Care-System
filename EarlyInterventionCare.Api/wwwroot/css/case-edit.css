@@ -2,3 +2,5 @@
 .case-edit-content .create-field-control[readonly] { color: var(--text-secondary); background: var(--brand-teal-pale); }
 .case-edit-content .create-field-control { min-width: 0; }
 .case-edit-content > [hidden] { display: none !important; }
+.case-edit-content .create-field-control:disabled { color: var(--text-secondary); background: var(--brand-teal-pale); cursor: not-allowed; opacity: 1; }
+.case-edit-content .permission-hint { overflow-wrap: anywhere; }

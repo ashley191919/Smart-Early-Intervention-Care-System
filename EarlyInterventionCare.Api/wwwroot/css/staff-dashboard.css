@@ -38,6 +38,8 @@ svg {
 
 /* Match the teacher workspace shell, with medical staff navigation. */
 .dashboard-shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100svh; }
+[data-staff-protected][hidden] { display: none !important; }
+[data-staff-permission][hidden] { display: none !important; }
 .sidebar {
     display: flex;
     flex-direction: column;

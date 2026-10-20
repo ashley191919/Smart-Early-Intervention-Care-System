@@ -26,7 +26,8 @@
         <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
     </svg>
 
-    <div class="dashboard-shell">
+    <p data-staff-auth-error role="alert" aria-live="assertive" hidden></p>
+    <div class="dashboard-shell" data-staff-protected hidden>
         <aside class="sidebar" aria-label="主要導覽">
             <a class="brand" href="staff-dashboard.html" aria-label="早療智慧動態照護系統首頁">
                 <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
@@ -173,12 +174,13 @@
                         <div class="create-fields-grid">
                             <div class="create-field">
                                 <label for="status">個案狀態 <span aria-hidden="true">*</span></label>
-                                <select class="create-field-control" id="status" name="status" required aria-describedby="status-help status-error">
+                                <select class="create-field-control" id="status" name="status" required disabled data-staff-permission="case.status.update" data-permission-hint="status-permission-hint" aria-describedby="status-help status-error status-permission-hint">
                                     <option value="pending-contact">待聯繫</option>
                                     <option value="in-progress">進行中</option>
                                     <option value="completed">已完成</option>
                                 </select>
                                 <p class="create-field-helper" id="status-help">個案狀態與聯絡、預約、表單進度分開管理。</p>
+                                <p class="create-field-helper permission-hint" id="status-permission-hint" role="status" aria-live="polite">正在確認操作權限…</p>
                                 <p class="create-field-error" id="status-error" hidden></p>
                             </div>
                             <div class="create-field">
@@ -202,7 +204,9 @@
             </main>
         </div>
     </div>
-    <script src="js/case-edit.js" defer></script>
+    <script src="js/staff-auth.js?v=20261020-permissions1" defer></script>
+    <script src="js/staff-permissions.js?v=20261020-permissions1" defer></script>
+    <script src="js/case-edit.js?v=20261020-permissions1" defer></script>
     <script src="js/staff-header.js" defer></script>
 </body>
 </html>

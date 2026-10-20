@@ -4,12 +4,30 @@
     const medicalRoles = new Set(["CASE_MANAGER", "MEDICAL_STAFF"]);
     const protectedAreas = Array.from(document.querySelectorAll("[data-staff-protected]"));
     const errorArea = document.querySelector("[data-staff-auth-error]");
+    // Only the four codes registered by AddFirstBatchPermissionPolicies are presentation contracts.
+    const registeredPermissions = new Set([
+        "case.read", "case.status.update", "case.status_history.read", "questionnaire.task.read"
+    ]);
     let currentUser = null;
+    let permissionState = "pending";
+    let sessionRevision = 0;
 
     class StaffAuthError extends Error {}
 
-    function showError(message) {
+    function invalidatePermissions(state) {
+        sessionRevision++;
         currentUser = null;
+        permissionState = state;
+        document.dispatchEvent(new CustomEvent("staff-permissions-changed"));
+    }
+
+    function hasPermission(permission) {
+        return permissionState === "ready" && registeredPermissions.has(permission) &&
+            currentUser?.permissions.includes(permission) === true;
+    }
+
+    function showError(message) {
+        invalidatePermissions("error");
         protectedAreas.forEach((area) => { area.hidden = true; });
         if (errorArea) {
             errorArea.textContent = message;
@@ -23,6 +41,7 @@
     }
 
     function clearProtectedContent() {
+        invalidatePermissions("expired");
         protectedAreas.forEach((area) => {
             area.hidden = true;
             area.replaceChildren();
@@ -50,11 +69,17 @@
     }
 
     async function getCsrfToken() {
-        const response = await fetch("/api/auth/csrf", {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-            credentials: "same-origin"
-        });
+        let response;
+        try {
+            response = await fetch("/api/auth/csrf", {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin"
+            });
+        } catch {
+            invalidatePermissions("error");
+            throw new StaffAuthError("無法取得安全驗證資訊，請稍後再試。");
+        }
         const body = await parseJson(response);
         if (response.status === 401) {
             clearProtectedContent();
@@ -62,6 +87,7 @@
             throw new StaffAuthError("登入已逾時，請重新登入。");
         }
         if (!response.ok || typeof body?.requestToken !== "string" || !body.requestToken) {
+            invalidatePermissions("error");
             throw new StaffAuthError("無法取得安全驗證資訊，請稍後再試。");
         }
         return body.requestToken;
@@ -77,15 +103,31 @@
         if (isUnsafeMethod(method)) {
             headers.set("X-EarlyCare-CSRF", await getCsrfToken());
         }
-        return fetch(ensureSameOrigin(path), {
-            ...options,
-            method,
-            headers,
-            credentials: "same-origin"
-        });
+        let response;
+        try {
+            response = await fetch(ensureSameOrigin(path), {
+                ...options,
+                method,
+                headers,
+                credentials: "same-origin"
+            });
+        } catch (error) {
+            invalidatePermissions("error");
+            throw error;
+        }
+        if (response.status === 401) {
+            clearProtectedContent();
+            redirectToLogin();
+        } else if (!response.ok) {
+            // Keep the response for its caller, but stop using stale permissions.
+            invalidatePermissions(response.status === 403 ? "forbidden" : "error");
+        }
+        return response;
     }
 
     async function requireStaffSession() {
+        invalidatePermissions("pending");
+        const revision = sessionRevision;
         let response;
         try {
             response = await fetch("/api/auth/me", {
@@ -94,9 +136,12 @@
                 credentials: "same-origin"
             });
         } catch {
+            if (revision !== sessionRevision) return null;
             showError("目前無法連線至登入服務，請確認網路後再試。");
             return null;
         }
+
+        if (revision !== sessionRevision) return null;
 
         if (response.status === 401) {
             clearProtectedContent();
@@ -115,6 +160,7 @@
         }
 
         const user = await parseJson(response);
+        if (revision !== sessionRevision) return null;
         if (!user || typeof user.userId !== "string" || typeof user.username !== "string" ||
             typeof user.role !== "string") {
             showError("登入服務回應格式異常，請稍後再試。");
@@ -126,12 +172,16 @@
             return null;
         }
 
+        // A missing/mixed/malformed list rejects all operations, including otherwise valid entries.
+        const validPermissions = Array.isArray(user.permissions) && user.permissions.every((code) =>
+            typeof code === "string" && /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(code));
         currentUser = Object.freeze({
             userId: user.userId,
             username: user.username,
             role: user.role,
-            permissions: Array.isArray(user.permissions) ? [...user.permissions] : []
+            permissions: Object.freeze(validPermissions ? [...new Set(user.permissions)] : [])
         });
+        permissionState = validPermissions ? "ready" : "error";
         showProtectedAreas();
         document.dispatchEvent(new CustomEvent("staff-authenticated", { detail: currentUser }));
         return currentUser;
@@ -168,9 +218,16 @@
     window.StaffAuth = Object.freeze({
         requireStaffSession,
         getCurrentUser: () => currentUser,
+        hasPermission,
+        getPermissionState: () => permissionState,
         cookieFetch,
         logout
     });
 
+    // A restored page must revalidate rather than reuse permissions from its old session.
+    window.addEventListener("pagehide", () => invalidatePermissions("expired"));
+    window.addEventListener("pageshow", (event) => {
+        if (event.persisted) void requireStaffSession();
+    });
     void requireStaffSession();
 })();

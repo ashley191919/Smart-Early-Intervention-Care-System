@@ -44,6 +44,14 @@
     form.querySelector("#edit-cancel-link").href = demo.detailHref;
     form.querySelector("#caseId").value = demo.caseId;
     fields.forEach((field) => { field.value = demo[field.id]; });
+    // This is still a non-persisting fixture form. Permission affects only its status field;
+    // no case.update contract is inferred for the other fields or the save button.
+    function resetUnauthorizedStatus() {
+        if (window.StaffAuth?.hasPermission("case.status.update") !== true) {
+            form.querySelector("#status").value = demo.status;
+        }
+    }
+    document.addEventListener("staff-permissions-changed", resetUnauthorizedStatus);
 
     // Use the same national-ID letter mapping and checksum as case-create.js.
     const nationalIdLetterCodes = {
@@ -134,6 +142,7 @@
     birthDate.addEventListener("focus", updateBirthDateLimit);
     form.addEventListener("submit", (event) => {
         event.preventDefault();
+        resetUnauthorizedStatus();
         fields.forEach((field) => normalizeField(field));
         const invalidFields = fields.filter((field) => !validateField(field));
         feedback.classList.toggle("is-error", invalidFields.length > 0);
