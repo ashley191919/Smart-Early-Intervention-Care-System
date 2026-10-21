@@ -73,6 +73,7 @@ Gateway 使用 scoped、乾淨且獨占的 ApplicationDbContext；不能混入�
 | IDEMPOTENCY_CONFLICT | 409 | 同 key 非相同提交 |
 | WRITE_CONFLICT | 409 | 唯一鍵競爭；以原 key 重讀／重試 |
 | RESPONSE_NOT_FOUND | 404 | 尚無本人收據 |
+| STORAGE_INCONSISTENT | 503 | Task／Response／Draft 持久化關聯或提交狀態不一致；不回成功、不自動修復 |
 
 取消及 DB 故障向上傳遞；11 的 Controller error boundary 應以安全 503 回應 DB 故障，不回 exception、SQL 或連線資訊。
 
@@ -84,6 +85,8 @@ Gateway 使用 scoped、乾淨且獨占的 ApplicationDbContext；不能混入�
 - `services.AddScopedCaseTaskReads()` 重用 Permission／Handler，註冊 case.read 與 questionnaire.task.read，預設 `DenyCaseTaskReadScope`。
 - 07 實作 `ICaseTaskReadScope`，檢查可信 principal、目前帳號／院所及 Task 實際隸屬 Case；不能只檢查 Permission。
 - 使用 `ScopedReadAuthorization.CanReadCaseAsync/CanReadTaskAsync`；錯誤延續既有 PermissionLookupExceptionMiddleware。各端 Policy／Controller 接入仍由 07／11 負責。
+- 本次補強：Registration 使用 `IValidateOptions<AuthorizationOptions>` 在 Configure／PostConfigure 全部完成後檢查兩個讀取 Policy。只接受原來的 authenticated requirement＋精確 PermissionRequirement、預設 authentication scheme；同名普通 Policy、錯 Permission、錯大小寫、額外 Permission 或 scheme 均拒絕。這是啟用共用讀取 Extension 的整合契約，不改其他業務 Policy。
+- 07 不要用同名 Policy 覆寫此契約；需新語意時先共同審查。Options 衝突會拋 OptionsValidationException，不能吞掉後改用登入即可的 fallback。重複呼叫共用 Extension 保持冪等。
 - 核准虛構資料格式：`caseId, organizationId, taskId, questionnaireVersionId, respondentRole=PARENT, assignmentRound=1, isRequired=true, taskStatus, submittedAtUtc`。本批沒有自行建立 DB rows 或捏造個資／院所回填。
 
 ## 交易測試界線
@@ -92,6 +95,15 @@ Gateway 使用 scoped、乾淨且獨占的 ApplicationDbContext；不能混入�
 可證明服務流程、作者隔離、revision、提交不可覆寫、回滾、去重與再驗證呼叫；不能證明真 Guardian／Consent、MySQL 鎖、FK、重啟持久化或瀏覽器 Cookie。
 EF metadata 使用禁止連線 factory。`ParentAuthorSchemaProposal` 只允許精確六項增量，不是 Migration 驗收。
 教師 Phase22 可顯式 `--parent-author-schema-proposal` 做回歸，預設模型 gate 保持拒絕，不把新模式用於部署。
+
+### 482d575 後的補強交接
+
+- 家長 Gateway 在回傳狀態／收據與任何寫入之前核對：SUBMITTED 與 Response 存在性一致、Response／Draft 連結的 Task／Version 相同、提交時間一致。Owner 檢查仍先於一致性錯誤，避免向其他作者洩漏紀錄狀態。
+- 不一致回 STORAGE_INCONSISTENT／503；11 的專用 Controller 應沿用安全錯誤格式，不能把它顯示成成功或擅自修補資料。一般已提交仍是 TASK_SUBMITTED／409；同 key 改內容仍是 IDEMPOTENCY_CONFLICT／409。
+- 新 `tests/EfParentStore` 直接執行正式 EF Store／Gateway、Pomelo SQL 轉譯及 SaveChanges，以無 socket 能力的 ADO connection／transaction 與命令攔截器提供合成結果。這不是 Fake Store，也不是 MySQL engine。
+- 新測試涵蓋參數／scope predicates、原 revision 的 UPDATE WHERE、零 affected rows 衝突、同 key 重送、跨作者／Case／院所拒絕、同一 command transaction、回滾 Dispose 與 tracker 清理。院所拒絕由 Access 替身回傳，仍不能當作 11 真 Guardian／Consent 查詢已驗收。
+- 新 `tests/ScopedReadSafety` 覆蓋 Configure 與 PostConfigure 的同名覆寫；既有 Permission／Handler 未重建。
+- 這批不修改 Program、Schema／Migration／Snapshot、教師核心或網路設定。交付 Git 狀態與實際結果見本批 verification 補充。
 
 ## 整合順序
 

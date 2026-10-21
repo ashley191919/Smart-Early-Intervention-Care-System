@@ -215,6 +215,25 @@ using (var db = new ApplicationDbContextFactory().CreateDbContext([]))
     Check(scope.ServiceProvider.GetRequiredService<ICaseTaskReadScope>() is DenyCaseTaskReadScope, "default medical scope deny");
     Check(!await scope.ServiceProvider.GetRequiredService<ScopedReadAuthorization>().CanReadCaseAsync(new ClaimsPrincipal(), f.CaseId), "anonymous medical denied without DB");
 }
+// Inconsistent persisted records must fail closed, including reads and idempotent replay.
+foreach (var kind in new[] { "submitted-without-response", "response-with-pending-task", "wrong-response-version", "missing-submit-time", "different-submit-time" })
+{
+    var f = New();
+    await f.Gateway.SubmitAsync(f.Principal, f.TaskId, f.Key, f.Submit());
+    switch (kind)
+    {
+        case "submitted-without-response": f.Store.State.Response = null; break;
+        case "response-with-pending-task": f.Store.State.Task.TaskStatus = "PENDING"; break;
+        case "wrong-response-version": f.Store.State.Response!.QuestionnaireVersionId = Guid.NewGuid(); break;
+        case "missing-submit-time": f.Store.State.Task.SubmittedAtUtc = null; break;
+        case "different-submit-time": f.Store.State.Task.SubmittedAtUtc = f.Store.State.Response!.SubmittedAtUtc.AddMinutes(1); break;
+    }
+    await Error(() => f.Gateway.GetStatusAsync(f.Principal, f.TaskId), "STORAGE_INCONSISTENT");
+    await Error(() => f.Gateway.GetReceiptAsync(f.Principal, f.TaskId), "STORAGE_INCONSISTENT");
+    await Error(() => f.Gateway.GetDraftAsync(f.Principal, f.TaskId), "STORAGE_INCONSISTENT");
+    await Error(() => f.Gateway.SaveDraftAsync(f.Principal, f.TaskId, f.Draft()), "STORAGE_INCONSISTENT");
+    await Error(() => f.Gateway.SubmitAsync(f.Principal, f.TaskId, f.Key, f.Submit()), "STORAGE_INCONSISTENT");
+}
 Console.WriteLine($"PASS {passed} checks; transactional Fake Store/Adapter and offline EF only; no MySQL, no HTTP host.");
 
 sealed class State

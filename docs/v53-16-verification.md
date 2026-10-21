@@ -49,3 +49,54 @@ dotnet run --project tests/QuestionnairePhase22Harness.csproj --no-launch-profil
 ```
 
 勿把 proposal 參數加到部署工具。預設 CoreDatabase／History MODEL_SNAPSHOT gate 的拒絕必須保留至正式增量產生並驗收。
+
+## 接續補強批次：以 482d575 為基準
+
+本批只在 codex/v53-parent-core Worktree 開發；未 Commit／Push／Merge，交付狀態為 HEAD 482d575 加工作區差異。沒有變更任何其他 Worktree、Program、Migration／Snapshot、Entity、原教師核心或環境設定。
+
+### 測試先行證據
+
+1. 先新增 Policy 衝突測試：原版 12 通過／16 失敗，同名普通 Policy、錯 Permission、缺登入等均未拒絕。
+2. 先新增 Task／Response 不一致測試：原版 GetStatus 沒有拋 STORAGE_INCONSISTENT，測試失敗。
+3. 初次以 PostConfigure 檢查後，再新增較晚 PostConfigure 覆寫：28 通過／2 失敗。最後改用 IValidateOptions，在所有 Configure／PostConfigure 後驗證，沒有放寬安全條件。
+4. EF Harness 起初出現 reader 型別／savepoint／write-result 模擬不符，均修正在測試 ADO 替身；正式 EF Store 不必修改。測試早期未處理例外曾造成 apphost 鎖定，改為明確回報 Exit 1，EF Harness 使用 DLL host；未操作資料庫或系統安全政策。
+
+### 本批最終實際結果
+
+| 項目 | 結果 | 層級 |
+|---|---|---|
+| API Build | Exit 0，0 errors；NU1900 | 編譯；弱點索引未取得 |
+| ScopedReadSafety | 44 passed／0 failed | 38 unit／DI＋6 loopback HTTP；合成 authentication、permission、scope，無 DB |
+| EfParentStoreHarness | 86 checks PASS | 正式 Store／Gateway＋EF／Pomelo SQL 轉譯、ADO／transaction 替身與攔截器，無 socket／MySQL |
+| ParentQuestionnaireHarness | 126 checks PASS | 原 101＋25 個一致性拒絕檢查；transactional Fake Store／Adapter |
+| PermissionServiceOfflineHarness | 34 passed／0 failed | EF／ADO 攔截 |
+| RbacOfflineHarness | 22 passed／0 failed | Handler／Policy 替身 |
+| RbacPolicyHarness | 43 passed／0 failed | Policy／DI |
+| RbacHttpHarness | 19 passed／0 failed | 既有 loopback HTTP／JWT 與 ADO 合成結果 |
+| QuestionnairePhase22 proposal mode | 158 PASS，Exit 0 | 教師回歸；精確六項 Schema 提案仍不是部署核准 |
+| QuestionnairePhase21 | PASS，Exit 0 | 指派／完成摘要離線回歸 |
+| RoundCompletion | 37 PASS，Exit 0 | 純計算 |
+| CoreDatabase 預設 gate | Exit 1 | pending 模型未做 Migration，維持拒絕 |
+| History --offline gate | Exit 1 MODEL_SNAPSHOT | 維持拒絕；本次不宣稱既有 70 項通過 |
+
+新 production 修改僅：ScopedReadAuthorization 的最終 Policy 驗證、ParentQuestionnaireGateway 的一致性拒絕。
+EF Store 實作不變；測試直接執行其 SQL 轉譯與 SaveChanges 路徑，而不是以 Fake Store 代替它。
+
+### EF 測試能證明及不能證明的事
+
+- 可證明：WHERE／參數形狀、作者＋key 條件、Task lock SQL、原 revision 條件、SaveChanges／Commit／Dispose 路徑、同一 command transaction、異常映射、tracker 清理、去重與拒絕流程。
+- 合成 rows／ROW_COUNT／RecordsAffected 由攔截器提供，不是 SQL engine；transaction rollback 是 ADO double 的狀態紀錄，不是 MySQL 的資料回復證據。
+- 跨院所／Consent 拒絕由 Access double 回傳，仍須 11 真 Adapter／DB 證明其政策與查詢。沒有替 11 實作另一套 Guardian／Consent。
+- 不能證明：真 FK／唯一鍵執行、MySQL isolation／死鎖／撤銷競爭、DDL、重啟持久化、備份還原、正式 Cookie／跨網域。
+
+### 可重現命令
+
+```powershell
+dotnet run --project tests/ScopedReadSafety/ScopedReadSafety.csproj --no-restore --no-launch-profile
+dotnet build tests/EfParentStore/EfParentStoreHarness.csproj --no-restore
+dotnet tests/EfParentStore/bin/Debug/net8.0/EfParentStoreHarness.dll
+dotnet run --project tests/ParentQuestionnaire/ParentQuestionnaireHarness.csproj --no-restore --no-launch-profile
+```
+
+首次使用新 Harness 需一般套件還原；沒有新增第三方套件。此環境有 NU1900，不能把 Build 成功當作弱點資料查核成功。
+真正 MySQL、Level1 主機啟動、Level2 持久化／備份還原均未執行；只執行測試期間的 ephemeral loopback HTTP，測後停止。

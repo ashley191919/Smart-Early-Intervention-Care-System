@@ -51,6 +51,17 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
             throw Error("TASK_NOT_FOUND", 404);
     }
 
+    private static void Consistent(QuestionnaireTask task, QuestionnaireDraft? draft, QuestionnaireResponse? response)
+    {
+        // Do not manufacture a success status/receipt or repair inconsistent persisted records.
+        if ((task.TaskStatus == "SUBMITTED") != (response is not null) ||
+            (response is null && task.SubmittedAtUtc is not null) ||
+            (draft is not null && (draft.TaskId != task.TaskId || draft.QuestionnaireVersionId != task.QuestionnaireVersionId)) ||
+            (response is not null && (response.TaskId != task.TaskId || response.QuestionnaireVersionId != task.QuestionnaireVersionId ||
+                task.SubmittedAtUtc is null || task.SubmittedAtUtc != response.SubmittedAtUtc)))
+            throw Error("STORAGE_INCONSISTENT", 503);
+    }
+
     private async Task Finish(IParentQuestionnaireTransaction tx, ParentTaskAccess scope, CancellationToken ct)
     {
         await access.RevalidateAsync(tx, scope, ct);
@@ -75,6 +86,7 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
         var draft = await tx.FindDraftAsync(taskId, ct);
         var response = await tx.FindResponseAsync(taskId, ct);
         Owner(draft, response, scope.UserId);
+        Consistent(task, draft, response);
         Editable(task, response);
         var result = Draft(task, draft);
         await Finish(tx, scope, ct);
@@ -90,6 +102,7 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
         var draft = await tx.FindDraftAsync(taskId, ct);
         var response = await tx.FindResponseAsync(taskId, ct);
         Owner(draft, response, scope.UserId);
+        Consistent(task, draft, response);
         Editable(task, response);
         if (input.QuestionnaireVersionId != task.QuestionnaireVersionId) throw Error("VERSION_MISMATCH", 409);
         if (input.ExpectedRevision is null) throw Error("INVALID_INPUT", 400);
@@ -123,6 +136,7 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
         var draft = await tx.FindDraftAsync(taskId, ct);
         var response = await tx.FindResponseAsync(taskId, ct);
         Owner(draft, response, scope.UserId);
+        Consistent(task, draft, response);
         var content = Validate(version, input, true);
         var hash = content.SubmissionHash(taskId, task.QuestionnaireVersionId);
         var existing = await tx.FindByKeyAsync(scope.UserId, key, ct);
@@ -154,7 +168,9 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
         await using var tx = await store.OpenAsync(ct);
         var (scope, task, _) = await Scope(tx, principal, taskId, ct);
         var response = await tx.FindResponseAsync(taskId, ct);
-        Owner(await tx.FindDraftAsync(taskId, ct), response, scope.UserId);
+        var draft = await tx.FindDraftAsync(taskId, ct);
+        Owner(draft, response, scope.UserId);
+        Consistent(task, draft, response);
         if (response is null || task.TaskStatus != "SUBMITTED") throw Error("RESPONSE_NOT_FOUND", 404);
         await Finish(tx, scope, ct);
         return Receipt(response, false);
@@ -165,7 +181,10 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
         UserId(principal);
         await using var tx = await store.OpenAsync(ct);
         var (scope, task, _) = await Scope(tx, principal, taskId, ct);
-        Owner(await tx.FindDraftAsync(taskId, ct), await tx.FindResponseAsync(taskId, ct), scope.UserId);
+        var draft = await tx.FindDraftAsync(taskId, ct);
+        var response = await tx.FindResponseAsync(taskId, ct);
+        Owner(draft, response, scope.UserId);
+        Consistent(task, draft, response);
         var result = new ParentTaskStatus(taskId, task.QuestionnaireVersionId, task.TaskStatus, task.SubmittedAtUtc);
         await Finish(tx, scope, ct);
         return result;

@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace EarlyInterventionCare.Api.Services.Authorization;
 
@@ -42,6 +44,24 @@ public static class ScopedReadRegistration
         });
         services.TryAddScoped<ICaseTaskReadScope, DenyCaseTaskReadScope>();
         services.TryAddScoped<ScopedReadAuthorization>();
+        // Check final options, including registrations made AFTER this extension.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<AuthorizationOptions>, ScopedReadPolicyValidation>());
         return services;
+    }
+}
+
+internal sealed class ScopedReadPolicyValidation : IValidateOptions<AuthorizationOptions>
+{
+    public ValidateOptionsResult Validate(string? name, AuthorizationOptions options)
+    {
+        foreach (var permission in new[] { "case.read", "questionnaire.task.read" })
+        {
+            var policy = options.GetPolicy("Permission:" + permission);
+            if (policy is null || policy.AuthenticationSchemes.Count != 0 || policy.Requirements.Count != 2 ||
+                policy.Requirements.OfType<DenyAnonymousAuthorizationRequirement>().Count() != 1 ||
+                policy.Requirements.OfType<PermissionRequirement>().Count(r => r.Permission == permission) != 1)
+                return ValidateOptionsResult.Fail("Scoped read policy configuration conflicts with its required permission.");
+        }
+        return ValidateOptionsResult.Success;
     }
 }
