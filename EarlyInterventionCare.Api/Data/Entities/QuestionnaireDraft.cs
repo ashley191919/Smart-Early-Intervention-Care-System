@@ -11,5 +11,7 @@ public sealed class QuestionnaireDraft
     public string? Observation { get; set; }
     public ulong Revision { get; set; }
     public Guid? LastSavedByGrantId { get; set; }
+    // Null for legacy/teacher rows. No backfill or inferred parent identity.
+    public Guid? ParentAuthorUserId { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

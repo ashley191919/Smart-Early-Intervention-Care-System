@@ -1,0 +1,13 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=127.0.0.1;Port=33326;Database=earlycare_v53_synthetic;User=earlycare_v53_app;Password=REPLACE_AFTER_APPROVAL;DateTimeKind=Utc;AllowLoadLocalInfile=false"
+  },
+  "Jwt": {
+    "SigningKey": "REPLACE_WITH_SEPARATE_BASE64_KEY_AFTER_APPROVAL",
+    "Issuer": "earlycare-v53-loopback",
+    "Audience": "earlycare-v53-synthetic",
+    "ExpirationMinutes": 30
+  },
+  "StaffSession": { "TrustedOrigins": [] },
+  "Logging": { "LogLevel": { "Default": "Warning", "Microsoft.AspNetCore": "Warning" } }
+}

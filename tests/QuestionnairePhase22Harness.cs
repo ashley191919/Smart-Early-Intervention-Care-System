@@ -363,10 +363,12 @@ foreach (var revoke in new[] { false, true })
 // EF metadata and pending model check are local operations; factory prevents any DB connection.
 await using (var db = new ApplicationDbContextFactory().CreateDbContext([]))
 {
-    Check(!db.Database.HasPendingModelChanges(), "no pending schema/model changes");
+    var proposalMode = args.SequenceEqual(new[] { "--parent-author-schema-proposal" });
+    Check(proposalMode ? ParentAuthorSchemaProposal.IsExact(db) : !db.Database.HasPendingModelChanges(),
+        proposalMode ? "exact nullable parent-author proposal only; NOT deployment approval" : "no pending schema/model changes");
     Check(db.Model.FindEntityType(typeof(QuestionnaireDraft))!.FindProperty("Revision")!.IsConcurrencyToken, "existing revision mapping preserved");
 }
-Console.WriteLine($"PASS: {checks} offline Phase 2-2 checks; draft/revision, scope, shared validation/hash, submit/receipt/idempotency, rollback and unchanged EF model.");
+Console.WriteLine($"PASS: {checks} offline Phase 2-2 checks; draft/revision, scope, shared validation/hash, submit/receipt/idempotency, rollback; schema proposal mode={args.Contains("--parent-author-schema-proposal")}; no MySQL/deployment approval.");
 
 sealed class TestClock : TimeProvider
 {

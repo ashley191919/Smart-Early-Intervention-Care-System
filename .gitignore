@@ -2,3 +2,12 @@
 **/bin/ 
 **/obj/ 
 *.csproj.user 
+
+# Private test credentials and local runtime overrides.
+secrets.json
+.env
+.env.*
+appsettings.Local.json
+appsettings.*.Local.json
+!.env.example
+!.env.*.example

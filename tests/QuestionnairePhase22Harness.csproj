@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="QuestionnairePhase22Harness.cs" />
+    <Compile Include="ParentAuthorSchemaProposal.cs" />
     <ProjectReference Include="../EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj" />
   </ItemGroup>
 </Project>

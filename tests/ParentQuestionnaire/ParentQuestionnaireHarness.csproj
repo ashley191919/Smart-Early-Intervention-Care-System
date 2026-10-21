@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../ParentAuthorSchemaProposal.cs" Link="ParentAuthorSchemaProposal.cs" /></ItemGroup>
+</Project>

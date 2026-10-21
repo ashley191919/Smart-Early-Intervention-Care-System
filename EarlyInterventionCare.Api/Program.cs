@@ -26,6 +26,21 @@ if (args.Contains("--verify-db-read") && args.Contains("--create-dev-user"))
     return;
 }
 var builder = WebApplication.CreateBuilder(args.Where(arg => arg != "--verify-db-read" && arg != "--create-dev-user").ToArray());
+var isolatedTest = builder.Environment.EnvironmentName == LocalIsolationSettings.EnvironmentName;
+if (isolatedTest)
+{
+    if (args.Any(arg => arg is "--verify-db-read" or "--create-dev-user"))
+        throw new InvalidOperationException("LOCAL_ISOLATION_UTILITY_MODE_REJECTED");
+    var privateSettings = Environment.GetEnvironmentVariable("EARLYCARE_LOCAL_SETTINGS");
+    if (string.IsNullOrWhiteSpace(privateSettings) || !Path.IsPathFullyQualified(privateSettings))
+        throw new InvalidOperationException("LOCAL_ISOLATION_SETTINGS_REQUIRED");
+    builder.Configuration.AddJsonFile(privateSettings, optional: false, reloadOnChange: false);
+    if (builder.Configuration.GetSection("Kestrel:Endpoints").GetChildren().Any())
+        throw new InvalidOperationException("LOCAL_ISOLATION_ENDPOINT_OVERRIDE_REJECTED");
+    LocalIsolationSettings.ValidateConnection(builder.Configuration.GetConnectionString("DefaultConnection"));
+    // Override URL settings; no public binding is supported by this test profile.
+    builder.WebHost.UseUrls(LocalIsolationSettings.Url);
+}
 if (args.Contains("--create-dev-user"))
 {
     Environment.ExitCode = await DevelopmentUserCreator.RunAsync(builder);
@@ -81,7 +96,7 @@ if (!JwtOptions.TryLoad(builder.Configuration, out var jwtOptions, out var decod
     return;
 }
 var signingKey = new SymmetricSecurityKey(decodedSigningKey);
-var staffSessionOptions = StaffSessionOptions.Load(builder.Configuration);
+var staffSessionOptions = isolatedTest ? new StaffSessionOptions([]) : StaffSessionOptions.Load(builder.Configuration);
 builder.Services.AddSingleton(jwtOptions);
 builder.Services.AddSingleton(signingKey);
 builder.Services.AddSingleton(staffSessionOptions);
@@ -193,7 +208,7 @@ if (app.Environment.IsDevelopment())
 // Reject Development-only routes before HTTPS redirects as well.
 app.UseDevelopmentTeacherAccess();
 
-app.UseHttpsRedirection();
+if (!isolatedTest) app.UseHttpsRedirection();
 
 // Serve the login prototype and its local assets from wwwroot.
 app.UseDefaultFiles();
@@ -213,5 +228,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapControllers();
+if (isolatedTest)
+    app.MapGet("/health/local", () => Results.Json(new { status = "alive", databaseChecked = false }));
 
 app.Run();
