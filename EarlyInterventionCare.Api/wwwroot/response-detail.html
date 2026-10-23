@@ -2,17 +2,18 @@
 <html lang="zh-Hant">
 <head>
 <script src="/js/shared-demo.js" defer></script>
+<script src="/js/medical-demo-client.js?v=20261023-medical-case-demo2" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="早療智慧動態照護系統醫療人員填答結果詳細頁 Demo">
-    <title>填答結果｜早療智慧動態照護系統</title>
-    <link rel="stylesheet" href="css/staff-dashboard.css">
+    <meta name="description" content="早療智慧動態照護系統問卷填答詳細頁">
+    <title>問卷填答詳細｜早療智慧動態照護系統</title>
+    <link rel="stylesheet" href="css/staff-dashboard.css?v=20261023-medical-case-demo2">
     <link rel="stylesheet" href="css/response-detail.css">
     <link rel="stylesheet" href="css/staff-header.css">
-<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-login-spacing5" defer></script>
+<link rel="stylesheet" href="/css/system-interface.css?v=20261011-product1">
 </head>
 <body>
-    <!-- 專題展示用獨立家長填答紀錄；題目、答案與分數皆是假資料，非正式量表或真實計分結果。 -->
+    <!-- Read-only presentation of existing submitted fixtures; no scoring or persistence. -->
     <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M12 21V11M12 15C5 15 3 10 4 4c6 0 8 4 8 11ZM12 17c0-6 3-9 9-9 0 6-3 9-9 9Z"/></symbol>
         <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11H3ZM9 21v-8h6v8"/></symbol>
@@ -26,7 +27,8 @@
         <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
     </svg>
 
-    <div class="dashboard-shell">
+    <p data-staff-auth-error role="alert" aria-live="assertive" hidden></p>
+    <div class="dashboard-shell" data-staff-protected hidden>
         <aside class="sidebar" aria-label="主要導覽">
             <a class="brand" href="staff-dashboard.html" aria-label="早療智慧動態照護系統首頁">
                 <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
@@ -77,96 +79,53 @@
             </header>
 
             <main id="main-content" class="dashboard-content response-content">
-                <nav class="response-back-nav" aria-label="返回導覽"><a href="case-detail.html">← 返回個案詳細資料</a></nav>
+                <nav class="response-back-nav" aria-label="返回導覽"><a id="response-back-top" href="case-detail.html#shared-tasks">← 返回個案詳細・表單紀錄</a></nav>
                 <section class="page-heading" aria-labelledby="response-title">
-                    <div>
-                        <p class="eyebrow">MEDICAL WORKSPACE</p>
-                        <h1 id="response-title">填答結果</h1>
-                        <p>查看電子表單填答內容與計分結果</p>
-                    </div>
+                    <div><p class="eyebrow">QUESTIONNAIRE RESPONSE</p><h1 id="response-title">問卷填答詳細</h1><p>原始填答內容與計分結果</p></div>
+                    <span class="response-readonly">唯讀紀錄</span>
                 </section>
-
-                <!-- 此處僅展示一筆 SNAP / parent 填答紀錄，填答狀態與個案處理狀態分開。 -->
-                <section class="panel response-panel" aria-labelledby="response-info-title" data-response-status="completed" data-respondent-role="parent">
-                    <div class="panel-heading"><h2 id="response-info-title">填答資訊</h2></div>
-                    <dl class="response-info-grid">
-                        <div><dt>個案姓名</dt><dd><span class="case-person"><span class="case-avatar" aria-hidden="true">王</span><strong>王○安</strong></span></dd></div>
-                        <div><dt>個案編號</dt><dd>DEMO-001</dd></div>
-                        <div><dt>表單名稱</dt><dd>SNAP</dd></div>
-                        <div><dt>填答者</dt><dd>家長</dd></div>
-                        <div><dt>完成時間</dt><dd><time datetime="2026-10-06T14:30">2026/10/06 14:30</time></dd></div>
-                        <div><dt>填答狀態</dt><dd><span class="response-status-badge response-completed">已完成</span></dd></div>
-                    </dl>
-                </section>
-
-                <!-- 本 Demo 的 hasScoring 概念為 true；未來僅在表單有計分規則時顯示此獨立 Card。
-                     無計分規則的資料表單可省略整張 Card，不要求一定有 totalScore。 -->
-                <section class="panel response-panel response-score-card" aria-labelledby="response-score-title" aria-describedby="response-score-note">
-                    <div class="panel-heading response-score-heading"><h2 id="response-score-title">計分結果</h2><span class="response-demo-badge">Demo</span></div>
-                    <dl class="response-summary-grid">
-                        <div><dt>完成題數</dt><dd>5 / 5</dd></div>
-                        <div><dt>未填題數</dt><dd>0</dd></div>
-                        <div class="response-total-score"><dt>總分（Demo）</dt><dd><strong>12</strong><span>分</span></dd></div>
-                    </dl>
-                    <p id="response-score-note" class="response-score-note">目前為介面展示，分數為 Demo 資料，正式版本將依各量表既定計分規則自動計算。</p>
-                    <h3 class="response-subtitle">分項結果（Demo）</h3>
-                    <dl class="response-section-scores">
-                        <div><dt>分項 A</dt><dd>4 分</dd></div>
-                        <div><dt>分項 B</dt><dd>5 分</dd></div>
-                        <div><dt>分項 C</dt><dd>3 分</dd></div>
-                    </dl>
-                    <dl class="response-scoring-meta">
-                        <div><dt>計分方式</dt><dd>系統自動計算（Demo 展示）</dd></div>
-                        <div><dt>計分時間</dt><dd><time datetime="2026-10-06T14:30">2026/10/06 14:30</time></dd></div>
-                    </dl>
-                </section>
-
-                <section class="panel response-panel" aria-labelledby="response-answers-title" aria-describedby="response-demo-note">
-                    <div class="panel-heading"><h2 id="response-answers-title">逐題填答內容</h2></div>
-                    <p id="response-demo-note" class="response-demo-note">目前為介面展示，題目、回答與計分結果皆為 Demo 資料。</p>
-                    <ol class="response-questions" role="list">
-                        <li class="response-question">
-                            <article aria-labelledby="response-question-1">
-                                <h3 id="response-question-1">第 1 題</h3>
-                                <p class="response-question-text">Demo 題目內容 1（僅供介面展示）</p>
-                                <dl class="response-answer"><div><dt>回答</dt><dd>選項 B</dd></div><div><dt>得分（Demo）</dt><dd class="response-answer-score">2 分</dd></div></dl>
-                            </article>
-                        </li>
-                        <li class="response-question">
-                            <article aria-labelledby="response-question-2">
-                                <h3 id="response-question-2">第 2 題</h3>
-                                <p class="response-question-text">Demo 題目內容 2（僅供介面展示）</p>
-                                <dl class="response-answer"><div><dt>回答</dt><dd>選項 A</dd></div><div><dt>得分（Demo）</dt><dd class="response-answer-score">1 分</dd></div></dl>
-                            </article>
-                        </li>
-                        <li class="response-question">
-                            <article aria-labelledby="response-question-3">
-                                <h3 id="response-question-3">第 3 題</h3>
-                                <p class="response-question-text">Demo 題目內容 3（僅供介面展示）</p>
-                                <dl class="response-answer"><div><dt>回答</dt><dd>選項 C</dd></div><div><dt>得分（Demo）</dt><dd class="response-answer-score">3 分</dd></div></dl>
-                            </article>
-                        </li>
-                        <li class="response-question">
-                            <article aria-labelledby="response-question-4">
-                                <h3 id="response-question-4">第 4 題</h3>
-                                <p class="response-question-text">Demo 題目內容 4（僅供介面展示）</p>
-                                <dl class="response-answer"><div><dt>回答</dt><dd>選項 D</dd></div><div><dt>得分（Demo）</dt><dd class="response-answer-score">4 分</dd></div></dl>
-                            </article>
-                        </li>
-                        <li class="response-question">
-                            <article aria-labelledby="response-question-5">
-                                <h3 id="response-question-5">第 5 題</h3>
-                                <p class="response-question-text">Demo 題目內容 5（僅供介面展示）</p>
-                                <dl class="response-answer"><div><dt>回答</dt><dd>選項 B</dd></div><div><dt>得分（Demo）</dt><dd class="response-answer-score">2 分</dd></div></dl>
-                            </article>
-                        </li>
-                    </ol>
-                </section>
-
+                <p id="response-demo-label" class="response-score-note" hidden>Demo 模擬資料</p>
+                <p id="response-state" class="panel response-empty" role="status" aria-live="polite">正在讀取填答紀錄…</p>
+                <div id="response-record" hidden>
+                    <section class="panel response-panel response-info" aria-labelledby="response-info-title">
+                        <div class="panel-heading"><h2 id="response-info-title">問卷基本資訊</h2><span id="response-status" class="response-status-badge"></span></div>
+                        <dl class="response-info-grid">
+                            <div class="response-info-name"><dt>問卷名稱</dt><dd id="response-name"></dd></div>
+                            <div><dt>問卷版本</dt><dd id="response-version"></dd></div>
+                            <div><dt>個案編號</dt><dd id="response-case-code"></dd></div>
+                            <div><dt>個案姓名</dt><dd id="response-case-name"></dd></div>
+                            <div><dt>填答者</dt><dd id="response-role"></dd></div>
+                            <div id="response-respondent-row" hidden><dt>填答者姓名</dt><dd id="response-respondent"></dd></div>
+                            <div><dt>提交時間</dt><dd id="response-submitted"></dd></div>
+                        </dl>
+                    </section>
+                    <section class="panel response-panel response-scoring" aria-labelledby="response-score-title">
+                        <div class="panel-heading"><h2 id="response-score-title">計分結果</h2><span id="response-score-status" class="response-score-status"></span></div>
+                        <div id="response-score-cards" class="response-score-grid" hidden></div>
+                        <p id="response-score-note" class="response-score-note"></p>
+                        <dl id="response-score-meta" class="response-score-meta" hidden></dl>
+                    </section>
+                    <section class="panel response-panel response-answers" aria-labelledby="response-answers-title">
+                        <div class="panel-heading"><h2 id="response-answers-title">原始填答內容</h2><span id="response-question-count" class="response-section-meta"></span></div>
+                        <ol id="response-questions" class="response-questions"></ol>
+                    </section>
+                    <section class="panel response-panel" aria-labelledby="response-observation-title">
+                        <div class="panel-heading"><h2 id="response-observation-title">補充觀察</h2></div>
+                        <p id="response-observation" class="response-observation"></p>
+                    </section>
+                    <footer class="response-actions">
+                        <a id="response-back-bottom" class="response-secondary-button" href="case-detail.html#shared-tasks">← 返回表單紀錄</a>
+                        <div class="response-export">
+                            <button class="primary-button" type="button" disabled aria-describedby="response-export-note">匯出可編輯問卷檔案</button>
+                            <p id="response-export-note">目前無可下載檔案</p>
+                        </div>
+                    </footer>
+                </div>
             </main>
         </div>
     </div>
-    <script src="js/response-detail.js" defer></script>
+    <script src="js/staff-auth.js?v=20261020-permissions1" defer></script>
+    <script src="js/response-detail.js?v=20261023-medical-case-demo2" defer></script>
     <script src="js/staff-header.js" defer></script>
 </body>
 </html>

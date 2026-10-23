@@ -195,6 +195,9 @@ app.UseDevelopmentTeacherAccess();
 
 app.UseHttpsRedirection();
 
+// Only the synthetic medical demo surface; do not change normal auth or case policies.
+app.UseMedicalDemoBoundary();
+
 // Serve the login prototype and its local assets from wwwroot.
 app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions
@@ -213,5 +216,6 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapControllers();
+app.MapMedicalDemoEndpoints();
 
 app.Run();

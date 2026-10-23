@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Development\MedicalDemoFixture.json" />
+    <EmbeddedResource Include="Development\MedicalDemoFixture.json" />
     <Content Update="Development\SnapQuestionnaire.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.31" />

@@ -8,6 +8,7 @@
 @media(min-width:851px){.system-demo-bar~.dashboard-shell{height:calc(100svh - 44px);min-height:0;overflow:hidden}.dashboard-shell .page-area{height:100%;min-height:0;display:flex;flex-direction:column}.dashboard-shell .dashboard-content{min-height:0;overflow:auto;flex:1}}
 
 .system-demo-panel{padding:20px;margin:16px 0}.system-demo-panel h2{font-size:20px;margin:0 0 10px}.system-demo-panel p{margin:8px 0}.system-demo-panel th,.system-demo-panel td{padding:9px 12px}dialog:has([data-demo-result]),dialog:has(h2){max-width:min(760px,90vw);max-height:85svh;overflow:auto}
+.medical-task-table{max-width:100%;overflow-x:auto}.medical-task-table td{overflow-wrap:anywhere}.medical-demo-label{display:block;color:#63736f;font-size:13px}.medical-task-table a{display:inline-block;min-width:7em}
 
 /* Shared login spacing; the demo entry stays separate from credential submission. */
 .demo-preview-area{margin-top:16px;padding-top:16px;border-top:1px solid #e9ebee;text-align:center}

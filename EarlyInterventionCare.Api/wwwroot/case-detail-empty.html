@@ -2,14 +2,15 @@
 <html lang="zh-Hant">
 <head>
 <script src="/js/shared-demo.js" defer></script>
+<script src="/js/medical-demo-client.js?v=20261023-medical-case-demo2" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="早療智慧動態照護系統個案詳細資料 Demo">
     <title>個案詳細資料｜早療智慧動態照護系統</title>
-    <link rel="stylesheet" href="css/staff-dashboard.css">
+    <link rel="stylesheet" href="css/staff-dashboard.css?v=20261023-medical-case-demo2">
     <link rel="stylesheet" href="css/case-detail.css">
     <link rel="stylesheet" href="css/staff-header.css">
-<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-login-spacing5" defer></script>
+<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261023-medical-case-demo2" defer></script>
 </head>
 <body>
     <!-- 專題展示用 Demo A；未來由同一個 case-detail.html 依 API 資料決定空狀態或紀錄列表。 -->
@@ -28,7 +29,8 @@
         <symbol id="icon-eye-off" viewBox="0 0 24 24"><path d="m3 3 18 18M10.6 5.1 12 5c6.5 0 10 7 10 7a20 20 0 0 1-3 4M6 6.5A20 20 0 0 0 2 12s3.5 7 10 7a12 12 0 0 0 5-1M10 10a3 3 0 0 0 4 4"/></symbol>
     </svg>
 
-    <div class="dashboard-shell">
+    <p data-staff-auth-error role="alert" aria-live="assertive" hidden></p>
+    <div class="dashboard-shell" data-staff-protected hidden>
         <aside class="sidebar" aria-label="主要導覽">
             <a class="brand" href="staff-dashboard.html" aria-label="早療智慧動態照護系統首頁">
                 <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
@@ -421,6 +423,7 @@
             </footer>
         </div>
     </dialog>
+    <script src="js/staff-auth.js?v=20261020-permissions1" defer></script>
     <script src="js/case-detail.js" defer></script>
     <script src="js/staff-header.js" defer></script>
 </body>

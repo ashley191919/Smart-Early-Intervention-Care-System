@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="早療智慧動態照護系統醫療人員個案管理列表">
     <title>早療個案管理｜早療智慧動態照護系統</title>
-    <link rel="stylesheet" href="css/staff-dashboard.css">
+    <link rel="stylesheet" href="css/staff-dashboard.css?v=20261023-medical-case-demo2">
     <link rel="stylesheet" href="css/cases.css">
     <link rel="stylesheet" href="css/staff-header.css">
 <link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-login-spacing5" defer></script>
@@ -25,7 +25,8 @@
         <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
     </svg>
 
-    <div class="dashboard-shell">
+    <p data-staff-auth-error role="alert" aria-live="assertive" hidden></p>
+    <div class="dashboard-shell" data-staff-protected hidden>
         <aside class="sidebar" aria-label="主要導覽">
             <a class="brand" href="staff-dashboard.html" aria-label="早療智慧動態照護系統首頁">
                 <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
@@ -128,6 +129,7 @@
             </main>
         </div>
     </div>
+    <script src="js/staff-auth.js?v=20261020-permissions1" defer></script>
     <script src="js/cases.js" defer></script>
     <script src="js/staff-header.js" defer></script>
 </body>
