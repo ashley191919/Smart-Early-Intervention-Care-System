@@ -28,9 +28,13 @@
  .parent-shell .sidebar { width:auto; padding:16px 23px; border-top-width:6px; border-right:0; border-bottom:1px solid var(--line); }
  .parent-shell .sidebar-menu { margin-top:16px; }
  .parent-shell .sidebar .nav-label { display:none; }
- .parent-shell .sidebar .nav { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+ .parent-shell .sidebar .nav { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
  .parent-shell .sidebar .nav button { font-size:12px; padding:8px; gap:7px; flex-wrap:wrap; }
  .parent-shell .sidebar .nav-count { margin-left:0; }
  .parent-shell .workspace { min-height:0; }
  .parent-shell .content { overflow:visible; }
 }
+
+/* The parent home no longer has teacher-progress side cards. */
+.parent-workspace .home-grid { grid-template-columns:minmax(0,1fr); }
+.parent-fill .respondent-fields select{font:inherit;width:100%;min-height:44px;padding:12px;border:1px solid #d1d5db;border-radius:9px;background:#f8fafc;color:var(--ink)}.parent-fill .respondent-fields select:focus-visible{outline:3px solid #476f6b;outline-offset:3px}

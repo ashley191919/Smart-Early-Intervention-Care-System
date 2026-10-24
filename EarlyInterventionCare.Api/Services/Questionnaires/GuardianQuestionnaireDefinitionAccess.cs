@@ -16,6 +16,7 @@ public static class ParentQuestionnaireDefinitionRegistration
 {
     public static IServiceCollection AddParentQuestionnaireDefinitions(this IServiceCollection services)
     {
+        EarlyInterventionCare.Api.ParentModule.ParentModuleRegistration.AddParentV53(services);
         services.AddSingleton<QuestionnaireAnswerValidator>();
         services.AddScoped<IParentQuestionnaireDefinitionAccess, GuardianQuestionnaireDefinitionAccess>();
         services.AddScoped<IQuestionnaireDefinitionStore, EfQuestionnaireDefinitionStore>();

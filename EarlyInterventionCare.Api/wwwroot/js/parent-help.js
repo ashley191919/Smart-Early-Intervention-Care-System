@@ -9,11 +9,11 @@
   ["為什麼沒有看到問卷？", "請確認目前選擇的孩子，再查看「我的問卷」。問卷種類、版本與評估輪次由醫護指定；若沒有任務，請向承辦窗口確認。"],
   ["暫存、提交有什麼不同？", "暫存供稍後繼續填寫；只有顯示保存成功後，才能確認草稿已保存。正式提交前請再次檢查；提交成功後，家長與教師都不能修改原始答案。如需補充，請聯絡醫療團隊。"],
   ["儲存時斷線或出現資料已更新，怎麼辦？", "斷線時先不要認定操作成功；請依畫面提示確認結果。若提示版本衝突，先保留需要的內容，再重新載入最新資料，不要直接覆寫。提交結果未確認時，請使用原畫面的重試操作。"],
-  ["可以查看教師作答內容嗎？", "家長只能查看教師是否完成指定問卷，不提供教師逐題答案、草稿、分數或補充觀察。教師只處理本次授權的指定問卷。"],
+  ["可以查看教師作答內容嗎？", "家長端不顯示教師填答進度或作答內容。是否同意邀請教師填寫，請於進入系統時的同意視窗選擇；教師僅填寫指定問卷。"],
   ["綁定或教師授權被撤銷後會怎樣？", "被撤銷後不能繼續使用原本的存取權限；已提交資料不會因此刪除。若需重新綁定或授權，請聯絡醫護或提供授權的家長；重新授權不代表可以修改原已提交答案。"]
  ];
  function render() {
-  return '<div class="parent-guide"><section class="panel article"><h2>登入與綁定是兩個步驟</h2><ol><li>使用電子郵件接收驗證碼，完成登入身分驗證。</li><li>首次使用時，以醫護提供的邀請碼綁定孩子；邀請指定信箱須與登入信箱相符。</li><li>選擇孩子，查看醫護指派的問卷。</li><li>填寫、暫存並確認提交，再追蹤完成狀態。</li></ol></section><section class="panel article"><h2>常見問題</h2>' + questions.map(([title,body])=>`<details><summary>${title}</summary><p>${body}</p></details>`).join('') + '</section><section class="panel article"><h2>使用安全提醒</h2><p>驗證碼只用於本人登入。請勿公開邀請碼或教師授權連結，也不要在共用電腦保留登入狀態；離開時使用右上角選單登出。</p></section></div>';
+  return '<div class="parent-guide"><section class="panel article"><h2>登入與綁定是兩個步驟</h2><ol><li>使用電子郵件接收驗證碼登入，閱讀並勾選資料使用同意；教師填答授權可自由選擇。</li><li>首次使用時，以醫護提供的邀請碼綁定孩子；邀請指定信箱須與登入信箱相符。</li><li>選擇孩子，查看醫護指派的問卷。</li><li>填寫、暫存並確認提交，再追蹤完成狀態。</li></ol></section><section class="panel article"><h2>常見問題</h2>' + questions.map(([title,body])=>`<details><summary>${title}</summary><p>${body}</p></details>`).join('') + '</section><section class="panel article"><h2>使用安全提醒</h2><p>驗證碼只用於本人登入。請勿公開邀請碼或教師授權連結，也不要在共用電腦保留登入狀態；離開時使用右上角選單登出。</p></section></div>';
  }
  root.EarlyCareParentHelp = Object.freeze({render});
  document.querySelectorAll('[data-parent-help]').forEach(target=>target.innerHTML=render());

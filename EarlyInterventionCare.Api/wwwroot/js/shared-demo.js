@@ -34,5 +34,13 @@
     if(data.grant?.status==='active'&&data.grant.taskIds.every(id=>data.tasks.find(t=>t.id===id)?.status==='done'))data.grant.status='used';
     write(data);return t.revision;
   }
-  window.SharedDemo={read,tasks,parentTaskScope,assign,grant,verify,revoke,save,key,reset:()=>write(seed())};
+  // Browser presentation only. Never used by formal parent API/account mode.
+  function restartParent(id,revision){
+    const data=read(),t=data.tasks.find(t=>t.id===id&&t.role==='parent');
+    if(!t||t.status!=='done'||t.revision!==revision)throw new Error('問卷狀態已改變，請重新整理後再試。');
+    data.parentRetryBackups=data.parentRetryBackups||{};
+    data.parentRetryBackups[id]=JSON.parse(JSON.stringify(t));
+    t.status='pending';t.draft=null;t.revision++;write(data);return t;
+  }
+  window.SharedDemo={read,tasks,parentTaskScope,assign,grant,verify,revoke,save,restartParent,key,reset:()=>write(seed())};
 })();

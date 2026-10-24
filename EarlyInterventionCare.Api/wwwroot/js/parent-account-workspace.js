@@ -5,39 +5,41 @@
  const api = EarlyCareParentClient.createClient(session, window.fetch.bind(window));
  const renderGate = EarlyCareParentClient.latestRequest(), loadGate = EarlyCareParentClient.latestRequest();
  const definitionGate = EarlyCareParentClient.latestRequest();
+ let questionnaireUi=null;
  const root = document.querySelector("#page-content"), select = document.querySelector("#child-select"), modal = document.querySelector("#modal");
  const count = document.querySelector(".nav-count"), bind = document.querySelector('[data-action="bind"]');
- let children = [], profiles = [], currentId = "", page = ["home","tasks","children","teacher","consent","help"].includes(new URLSearchParams(location.search).get("page")) ? new URLSearchParams(location.search).get("page") : "home", loaded = false;
+ let children = [], profiles = [], currentId = "", page = ["home","tasks","children","help"].includes(new URLSearchParams(location.search).get("page")) ? new URLSearchParams(location.search).get("page") : "home", loaded = false;
  function accountFormDirty() {
   if(!modal.open)return false;
+  if(modal.querySelector(".parent-answer-form"))return questionnaireUi.isDirty();
   const form = modal.querySelector("form");
   return !!form && (form.dataset.submitting === "true" || Array.from(form.querySelectorAll("input")).some(input => input.value !== input.defaultValue));
  }
  let discardPrompt = null;
  async function closeAccountDialog() {
   if(!modal.open)return true;
-  if(modal.querySelector('form[data-submitting="true"]'))return false;
+  if(questionnaireUi?.isBusy()||modal.querySelector('form[data-submitting="true"]'))return false;
   if(accountFormDirty()){
    if(discardPrompt)return discardPrompt;
    const prompt=document.createElement("dialog");prompt.setAttribute("aria-labelledby","account-discard-title");
    prompt.innerHTML='<h2 id="account-discard-title">放棄尚未儲存的變更？</h2><p>離開後需要重新輸入，已保存的資料不受影響。</p><div class="actions"><button class="btn secondary" type="button" data-keep>繼續編輯</button><button class="btn" type="button" data-discard>放棄變更並離開</button></div>';
    document.body.append(prompt);
    discardPrompt=new Promise(resolve=>{
-    const finish=discard=>{prompt.close();prompt.remove();discardPrompt=null;if(discard)modal.close();resolve(discard);};
+    const finish=discard=>{prompt.close();prompt.remove();discardPrompt=null;if(discard){questionnaireUi?.invalidate();modal.close();}resolve(discard);};
     prompt.querySelector('[data-keep]').addEventListener('click',()=>finish(false));
     prompt.querySelector('[data-discard]').addEventListener('click',()=>finish(true));
     prompt.addEventListener('cancel',event=>{event.preventDefault();finish(false);});
     prompt.showModal();prompt.querySelector('[data-keep]').focus();
    });return discardPrompt;
   }
-  definitionGate.begin();modal.close();document.querySelector("#modal-body").replaceChildren();return true;
+  questionnaireUi?.invalidate();definitionGate.begin();modal.close();document.querySelector("#modal-body").replaceChildren();return true;
  }
  window.addEventListener("beforeunload",event=>{if(accountFormDirty()){event.preventDefault();event.returnValue="";}});
  modal.addEventListener("cancel",event=>{event.preventDefault();closeAccountDialog();});
  window.EarlyCareParentWorkspace=Object.freeze({beforeLogout:closeAccountDialog});
  // A history restore can reuse the old DOM without rerunning scripts or making requests.
  window.addEventListener("pagehide",()=>{
-  loadGate.begin();renderGate.begin();definitionGate.begin();clearData();root.replaceChildren();
+  questionnaireUi?.invalidate();loadGate.begin();renderGate.begin();definitionGate.begin();clearData();root.replaceChildren();
   if(modal.open)modal.close();document.querySelector("#modal-body").replaceChildren();
  });
  window.addEventListener("pageshow",event=>{if(event.persisted)load();});
@@ -45,7 +47,7 @@
  const statusNames = {NEW:"新個案",TO_CONTACT:"待聯絡",APPOINTED:"已預約",WAITING_FORM:"待填表",FORM_COMPLETED:"表單完成",COMPLETED:"已完成"};
  const relations = {FATHER:"父親",MOTHER:"母親",GRANDPARENT:"祖父母",RELATIVE:"其他親屬",GUARDIAN:"監護人",CAREGIVER:"照顧者",OTHER:"其他"};
  const taskNames = {PENDING:"待填寫",IN_PROGRESS:"填寫中",SUBMITTED:"已提交"};
- const labels = {home:["家長照顧工作台","查看孩子資料與本次評估準備。"],children:["我的孩子","新增孩子時使用醫護提供的邀請碼。"],tasks:["我的問卷","查看醫護指定的家長問卷。"],teacher:["教師問卷完成進度","家長僅查看教師是否完成問卷。"],help:["使用協助","需要更正孩子資料時，請聯絡醫護人員。"],consent:["同意與資料使用","如需查閱同意紀錄，請聯絡承辦窗口。"]};
+ const labels = {home:["家長照顧工作台","查看孩子資料與本次評估準備。"],children:["我的孩子","新增孩子時使用醫護提供的邀請碼。"],tasks:["我的問卷","查看醫護指定的家長問卷。"],help:["使用協助","需要更正孩子資料時，請聯絡醫護人員。"]};
  function errorPanel(error) {
   return `<section class="panel account-card" role="alert"><p>${esc(error.message)}</p><div class="actions"><a class="btn secondary" href="/?role=parent&mode=account">返回家長登入</a><button class="btn secondary" type="button" data-action="reload-account">重新載入</button></div></section>`;
  }
@@ -69,7 +71,7 @@
  }
  function tasksPanel(tasks, compact = false) {
   const rows = compact ? tasks.filter(t => ["PENDING","IN_PROGRESS"].includes(t.taskStatus)).slice(0,3) : tasks;
-  return `<section class="panel account-card"><div class="account-card-heading"><h2>${compact ? "待填問卷" : "家長問卷"}</h2>${compact ? '<button class="text-button" data-page="tasks">查看全部 →</button>' : ""}</div>${rows.length ? rows.map(t => `<div class="account-task-row"><div><strong>${esc(t.questionnaireTitle)}</strong><p>第 ${esc(t.assignmentRound)} 輪 · 版本 ${esc(t.versionNumber)} · ${t.isRequired ? "必填" : "選填"}</p></div><div class="account-task-actions"><span class="tag">${esc(taskNames[t.taskStatus] || t.taskStatus)}</span><button class="btn secondary" type="button" data-definition-task="${esc(t.taskId)}" aria-label="查看${esc(t.questionnaireTitle)}題目">查看題目</button></div></div>`).join("") : "<p>目前沒有待填問卷。</p>"}</section>`;
+  return `<section class="panel account-card"><div class="account-card-heading"><h2>${compact ? "待填問卷" : "家長問卷"}</h2>${compact ? '<button class="text-button" data-page="tasks">查看全部 →</button>' : ""}</div>${rows.length ? rows.map(t => `<div class="account-task-row"><div><strong>${esc(t.questionnaireTitle)}</strong><p>第 ${esc(t.assignmentRound)} 輪 · 版本 ${esc(t.versionNumber)} · ${t.isRequired ? "必填" : "選填"}</p></div><div class="account-task-actions"><span class="tag">${esc(taskNames[t.taskStatus] || t.taskStatus)}</span><button class="btn secondary" type="button" data-parent-task="${esc(t.taskId)}" data-submitted="${t.taskStatus==='SUBMITTED'}" aria-label="${t.taskStatus==='SUBMITTED'?'查看':'填寫'}${esc(t.questionnaireTitle)}">${t.taskStatus==='SUBMITTED'?'查看回執':t.taskStatus==='IN_PROGRESS'?'繼續填寫':'開始填寫'}</button></div></div>`).join("") : "<p>目前沒有待填問卷。</p>"}</section>`;
  }
  async function showDefinition(taskId) {
   if (!await closeAccountDialog()) return;
@@ -122,10 +124,7 @@
    } else if (selectedPage === "children") {
     html = (children.length ? children.map(childCard).join("") : '<section class="panel account-card"><p>尚未綁定孩子，請使用醫護邀請碼新增。</p></section>') + profileCards(child);
    } else if (selectedPage === "tasks") html = child ? tasksPanel(tasks) : '<p>請先綁定孩子。</p>';
-   else if (selectedPage === "teacher") {
-    const rows = child ? await api(`/api/parent/cases/${child.caseId}/teacher-completion`) : [];
-    html = `<section class="panel account-card"><h2>教師問卷完成進度</h2>${rows.length ? rows.map(t => `<p><strong>${esc(t.questionnaireTitle)}</strong> · 第 ${esc(t.assignmentRound)} 輪 · ${t.isCompleted ? "已完成" : "尚未完成"}</p>`).join("") : "<p>目前沒有指定教師問卷。</p>"}</section>`;
-   } else if(selectedPage === "help") html = window.EarlyCareParentHelp.render();
+   else if(selectedPage === "help") html = window.EarlyCareParentHelp.render();
    else html = `<section class="panel account-card"><p>${esc(labels[selectedPage][1])}</p></section>`;
    if (renderGate.current(request)) { root.innerHTML = html; count.textContent = String(EarlyCareParentClient.summarize(tasks).outstanding); }
   } catch (error) {
@@ -138,6 +137,8 @@
  async function load() {
   const request = loadGate.begin(); renderGate.begin(); clearData(); root.innerHTML = '<p role="status">正在載入…</p>';
   try {
+   await window.EarlyCareParentEntryConsent.ensure(api);
+   if (!loadGate.current(request)) return;
    const list = await EarlyCareParentClient.loadChildren(api);
    if (!loadGate.current(request)) return;
    const ownProfiles = await api("/api/parent/profile");
@@ -147,17 +148,21 @@
    select.innerHTML = children.map(c => `<option value="${esc(c.caseId)}">${esc(c.childName)} · ${esc(c.caseCode)}</option>`).join("");
    select.value = currentId; select.disabled = !children.length; bind.disabled = false;
    await render();
+
   } catch (error) { if (loadGate.current(request)) { clearData(); root.innerHTML = errorPanel(error); } }
  }
  select.addEventListener("change", () => { currentId = select.value; render(); });
  document.querySelector("#close-modal").addEventListener("click", closeAccountDialog);
  document.addEventListener("click", async event => {
+  const fillButton=event.target.closest("[data-parent-task]");
+  if(fillButton&&loaded){questionnaireUi.open(fillButton.dataset.parentTask,fillButton.dataset.submitted==='true');return;}
   const definitionButton = event.target.closest("[data-definition-task]");
   if (definitionButton && loaded) { showDefinition(definitionButton.dataset.definitionTask); return; }
   if (event.target.closest("[data-close-definition]")) { await closeAccountDialog(); return; }
   const nav = event.target.closest("[data-page]");
   if (nav) {
    if(!await closeAccountDialog())return;
+   if (!["home","tasks","children","help"].includes(nav.dataset.page)) return;
    page = nav.dataset.page;
    document.querySelectorAll(".nav [data-page]").forEach(button => { button.classList.toggle("active",button.dataset.page === page); button.removeAttribute("aria-current"); if (button.dataset.page === page) button.setAttribute("aria-current","page"); });
    const crumb = document.querySelector("#crumb"); if (crumb) crumb.textContent = labels[page][0];
@@ -197,5 +202,6 @@
   } finally { delete form.dataset.submitting; button.disabled = conflict; }
  });
  document.querySelectorAll(".nav [data-page]").forEach(button=>{const active=button.dataset.page===page;button.classList.toggle("active",active);if(active)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");});
+ questionnaireUi=window.EarlyCareParentFormUI.create({api,modal,closeDialog:closeAccountDialog,reload:load,onAccessError:error=>{questionnaireUi.invalidate();if(modal.open)modal.close();loadGate.begin();renderGate.begin();clearData();root.innerHTML=errorPanel(error);}});
  load();
 })();

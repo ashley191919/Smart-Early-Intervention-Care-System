@@ -1,0 +1,15 @@
+.parent-form-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
+.parent-form-fields label,.parent-observation{display:grid;gap:7px;font-size:14px;color:var(--ink,#505966)}
+.parent-form-fields input,.parent-form-fields select,.parent-observation textarea{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:10px;border:1px solid #dce6e3;border-radius:8px;font:inherit;background:#fff}
+.parent-observation textarea{min-height:100px;resize:vertical}
+.parent-form-question{min-width:0;margin:18px 0;padding:14px;border:1px solid #dce6e3;border-radius:10px}
+.parent-form-question legend{font-size:14px;line-height:1.8;padding:0 5px;overflow-wrap:anywhere}
+.parent-form-question small{color:#84928e;font-size:12px}
+.parent-answer-options{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.parent-answer-options label{display:flex;align-items:center;gap:10px;min-height:44px;padding:10px;border-radius:8px;background:#f1f6f5;font-size:14px;cursor:pointer;overflow-wrap:anywhere}
+.parent-answer-options input{appearance:auto;width:18px;height:18px;min-height:18px;flex:none;margin:0;accent-color:#6d8f89}
+.parent-form-error{font-size:14px;color:#a23c37;line-height:1.8}
+.parent-form-status{font-size:13px;color:#668681}
+.parent-receipt p{line-height:1.8;overflow-wrap:anywhere}
+.parent-answer-form .actions button{min-height:44px}
+@media(max-width:600px){.parent-form-fields,.parent-answer-options{grid-template-columns:minmax(0,1fr)}.parent-answer-form .actions button{flex:1 1 100%}}

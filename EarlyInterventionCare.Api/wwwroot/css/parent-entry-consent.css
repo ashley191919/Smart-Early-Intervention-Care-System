@@ -1,0 +1,26 @@
+.parent-entry-consent{box-sizing:border-box;width:min(600px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100svh - 32px);overflow:auto;margin:auto;padding:28px;border:1px solid #dce6e3;border-top:6px solid #7f9e99;border-radius:20px;background:#fff;color:#505966;font-family:inherit;font-size:14px;line-height:1.8;box-shadow:0 20px 65px #344e4a26}
+.parent-entry-consent *{box-sizing:border-box}
+.parent-entry-consent::backdrop{background:#263c3a66}
+.parent-entry-consent .entry-eyebrow{color:#668681;font-size:12px;letter-spacing:.08em}
+.parent-entry-consent h2{font-size:22px;line-height:1.5;margin:5px 0 10px;color:#668681}
+.parent-entry-consent h2:focus{outline:none}
+.parent-entry-consent p{font-size:14px;line-height:1.8;margin:0;color:#737e89;overflow-wrap:anywhere}
+.parent-entry-consent .entry-copy{margin:20px 0 12px}
+.parent-entry-consent h3{font-size:16px;margin:0 0 7px;color:#505966}
+.parent-entry-consent .entry-check{display:flex;align-items:flex-start;gap:12px;margin:0;padding:14px;background:#f1f6f5;border:1px solid #dce6e3;border-radius:10px;cursor:pointer;text-align:left;line-height:1.8}
+.parent-entry-consent .entry-check input{appearance:auto;flex:0 0 18px;width:18px;height:18px;margin:4px 0 0;accent-color:#6d8f89}
+.parent-entry-consent .entry-check span{min-width:0;font-size:14px}
+.parent-entry-consent .entry-check small{display:block;color:#84928e;font-size:12px;margin-top:3px}
+.parent-entry-consent .entry-actions{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.parent-entry-consent .entry-actions button{min-height:44px;padding:10px 20px;border:1px solid #7f9e99;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.parent-entry-consent .entry-primary{color:#fff;background:#7f9e99}
+.parent-entry-consent .entry-primary:disabled{opacity:.45;cursor:not-allowed}
+.parent-entry-consent .entry-secondary{color:#668681;background:#fff}
+.parent-entry-consent button:focus-visible,.parent-entry-consent input:focus-visible{outline:3px solid #476f6b;outline-offset:3px}
+@media(max-width:480px){.parent-entry-consent{padding:20px}.parent-entry-consent h2{font-size:20px}.parent-entry-consent .entry-actions button{flex:1 1 100%}}
+.parent-entry-consent .entry-document{white-space:pre-wrap;max-height:28svh;overflow:auto;padding:12px;border:1px solid #dce6e3;border-radius:10px}
+.parent-entry-consent .entry-teacher{margin:20px 0 0;padding:12px;border:1px solid #dce6e3;border-radius:10px;min-width:0}
+.parent-entry-consent .entry-teacher legend{font-weight:600;padding:0 5px}
+.parent-entry-consent .entry-teacher label{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-right:16px;font-size:14px}
+.parent-entry-consent .entry-teacher input{width:18px;height:18px;margin:0;accent-color:#6d8f89}
+.parent-entry-consent .entry-error{color:#a23c37;margin-top:14px}

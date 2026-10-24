@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-product1" defer></script>
 <link rel="stylesheet" href="/css/system-interface.css?v=20261011-product3">
 <script src="/js/workspace-user-menu.js?v=20261018-unsaved-guard" defer></script>
-</head>
+<link rel="stylesheet" href="/css/role-mobile-header.css?v=20261024-three-role"></head>
 <body>
 <svg class="sprite" aria-hidden="true"><defs>
 <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M12 21v-9M12 14C4 14 3 8 4 3c7 0 10 5 8 11ZM12 17c0-7 4-10 9-9 0 6-3 10-9 9Z"/></symbol>
@@ -35,7 +35,7 @@
  <button type="button" data-nav="tasks"><svg><use href="#i-form"/></svg>本次問卷<span class="badge" id="nav-count">2</span></button>
  <button type="button" data-nav="help"><svg><use href="#i-help"/></svg>填寫協助</button>
  </nav></div>
- <div class="side-note" hidden><strong><svg><use href="#i-shield"/></svg>指定問卷授權規則</strong><p>僅提供本次指定問卷。授權不限時；本次指定問卷全部提交成功或家長撤銷授權後失效。</p><button type="button" class="demo-reset" id="reset-demo">重新體驗示範</button><a class="return-login" href="/?role=teacher">返回教師登入</a></div><div class="sidebar-footer"><p>輔仁大學附設醫院</p><small>兒童發展聯合評估中心</small></div>
+ <div class="side-note" hidden><strong><svg><use href="#i-shield"/></svg>指定問卷授權規則</strong><p>僅提供本次指定問卷。授權不限時；本次指定問卷全部提交成功或家長撤銷授權後失效。</p><button type="button" class="demo-reset" id="reset-demo">重新體驗示範</button><a class="return-login" href="/?role=teacher">返回教師登入</a></div><div class="sidebar-footer"><p>輔仁大學附設醫院</p><small>兒童發展評估暨療育中心</small></div>
 </aside>
 <div class="workspace">
  <header class="topbar"><div class="hospital-brand"><img class="hospital-mark" src="/images/hospital-logo.png" alt="" width="325" height="247"><div><p class="hospital-name">天主教輔仁大學附設醫院</p><p class="hospital-english" lang="en">FU JEN CATHOLIC UNIVERSITY HOSPITAL</p></div></div><div class="breadcrumb">教師端 <span aria-hidden="true">／</span><b id="crumb">任務首頁</b></div><div class="session"><span class="session-dot"></span><span class="session-label" id="session-label">教師填答工作台</span><span class="demo">互動示範</span><span class="avatar" aria-label="教師身分">師</span></div></header>
@@ -69,5 +69,5 @@
 <div class="toast" id="toast" role="status" hidden></div>
 
 <dialog id="reload-draft-dialog" aria-labelledby="reload-draft-title"><h2 id="reload-draft-title">重新載入 DB 草稿</h2><p>這會以 DB 最新草稿取代目前尚未保存的輸入。請先確認需要保留的內容。</p><div class="dialog-actions"><button type="button" class="btn secondary" id="cancel-reload-draft">保留目前輸入</button><button type="button" class="btn" id="confirm-reload-draft">載入最新草稿</button></div></dialog>
-</body>
+<script src="/js/role-mobile-header.js?v=20261024-three-role" defer></script></body>
 </html>

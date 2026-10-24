@@ -11,42 +11,19 @@
     {id:'clancy-r1',name:'克氏行為量表',kind:'家長版',status:'done',round:1,meta:'第 1 輪初評 · 版本 1.0.0 · 提交後不可修改',submittedAt:'2026／09／15 10:45'},
     {id:'satisfaction',name:'早期療育服務滿意度調查',kind:'家長版',status:'done',round:null,meta:'過往服務後調查 · 版本 1.0.0 · 提交後不可修改',submittedAt:'2026／09／30 14:20'}
   ];
-  const states = new Map([['DEMO-001',{currentRound:2,roundLabel:'第 2 輪複評',tasks:makeTasks(),grant:null,teacherTasks:[
-    {taskId:'teacher-snap-r2',name:'SNAP-IV 教師版',round:2,isCompleted:false},
-    {taskId:'teacher-clancy-r2',name:'克氏行為量表教師版',round:2,isCompleted:false}
-  ]}]]);
-  function initialPage(){const page=new URLSearchParams(location.search).get('page');return ['home','tasks','children','teacher','consent','help'].includes(page)?page:'home';}
+  const states = new Map([['DEMO-001',{currentRound:2,roundLabel:'第 2 輪複評',tasks:makeTasks()}]]);
+  function initialPage(){const page=new URLSearchParams(location.search).get('page');return ['home','tasks','children','help'].includes(page)?page:'home';}
   let selected=children[0].id, page=initialPage(), filter='all', taskScope='current', toastTimer;
   let previewState='normal';
-  const teacherPreviewUrl=new URL('/?role=teacher',location.origin).href;
-  function showShare(){
-    const grant=state().grant;
-    if(!grant||grant.status!=='active'){toast('這組教師授權已無法分享，請查看目前狀態。');return;}
-    dialog('分享教師填答入口',`<div class="share-layout"><div><span class="pill">教師填答入口</span><p class="privacy-note">請將授權碼提供給受邀教師。</p><a class="btn ghost" href="${teacherPreviewUrl}" target="_blank" rel="noopener">開啟教師登入</a></div></div><label class="modal-field">教師授權碼<input readonly value="${grant.code}" aria-label="教師授權碼"></label><div class="actions"><button class="btn" data-action="copy-code">複製授權碼</button><button class="btn ghost" data-action="copy-link">複製登入連結</button></div><p class="error" id="copy-error" role="alert" hidden></p>`);
-  }
-  async function copyShare(kind){
-    const grant=state().grant;if(!grant||grant.status!=='active')return;
-    try{await navigator.clipboard.writeText(kind==='code'?grant.code:teacherPreviewUrl);toast(kind==='code'?'授權碼已複製，可在教師入口體驗共用流程。':'教師登入連結已複製。');}
-    catch{const error=document.querySelector('#copy-error');error.textContent='瀏覽器未允許複製，請手動選取上方授權碼；登入連結可由「開啟教師登入」取得。';error.hidden=false;}
-  }
-  function grantActions(grant){
-    if(!teacherTasks().length)return '<p class="privacy-note">醫護尚未指派教師問卷，暫時無法建立授權。請向醫護確認。</p>';
-    if(!pendingTeacherTasks().length)return '<p class="privacy-note">全部指定問卷已完成，授權已結束，無需再分享或重新建立。</p>';
-    if(grant?.status==='active')return '<button class="btn" data-action="share">分享入口</button><button class="btn danger" data-action="revoke">撤銷教師授權</button>';
-    return '<button class="btn" data-action="grant">建立教師授權</button>';
-  }
-  const titles={home:['家長照顧工作台','把填表與授權集中在這裡，陪伴孩子完成評估前的準備。'],tasks:['我的問卷','只列出醫護為目前孩子指定的表單；提交後不能修改。'],children:['我的孩子','查看已綁定孩子的資料，新增孩子時使用醫護提供的邀請碼。'],teacher:['教師授權與進度','由家長提供指定問卷的授權，邀請教師補充校園觀察。'],consent:['同意與資料使用','了解資料用途與授權範圍；本頁尚未取得正式知情同意。'],help:['使用協助','從綁定孩子、填寫問卷，到邀請老師，一步一步完成。']};
+  const titles={home:['家長照顧工作台','陪伴孩子完成評估前的問卷準備。'],tasks:['我的問卷','只列出醫護為目前孩子指定的表單；提交後不能修改。'],children:['我的孩子','查看已綁定孩子的資料，新增孩子時使用醫護提供的邀請碼。'],help:['使用協助','從登入、綁定孩子到填寫問卷，一步一步完成。']};
   const content=document.querySelector('#page-content'), modal=document.querySelector('#modal'), select=document.querySelector('#child-select');
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const current=()=>children.find(c=>c.id===selected);
   const state=()=>states.get(selected);
   const currentTasks=()=>state().tasks.filter(t=>t.round===state().currentRound);
-  const teacherTasks=()=>state().teacherTasks.filter(t=>t.round===state().currentRound);
-  const pendingTeacherTasks=()=>teacherTasks().filter(t=>!t.isCompleted);
-  const grantTasks=grant=>teacherTasks().filter(t=>grant.taskIds.includes(t.taskId));
   const labels={pending:'待填寫',draft:'有草稿',done:'已提交'};
   function toast(text){const box=document.querySelector('#toast');box.textContent=text;box.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>box.hidden=true,4000);}
-  function dialog(title,html){document.querySelector('#modal-title').textContent=title;document.querySelector('#modal-body').innerHTML=html;modal.showModal();}
+  function dialog(title,html){document.querySelector('#modal-title').textContent=title;document.querySelector('#modal-body').innerHTML=html;if(!modal.open)modal.showModal();}
   let pendingInvite = null;
   const inviteErrors = {
     'DEMO-EXPIRED':'邀請碼已過期，請向原提供邀請的醫護索取新碼。',
@@ -74,7 +51,7 @@
     pendingInvite=null;
     if(children.some(c=>c.id==='DEMO-002')){beginBinding();showInviteError('邀請碼已被使用，第二位孩子已在本頁清單中。');return;}
     children.push({id:'DEMO-002',name:'陳○晴',sex:'女',age:'3 歲',relation:'主要照顧者',contact:'家長',phone:'0900-***-000'});
-    states.set('DEMO-002',{currentRound:1,roundLabel:'第 1 輪初評',tasks:[{...makeTasks()[0],id:'basic-r1-child2',round:1,meta:'第 1 輪初評 · 版本 1.0.0'}],grant:null,teacherTasks:[]});
+    states.set('DEMO-002',{currentRound:1,roundLabel:'第 1 輪初評',tasks:[{...makeTasks()[0],id:'basic-r1-child2',round:1,meta:'第 1 輪初評 · 版本 1.0.0'}]});
     selected='DEMO-002';filter='all';taskScope='current';childOptions();navigate('home');
     bindingView('孩子已加入本頁清單',`${bindingSteps(3)}<div class="binding-complete"><span class="binding-success" aria-hidden="true">✓</span><h3>接下來，一起完成評估準備</h3></div><p class="modal-copy">綁定完成後，之後只需Email 驗證碼登入即可看到孩子，不必再次輸入邀請碼。</p><p class="privacy-note">本次未建立正式綁定或保存至資料庫，重新整理會重設。</p><div class="actions"><button class="btn" data-action="binding-home">查看孩子的首頁</button><button class="btn ghost" data-action="binding-child">查看孩子資料</button></div>`);
   }
@@ -87,20 +64,13 @@
   modal.addEventListener('cancel',()=>{pendingInvite=null;});
   function childOptions(){select.innerHTML=children.map(c=>`<option value="${c.id}">${esc(c.name)} · ${c.id}</option>`).join('');select.value=selected;}
   function taskRows(tasks){return tasks.map(t=>`<div class="task-row"><div><div class="task-name">${t.name}</div><p class="task-meta">${t.kind} · ${t.meta}${t.submittedAt?`<br>提交：${esc(t.submittedAt)}（臺灣時間）`:""}</p></div><div class="task-end"><span class="pill ${t.status}">${labels[t.status]}</span><button class="btn ${t.status==='done'?'ghost':''}" data-task="${t.id}">${t.status==='draft'?'繼續填寫':t.status==='done'?'提交紀錄':'開始填寫'}</button></div></div>`).join('');}
-  function teacherRows(simulate=false){
-    const tasks=teacherTasks(),grant=state().grant;
-    if(!tasks.length)return '<p class="privacy-note">本輪尚未指派教師問卷。</p>';
-    return tasks.map(t=>`<div class="teacher-task"><div class="teacher-status"><span>${esc(t.name)}</span><span class="pill ${t.isCompleted?'done':'pending'}">${t.isCompleted?'已完成':'尚未完成'}</span></div>${simulate&&!t.isCompleted?`<button class="btn ghost" data-teacher-task="${t.taskId}" ${grant?.status==='active'&&grant.taskIds.includes(t.taskId)?'':'disabled'}>這份已提交</button>`:''}</div>`).join('');
-  }
   function syncShared(){
     const s=states.get('DEMO-001');
     s.tasks=s.tasks.filter(t=>t.round!==2).concat(SharedDemo.tasks('parent').map(t=>({id:t.id,name:t.name,kind:'家長版',status:t.status,round:2,meta:'第 2 輪複評 · 版本 1.0.0',submittedAt:t.draft?.submittedAt?new Date(t.draft.submittedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}):null})));
-    s.teacherTasks=SharedDemo.tasks('teacher').map(t=>({taskId:t.id,name:t.name+'教師版',round:2,isCompleted:t.status==='done'}));
-    s.grant=SharedDemo.read().grant;
   }
   window.addEventListener('storage',()=>render());window.addEventListener('focus',()=>render());
   window.addEventListener('pageshow',event=>{if(event.persisted)render();});
-  function render(){syncShared();
+  function render(){if(!window.EarlyCareParentEntryConsent.hasUiChoice())return;syncShared();
     document.querySelector('.child-switch').hidden=previewState!=='normal';
     document.querySelector('#crumb').textContent=page==='home'?'我的首頁':titles[page][0];document.querySelector('#page-title').textContent=titles[page][0];document.querySelector('#page-subtitle').textContent=titles[page][1];
     document.querySelectorAll('[data-page]').forEach(b=>{const active=b.dataset.page===page;b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
@@ -112,72 +82,57 @@
       content.innerHTML=`<section class="panel empty"><span class="state-symbol ${previewState==='loading'?'is-loading':''}" aria-hidden="true">${previewState==='loading'?'◌':previewState==='expired'?'⌁':previewState==='error'?'!':'✓'}</span><h2 ${previewState==='loading'?'role="status"':''}>${title}</h2><p>${description}</p>${previewState==='expired'?`<a class="btn" href="/?role=parent">${button}</a>`:`<button class="btn" data-action="reset-state">${button}</button>`}</section>`;
       return;
     }
-    if(selected==='empty'&&page!=='help'&&page!=='consent'){content.innerHTML=`<section class="panel empty"><span class="welcome-symbol" style="margin:auto">＋</span><h2>先綁定孩子，開始準備評估資料</h2><p>請使用醫護提供的一次性邀請碼。<br>Email 登入與個案綁定是兩個不同的步驟。</p><button class="btn" data-action="bind">輸入邀請碼</button><p class="privacy-note">本頁不會以姓名、生日或個案編號直接綁定孩子。</p></section>`;return;}
+    if(selected==='empty'&&page!=='help'){content.innerHTML=`<section class="panel empty"><span class="welcome-symbol" style="margin:auto">＋</span><h2>先綁定孩子，開始準備評估資料</h2><p>請使用醫護提供的一次性邀請碼。<br>Email 登入與個案綁定是兩個不同的步驟。</p><button class="btn" data-action="bind">輸入邀請碼</button><p class="privacy-note">本頁不會以姓名、生日或個案編號直接綁定孩子。</p></section>`;return;}
     if(page==='home'){
       const pending=currentTasks().filter(t=>t.status==='pending').length,draft=currentTasks().filter(t=>t.status==='draft').length,done=currentTasks().filter(t=>t.status==='done').length;
-      content.innerHTML=`<div class="welcome"><div><span class="welcome-tag">每一份觀察，都是了解孩子的起點</span><h2>家長您好，今天一起完成 ${esc(current().name)} 的評估準備。</h2><p>${current().id} · ${current().sex} · ${current().age} · ${esc(state().roundLabel)}<br>先填寫家中的觀察，再邀請老師提供校園表現。</p></div><span class="welcome-symbol" aria-hidden="true">♡</span></div><div class="stats"><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${pending}</strong><small>份待填寫</small><p>依醫護指定問卷填寫</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${draft}</strong><small>份草稿</small><p>可接續先前填答</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#shield"/></svg></span><div><strong>${done}</strong><small>份已提交</small><p>提交後保留原始答案</p></div></div></div><div class="home-grid"><section class="panel"><div class="section-title"><h2>本次待辦問卷</h2><button class="text-button" data-page="tasks">查看全部 →</button></div>${taskRows(currentTasks().filter(t=>t.status!=='done')) || '<p class="modal-copy">本輪目前沒有待辦問卷。</p>'}<p class="privacy-note">問卷種類、版本與複評輪次由醫護指定，不需自行挑選。</p></section><aside class="aside-stack"><section class="panel"><h2>邀請老師一起完成</h2><p>${state().grant?.status==='active'?'目前有一組教師授權，可提供給老師。':teacherTasks().length?'授權老師填寫本輪指定的教師問卷。':'本輪尚未指派教師問卷；請與醫護確認。'}</p><button class="btn" data-page="teacher">教師授權與進度 →</button></section><section class="panel"><h2>教師問卷完成進度</h2>${teacherRows()}<p class="privacy-note">家長只查看完成狀態；不提供教師答案、分數或補充觀察。</p></section></aside></div>`;
+      content.innerHTML=`<div class="welcome"><div><span class="welcome-tag">每一份觀察，都是了解孩子的起點</span><h2>家長您好，今天一起完成 ${esc(current().name)} 的評估準備。</h2><p>${current().id} · ${current().sex} · ${current().age} · ${esc(state().roundLabel)}<br>請依照孩子在家中的實際情況填寫指定問卷。</p></div><span class="welcome-symbol" aria-hidden="true">♡</span></div><div class="stats"><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${pending}</strong><small>份待填寫</small><p>依醫護指定問卷填寫</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${draft}</strong><small>份草稿</small><p>可接續先前填答</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#shield"/></svg></span><div><strong>${done}</strong><small>份已提交</small><p>提交後保留原始答案</p></div></div></div><div class="home-grid"><section class="panel"><div class="section-title"><h2>本次待辦問卷</h2><button class="text-button" data-page="tasks">查看全部 →</button></div>${taskRows(currentTasks().filter(t=>t.status!=='done')) || '<p class="modal-copy">本輪目前沒有待辦問卷。</p>'}<p class="privacy-note">問卷種類、版本與複評輪次由醫護指定，不需自行挑選。</p></section></div>`;
     } else if(page==='tasks'){
       const scoped=state().tasks.filter(t=>taskScope==='current'?t.round===state().currentRound:t.round!==state().currentRound);
       const tasks=scoped.filter(t=>filter==='all'||t.status===filter);
       content.innerHTML=`<div class="filterbar" role="group" aria-label="問卷輪次範圍">${[['current','本輪指定問卷'],['history','過往提交紀錄']].map(([key,label])=>`<button data-scope="${key}" class="${taskScope===key?'active':''}" aria-pressed="${taskScope===key}">${label}</button>`).join('')}</div>${taskScope==='current'?`<div class="filterbar" role="group" aria-label="問卷狀態篩選">${[['all','全部'],['pending','待填寫'],['draft','草稿'],['done','已提交']].map(([key,label])=>`<button data-filter="${key}" class="${filter===key?'active':''}" aria-pressed="${filter===key}">${label}</button>`).join('')}</div>`:''}<section class="panel"><div class="section-title"><h2>${esc(current().name)} · ${taskScope==='current'?esc(state().roundLabel):'過往提交紀錄'}</h2><small>全部 ${scoped.length} 份</small></div>${tasks.length?taskRows(tasks):'<p class="modal-copy">目前沒有此範圍或狀態的問卷。</p>'}</section><p class="privacy-note">${taskScope==='history'?'過往提交紀錄保留原輪次與版本，不能重開修改；服務後滿意度調查不計入本輪評估待辦。':'本輪由醫護指定問卷與版本，複評建立新任務，不覆蓋初評紀錄。'} 此為虛構清單，SNAP-IV 與克氏已接上共用前端填答；正式 API 仍待串接。</p>`;
     } else if(page==='children'){
       content.innerHTML=`<div class="split"><section class="panel"><div class="section-title"><h2>孩子基本資料</h2><span class="pill done">已綁定情境</span></div><dl class="detail-list"><dt>孩子姓名</dt><dd>${esc(current().name)}</dd><dt>個案代碼</dt><dd>${current().id}</dd><dt>性別／年齡</dt><dd>${current().sex} ／ ${current().age}</dd><dt>照顧者關係</dt><dd>${current().relation}</dd><dt>主要聯絡人</dt><dd>${esc(current().contact)}</dd><dt>手機號碼</dt><dd>${current().phone}</dd></dl><button class="btn ghost" data-action="contact">更新聯絡人</button><p class="privacy-note">孩子身分資料如需更正，請聯絡醫護核對。</p></section><section class="panel article"><h2>新增另一位孩子</h2><p>醫護建立個案並確認家長關係後，提供指定個案及家長信箱的一次性邀請碼。</p><ol><li>先完成 Email 驗證碼登入。</li><li>輸入醫護提供的邀請碼。</li><li>核對個案後建立綁定關係。</li></ol><button class="btn" data-action="bind">輸入邀請碼</button><p class="privacy-note">後续登入即可看到已綁定孩子，不用重複輸入邀請碼。</p></section></div>`;
-    } else if(page==='teacher'){
-      const grant=state().grant;
-      content.innerHTML=`<div class="split"><section class="panel article"><div class="section-title"><h2>本輪教師填答授權</h2><span class="pill ${grant?.status==='active'?'done':'pending'}">${grant?grant.status==='active'?'有效':grant.status==='used'?'已完成':'已撤銷':'尚未建立'}</span></div><p>填答對象：${esc(current().name)} · ${current().id}</p><p>${esc(state().roundLabel)} · 指定問卷：${teacherTasks().length?teacherTasks().map(t=>esc(t.name)).join('、'):'尚未指派'}。</p>${grant?`<div class="grant-code">${grant.code}</div>`:''}<p>教師授權不限時；全部指定問卷提交或家長撤銷後失效。撤銷不會刪除已提交的答案。</p><div class="actions">${grantActions(grant)}</div><p class="privacy-note">此授權碼可在共用教師入口使用，僅適用同一瀏覽器的。</p></section><section class="panel"><h2>指定問卷完成進度</h2>${teacherRows(false)}<p class="privacy-note">僅查看是否完成，家長無法取得教師答案、分數、判讀摘要或草稿。</p><div class="article"><h3>提供授權前請先確認</h3><p>正式流程需核對家長與孩子的有效綁定，以及知情同意紀錄。本次僅操作。</p><button class="text-button" data-page="consent">查看同意與資料使用 →</button></div></section></div>`;
-    } else if(page==='consent'){
-      content.innerHTML=`<div class="split"><section class="panel article"><h2>資料用途與可見範圍</h2><p>家長與教師提供的資料，供獲授權的醫療團隊作為評估參考。</p><ul><li>家長僅查看已綁定孩子的指定問卷與教師完成狀態。</li><li>教師僅填寫本次授權的指定問卷。</li><li>家長與教師提交後不能修改原始答案。</li><li>醫護若修改匯出的 Excel，不會覆蓋系統原始答案。</li></ul></section><section class="panel article"><h2>知情同意紀錄</h2><p>目前沒有正式同意紀錄可查詢。正式同意書內容、版本與取得方式，需要與團隊及院方確認。</p><span class="pill pending">尚未串接</span><p>本頁閱讀說明、勾選或建立教師授權，都不代表已完成正式知情同意。</p><button class="btn ghost" data-page="teacher">返回教師授權</button></section></div>`;
     } else {
       content.innerHTML=window.EarlyCareParentHelp.render();
     }
+    if(page==='tasks'&&selected==='DEMO-001'){const button=document.createElement('button');button.type='button';button.className='btn secondary';button.dataset.action='try-parent';button.textContent='試填問卷';content.append(button);}
   }
-  function navigate(next){page=next;render();document.querySelector('#content').scrollTop=0;document.querySelector('#page-title').focus({preventScroll:true});}
+  function navigate(next){page=['home','tasks','children','help'].includes(next)?next:'home';render();document.querySelector('#content').scrollTop=0;document.querySelector('#page-title').focus({preventScroll:true});}
   document.querySelector('#close-modal').addEventListener('click',()=>modal.close());
   select.addEventListener('change',()=>{selected=select.value;filter='all';taskScope='current';navigate('home');});
   document.addEventListener('click',event=>{
+    const retry=event.target.closest('[data-restart-parent]');
+    if(retry){const t=SharedDemo.tasks('parent').find(t=>t.id===retry.dataset.restartParent);if(!t)return;dialog('重新填寫這份問卷？',`<p>只重設「${esc(t.name)}」的填答狀態，其他問卷不變。原內容會保留一份備份。</p><div class="actions"><button class="btn" data-confirm-parent-retry="${esc(t.id)}" data-revision="${t.revision}">確認重新填寫</button><button class="btn secondary" data-action="close">取消</button></div>`);return;}
+    const confirmRetry=event.target.closest('[data-confirm-parent-retry]');
+    if(confirmRetry){try{const t=SharedDemo.restartParent(confirmRetry.dataset.confirmParentRetry,Number(confirmRetry.dataset.revision));location.assign('/parent-questionnaire.html?mode=demo&task='+encodeURIComponent(t.id));}catch(error){toast(error.message);}return;}
     const nav=event.target.closest('[data-page]');if(nav){navigate(nav.dataset.page);return;}
     const scope=event.target.closest('[data-scope]');if(scope){taskScope=scope.dataset.scope;filter='all';render();return;}
-    const teacherTask=event.target.closest('[data-teacher-task]');if(teacherTask){
-      const grant=state().grant,t=teacherTasks().find(x=>x.taskId===teacherTask.dataset.teacherTask);
-      if(!t||t.isCompleted||grant?.status!=='active'||!grant.taskIds.includes(t.taskId))return;
-      t.isCompleted=true;if(grantTasks(grant).every(x=>x.isCompleted))grant.status='used';
-      render();toast(grant.status==='used'?'全部授權問卷已完成，這組授權已結束。':'此份已完成；其他指定問卷未完成，授權仍有效。');return;
-    }
     const f=event.target.closest('[data-filter]');if(f){filter=f.dataset.filter;render();return;}
     const task=event.target.closest('[data-task]');
     const sharedTask=task&&SharedDemo.tasks('parent').find(t=>t.id===task.dataset.task);
     if(sharedTask){
       if(sharedTask.status==='done'){
         const saved=sharedTask.draft;
-        dialog('提交紀錄',`<h3>${esc(sharedTask.name)}</h3><p>第 ${esc(sharedTask.round)} 輪 · 已提交</p><p>填表人：${esc(saved?.respondent)}</p><p>填表日期：${esc(saved?.date)}</p><p>提交時間：${saved?.submittedAt?esc(new Date(saved.submittedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})):'未提供'}</p><p>提交後不能修改原始答案。</p><button class="btn" data-action="close">返回問卷清單</button>`);return;
+        dialog('提交紀錄',`<h3>${esc(sharedTask.name)}</h3><p>第 ${esc(sharedTask.round)} 輪 · 已提交</p><p>填表人：${esc(saved?.respondent)}</p><p>填表日期：${esc(saved?.date)}</p><p>提交時間：${saved?.submittedAt?esc(new Date(saved.submittedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})):'未提供'}</p><p>提交後不能修改原始答案。</p><div class="actions"><button class="btn secondary" data-restart-parent="${esc(sharedTask.id)}">重新填寫</button><button class="btn" data-action="close">返回問卷清單</button></div>`);return;
       }
       location.assign('/parent-questionnaire.html?mode=demo&task='+encodeURIComponent(sharedTask.id));return;
     }
     if(task){const t=state().tasks.find(x=>x.id===task.dataset.task);dialog(t.status==='done'?'提交紀錄':t.name,`<button class="btn" data-action="close">我知道了</button>`);return;}
     const action=event.target.closest('[data-action]')?.dataset.action;if(!action)return;
+    if(action==='try-parent'){
+      let t=SharedDemo.tasks('parent').find(t=>t.formId==='snap');
+      if(!t){SharedDemo.assign([{formId:'snap',respondentRole:'parent'}],'');t=SharedDemo.tasks('parent').find(t=>t.formId==='snap');}
+      if(t.status==='done'){dialog('重新填寫這份問卷？',`<p>只重設 SNAP-IV 的填答狀態，其他問卷不變。原內容會保留一份備份。</p><div class="actions"><button class="btn" data-confirm-parent-retry="${esc(t.id)}" data-revision="${t.revision}">確認重新填寫</button><button class="btn secondary" data-action="close">取消</button></div>`);return;}
+      location.assign('/parent-questionnaire.html?mode=demo&task='+encodeURIComponent(t.id));return;
+    }
     if(action==='close')modal.close();
-    if(action==='share')showShare();
-    if(action==='copy-code')void copyShare('code');
-    if(action==='copy-link')void copyShare('link');
     if(action==='reset-state'){previewState='normal';document.querySelector('#preview-state').value='normal';render();}
     if(action==='bind')beginBinding();
     if(action==='confirm-binding')finishBinding();
     if(action==='binding-home'){modal.close();navigate('home');}
     if(action==='binding-child'){modal.close();navigate('children');}
     if(action==='contact')dialog('聯絡人資料',`<p class="modal-copy">請確認主要聯絡人姓名。</p><form id="contact-form"><label class="modal-field">主要聯絡人<input name="contact" value="${esc(current().contact)}" maxlength="30" required></label><button class="btn" type="submit">套用至本頁</button></form>`);
-    if(action==='grant'){
-      if(!pendingTeacherTasks().length||state().grant?.status==='active')return;
-      dialog('建立教師授權',`<p class="modal-copy">為 ${esc(current().name)} · ${esc(state().roundLabel)} 尚未完成的 ${pendingTeacherTasks().length} 份指定教師問卷建立本頁授權碼：</p><ul class="modal-copy">${pendingTeacherTasks().map(t=>`<li>${esc(t.name)}</li>`).join('')}</ul><label class="check-label"><input id="grant-check" type="checkbox">我了解授權範圍僅限本次指定問卷，且可隨時撤銷。</label><div class="actions"><button class="btn" id="confirm-grant" data-action="confirm-grant" disabled>建立授權碼</button></div>`);
-    }
-    if(action==='confirm-grant'&&document.querySelector('#grant-check')?.checked){
-      if(!pendingTeacherTasks().length||state().grant?.status==='active')return;
-      state().grant=SharedDemo.grant();
-      modal.close();render();toast('已建立共用授權碼，請到教師入口輸入此碼。');
-    }
-    if(action==='revoke')dialog('撤銷教師授權',`<p class="modal-copy">撤銷後，老師將無法繼續使用這組授權，已提交答案會保留。</p><button class="btn danger" data-action="confirm-revoke">確認撤銷教師授權</button>`);
-    if(action==='confirm-revoke'){if(state().grant?.status!=='active')return;SharedDemo.revoke();modal.close();render();toast('教師授權已撤銷。');}
   });
-  document.addEventListener('change',event=>{if(event.target.id==='grant-check')document.querySelector('#confirm-grant').disabled=!event.target.checked;});
   document.addEventListener('change',event=>{if(event.target.id==='binding-check')document.querySelector('#confirm-binding').disabled=!event.target.checked;});
   document.querySelector('#preview-state').addEventListener('change',event=>{previewState=event.target.value;if(modal.open)modal.close();navigate('home');});
   document.addEventListener('input',event=>{
@@ -196,5 +151,6 @@
     }
     if(event.target.id==='contact-form'){event.preventDefault();const name=event.target.elements.contact.value.trim();if(!name){event.target.elements.contact.setCustomValidity('請輸入聯絡人名稱。');event.target.elements.contact.reportValidity();return;}current().contact=name;modal.close();render();toast('聯絡人只更新於本頁。');}
   });
-  childOptions();render();
+  if(window.EarlyCareParentEntryConsent.hasUiChoice()){childOptions();render();}
+  else{content.replaceChildren();select.replaceChildren();window.addEventListener('parent-entry-confirmed',()=>{childOptions();render();},{once:true});window.EarlyCareParentEntryConsent.request();}
 })();

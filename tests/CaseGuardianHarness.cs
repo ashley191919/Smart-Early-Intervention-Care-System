@@ -206,6 +206,21 @@ jwtBuilder.Services.AddControllers().AddApplicationPart(typeof(EarlyIntervention
 jwtBuilder.Services.AddScoped(_=>new ApplicationDbContext(options));jwtBuilder.Services.AddScoped<CaseAccessService>();jwtBuilder.Services.AddScoped<CaseGuardianService>();jwtBuilder.Services.AddSingleton<TimeProvider>(clock);
 jwtBuilder.Services.AddScoped<IQuestionnaireStore,EfQuestionnaireStore>();jwtBuilder.Services.AddScoped<QuestionnaireService>();
 jwtBuilder.Services.AddParentQuestionnaireDefinitions();
+// Explicit synthetic Consent fixture for legacy Email/Definition regression.
+// New V5.3 tests separately verify rejection without consent; never disable the guard.
+var consentFixture = new EarlyInterventionCare.Api.ParentModule.ConsentDocumentVersion {
+ DocumentVersionId=Guid.NewGuid(),DocumentCode="LEGACY_REGRESSION_ONLY",Version="test-1",Title="合成回歸測試文件",
+ Content="隔離測試使用，並非院方核准同意本文。",ScopeCode="ACCOUNT",ApprovalStatus="APPROVED",
+ ApprovalReference="ISOLATED REGRESSION TEST ONLY",ApprovedAtUtc=clock.GetUtcNow().UtcDateTime.AddDays(-1),EffectiveFromUtc=clock.GetUtcNow().UtcDateTime.AddDays(-1)};
+consentFixture.ContentHash=EarlyInterventionCare.Api.ParentModule.ParentConsentService.Hash(consentFixture.Content);
+db.Add(consentFixture);
+foreach(var testUser in await db.Users.AsNoTracking().ToListAsync())db.Add(new EarlyInterventionCare.Api.ParentModule.ParentConsentRecord {
+ ConsentId=Guid.NewGuid(),DocumentVersionId=consentFixture.DocumentVersionId,ActorUserId=testUser.Id,OrganizationId=testUser.OrganizationId,
+ ScopeKey="ACCOUNT",DocumentContentHash=consentFixture.ContentHash,DataUseDecision="AGREED",TeacherParticipation="UNDECIDED",
+ RequestId=Guid.NewGuid(),RecordedAtUtc=clock.GetUtcNow().UtcDateTime});
+await db.SaveChangesAsync();
+jwtBuilder.Services.PostConfigure<EarlyInterventionCare.Api.ParentModule.ParentModuleOptions>(o=>{
+ o.ConsentEnabled=true;o.DocumentVersionId=consentFixture.DocumentVersionId;o.ScopeCode="ACCOUNT";});
 jwtBuilder.Services.AddSingleton(tokens);jwtBuilder.Services.AddSingleton<EarlyInterventionCare.Api.Services.Authentication.IParentSmsVerification>(testSms);
 jwtBuilder.Services.AddScoped<EarlyInterventionCare.Api.Services.Authentication.ParentOtpAuthenticationService>();
 jwtBuilder.Services.AddSingleton<EarlyInterventionCare.Api.Services.Email.IParentEmailVerification>(emailHttpVerifier);
