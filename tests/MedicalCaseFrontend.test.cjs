@@ -22,16 +22,18 @@ test('route separates explicit API selection and defaults to existing Demo witho
 
 test('Fake Case adapter loads a page without inventing a global total, then loads another page', async () => {
   const adapter = new FakeCaseAdapter(), store = model.createStore(adapter);
-  const pending = store.list(); assert.equal(store.snapshot().phase, 'loading'); await pending;
+  const pending = store.list(1, 10); assert.equal(store.snapshot().phase, 'loading'); await pending;
   assert.equal(store.snapshot().rows.length, 10); assert.equal(store.snapshot().hasNext, true);
   assert.equal('total' in store.snapshot(), false);
-  await store.list(2); assert.equal(store.snapshot().page, 2); assert.equal(store.snapshot().rows.length, 2); assert.equal(store.snapshot().hasNext, false);
+  await store.list(2, 10); assert.equal(store.snapshot().page, 2); assert.equal(store.snapshot().rows.length, 2); assert.equal(store.snapshot().hasNext, false);
 });
 
 test('Fake Case detail maps only known fields; missing personal, organization, priority and contact data are not fabricated', async () => {
   const store = model.createStore(new FakeCaseAdapter()); await store.detail(records[3].caseId);
-  const detail = store.snapshot().detail; assert.equal(detail.name, records[3].childName); assert.equal(detail.statusLabel, '待填表');
-  for (const field of ['sex', 'birthDate', 'nationalId', 'address', 'contactName', 'relationship', 'phone', 'email']) assert.equal(detail[field], '未提供');
+  const detail = store.snapshot().detail; assert.equal(detail.name, '測○○○4'); assert.equal(detail.statusLabel, '待填表');
+  assert.equal(detail.sex, '未知'); assert.equal(detail.birthDate, '2021/05/12');
+  assert.equal(detail.nationalId, 'A12*******'); assert.equal(detail.address, '新北市○○區○○路');
+  for (const field of ['contactName', 'relationship', 'phone', 'email']) assert.equal(detail[field], '未提供');
   assert.equal(detail.priority, null); assert.equal('organizationId' in detail, false); assert.equal('canEdit' in detail, false);
   assert.equal(detail.detailHref, 'case-detail.html?source=api&caseId=' + records[3].caseId);
 });
@@ -82,7 +84,7 @@ test('pagehide invalidation and Session loss cannot resurrect data from delayed 
 });
 
 test('search/filter/sort operate on the loaded page only and FORM_COMPLETED does not mean Case closure', async () => {
-  const store = model.createStore(new FakeCaseAdapter()); await store.list(); const rows = store.snapshot().rows;
+  const store = model.createStore(new FakeCaseAdapter()); await store.list(1, 10); const rows = store.snapshot().rows;
   assert.equal(model.selectRows(rows, { mode: 'api', search: 'CASE-TEST-012' }).length, 0);
   assert.equal(model.selectRows(rows, { mode: 'api', status: 'COMPLETED' }).length, 1);
   assert.equal(model.selectRows(rows, { mode: 'api', status: 'FORM_COMPLETED' })[0].statusLabel, '表單已完成');
@@ -103,7 +105,7 @@ test('formal adapter consumes the existing MedicalApi Client contract, with no s
   const calls = [];
   const client = api.createClient({ cookieFetch: async url => { calls.push(url); return new Response(JSON.stringify(url.includes('?') ? [records[0]] : records[0])); } });
   const store = model.createStore(model.createApiAdapter(client)); await store.list(); await store.detail(records[0].caseId);
-  assert.deepEqual(calls, ['/api/cases?page=1&pageSize=10', '/api/cases/' + records[0].caseId]);
+  assert.deepEqual(calls, ['/api/cases?page=1&pageSize=20', '/api/cases/' + records[0].caseId]);
   for (const file of ['js/medical-case-model.js', 'js/medical-case-source.js', 'js/medical-case-detail.js', 'js/cases.js'])
     assert.doesNotMatch(read(file), /\bfetch\s*\(|localStorage|sessionStorage|organizationId\s*:/);
 });

@@ -25,12 +25,36 @@
     const time = value => typeof value === "string" && /Z$/.test(value) && Number.isFinite(Date.parse(value));
     const caseStatuses = new Set(["NEW", "TO_CONTACT", "APPOINTED", "WAITING_FORM", "FORM_COMPLETED", "COMPLETED"]);
     const taskStatuses = new Set(["PENDING", "IN_PROGRESS", "SUBMITTED", "CANCELLED"]);
+    const birthDate = value => typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) &&
+        value.slice(0, 4) !== "0000" && Number.isFinite(Date.parse(value + "T00:00:00Z")) &&
+        new Date(value + "T00:00:00Z").toISOString().slice(0, 10) === value;
+    const caseTime = value => typeof value === "string" &&
+        /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,7})?(?:Z|\+00:00)$/.test(value) &&
+        birthDate(value.slice(0, 10)) && Number.isFinite(Date.parse(value));
+    function maskName(value) {
+        const chars = Array.from(value.trim());
+        return chars.length < 2 ? "○" : chars.length === 2 ? chars[0] + "○" :
+            chars[0] + "○".repeat(chars.length - 2) + chars[chars.length - 1];
+    }
+    function maskNationalId(value) {
+        if (!value.trim() || value === "未提供") return "未提供";
+        return /^[A-Z]\d{9}$/.test(value) || /^[A-Z]\d{2}\*{7}$/.test(value) ? value.slice(0, 3) + "*******" : "已遮罩";
+    }
+    function maskAddress(value) {
+        if (!value.trim() || value === "未提供") return "未提供";
+        const city = value.match(/^([^\s]{2}[市縣])/);
+        return city ? city[1] + "○○區○○路" : "已遮罩";
+    }
     function caseDto(value) {
         if (!value || !uuid(value.caseId) || !text(value.caseCode) || !text(value.childName) ||
-            !caseStatuses.has(value.caseStatus) || !time(value.updatedAtUtc)) invalid();
-        // Deliberately omit NationalId, Address and other unnecessary sensitive fields.
-        return { caseId: value.caseId, caseCode: value.caseCode, childName: value.childName,
-            caseStatus: value.caseStatus, updatedAtUtc: value.updatedAtUtc };
+            !birthDate(value.birthDate) || !["MALE", "FEMALE", "UNKNOWN"].includes(value.sex) ||
+            typeof value.nationalId !== "string" || typeof value.address !== "string" ||
+            !caseStatuses.has(value.caseStatus) || !Number.isInteger(value.revision) || value.revision < 0 || value.revision > 4294967295 ||
+            !caseTime(value.createdAtUtc) || !caseTime(value.updatedAtUtc)) invalid();
+        // Validate all eleven producer fields, but never return unmasked child identifiers to a page.
+        return { caseId: value.caseId, caseCode: value.caseCode, childName: maskName(value.childName),
+            birthDate: value.birthDate, sex: value.sex, nationalId: maskNationalId(value.nationalId), address: maskAddress(value.address),
+            caseStatus: value.caseStatus, revision: value.revision, createdAtUtc: value.createdAtUtc, updatedAtUtc: value.updatedAtUtc };
     }
     function taskDto(value, caseId) {
         if (!value || !uuid(value.taskId) || value.caseId !== caseId || !uuid(value.questionnaireId) ||
@@ -116,8 +140,8 @@
             return items;
         }
         return Object.freeze({
-            async cases(page = 1, pageSize = 10, signal) {
-                if (!Number.isSafeInteger(page) || page < 1 || page > 100000 || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100)
+            async cases(page = 1, pageSize = 20, signal) {
+                if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100)
                     throw new MedicalApiError(400, "INVALID_PAGE");
                 const values = await get(`/api/cases?page=${page}&pageSize=${pageSize}`, signal);
                 if (!Array.isArray(values) || values.length > pageSize) invalid();

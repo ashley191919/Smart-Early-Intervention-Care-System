@@ -5,6 +5,8 @@ const records = Array.from({ length: 12 }, (_, index) => ({
   caseId: '20000000-0000-4000-8000-' + String(index + 1).padStart(12, '0'),
   caseCode: 'CASE-TEST-' + String(index + 1).padStart(3, '0'), childName: '測試幼兒' + String(index + 1),
   caseStatus: ['NEW', 'TO_CONTACT', 'APPOINTED', 'WAITING_FORM', 'FORM_COMPLETED', 'COMPLETED'][index % 6],
+  birthDate: '2021-05-12', sex: 'UNKNOWN', nationalId: 'A123456789', address: '新北市測試區虛構路123號',
+  revision: index, createdAtUtc: '2026-10-01T00:00:00Z',
   updatedAtUtc: '2026-10-' + String(24 - index).padStart(2, '0') + 'T01:00:00Z'
 }));
 class FakeCaseAdapter {

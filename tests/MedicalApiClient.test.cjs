@@ -12,7 +12,8 @@ const ids = { case: '20000000-0000-4000-8000-000000000001', other: '20000000-000
   task: '50000000-0000-4000-8000-000000000001', questionnaire: '30000000-0000-4000-8000-000000000001', version: '40000000-0000-4000-8000-000000000001' };
 const user = { userId: '10000000-0000-4000-8000-000000000007', username: 'synthetic', role: 'CASE_MANAGER', permissions: ['case.read'] };
 const caseRecord = { caseId: ids.case, caseCode: 'CASE-TEST-001', childName: '虛構測試幼兒', caseStatus: 'WAITING_FORM',
-  updatedAtUtc: '2026-10-21T00:00:00Z', nationalId: 'synthetic-private', address: 'synthetic-private' };
+  birthDate: '2021-05-12', sex: 'UNKNOWN', revision: 0, createdAtUtc: '2026-10-01T00:00:00Z',
+  updatedAtUtc: '2026-10-21T00:00:00Z', nationalId: 'A123456789', address: '新北市測試區虛構路123號' };
 const task = { taskId: ids.task, caseId: ids.case, questionnaireId: ids.questionnaire, questionnaireVersionId: ids.version,
   questionnaireTitle: '測試問卷', versionNumber: '1.0.0', respondentRole: 'PARENT', assignmentRound: 1, isRequired: true,
   taskStatus: 'SUBMITTED', createdAtUtc: '2026-10-20T00:00:00Z', updatedAtUtc: '2026-10-21T00:00:00Z', submittedAtUtc: '2026-10-21T00:00:00Z' };
@@ -35,7 +36,7 @@ test('shared same-origin Base URL applies to auth and clinical requests with for
   const f = fixture([json(user), json([caseRecord])], { apiBaseUrl: '/gateway/' });
   await f.transport.fetch('/api/auth/me', { credentials: 'include', redirect: 'follow', cache: 'force-cache' });
   await f.client.cases();
-  assert.deepEqual(f.calls.map(c => c.url), ['/gateway/api/auth/me', '/gateway/api/cases?page=1&pageSize=10']);
+  assert.deepEqual(f.calls.map(c => c.url), ['/gateway/api/auth/me', '/gateway/api/cases?page=1&pageSize=20']);
   for (const c of f.calls) {
     assert.equal(c.options.credentials, 'same-origin'); assert.equal(c.options.cache, 'no-store'); assert.equal(c.options.redirect, 'error');
     assert.equal(c.options.headers.get('Accept'), 'application/json'); assert.equal(c.options.headers.has('Authorization'), false);
@@ -57,9 +58,10 @@ test('transport rejects external, traversing and Demo paths without any network 
   assert.equal(f.calls.length, 0);
 });
 
-test('Case and Task consumer accepts existing DTO subsets and strips unnecessary private fields/answers', async () => {
+test('Case consumes fixed eleven-field DTO with masking; Task still strips answers', async () => {
   const f = fixture([json([caseRecord]), json(caseRecord), json([{ ...task, answers: ['private'], observation: 'private' }])]);
-  const list = await f.client.cases(); assert.equal(list.length, 1); assert.equal('nationalId' in list[0], false); assert.equal('address' in list[0], false);
+  const list = await f.client.cases(); assert.equal(list.length, 1); assert.equal(list[0].nationalId, 'A12*******'); assert.equal(list[0].address, '新北市○○區○○路');
+  assert.equal(list[0].childName, '虛○○○○兒');
   assert.equal((await f.client.caseDetail(ids.case)).caseId, ids.case);
   const tasks = await f.client.tasks(ids.case); assert.equal(tasks[0].taskStatus, 'SUBMITTED'); assert.equal('answers' in tasks[0], false); assert.equal('observation' in tasks[0], false);
   assert.equal('login' in f.client, false); assert.equal('logout' in f.client, false); assert.equal('me' in f.client, false);
@@ -131,7 +133,7 @@ test('browser default consumer delegates to existing StaffAuth rather than ownin
   const s = staffFixture([json(user), json([caseRecord])]); await tick();
   const result = await vm.runInContext('window.MedicalApi.createClient().cases()', s.context);
   assert.equal(result[0].caseId, ids.case);
-  assert.equal(s.calls[1].url, '/gateway/api/cases?page=1&pageSize=10');
+  assert.equal(s.calls[1].url, '/gateway/api/cases?page=1&pageSize=20');
   assert.equal(s.auth.getCurrentUser().userId, user.userId);
 });
 

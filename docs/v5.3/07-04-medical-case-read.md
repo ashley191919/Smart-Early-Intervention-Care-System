@@ -2,6 +2,8 @@
 
 日期：2026-10-24。基準 `feature/medical-backend` / `f630cdc682d570bc65b3b45159200ce147fcdd30`。
 
+後續契約對接已更新為完整 11 欄位及 API 預設每頁 20 筆，見 [07-04-case-get-contract.md](07-04-case-get-contract.md)。以下保留為前端準備階段的歷史基準，不作最新 DTO 規格。
+
 ## 現有流程與本次範圍
 
 原本 cases.js 內建 24 筆虛構個案，搜尋姓名/代碼、三種狀態篩選、優先程度再依日期排序、每頁 10 筆；只有 DEMO-001 和 DEMO-024 有對應詳細頁。詳細頁 HTML 是固定資料，case-detail.js 管理 Tabs、敏感值顯示及記憶體聯絡/預約/待辦。system-demo-ui 將 SharedDemo 與需登入的 Development Demo API 結果注入表單紀錄。

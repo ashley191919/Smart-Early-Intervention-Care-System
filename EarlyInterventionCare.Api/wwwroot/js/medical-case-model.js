@@ -23,8 +23,9 @@
         return Object.freeze({ id: value.caseId, name: value.childName, status: value.caseStatus,
             statusLabel: labels[value.caseStatus], statusClass: value.caseStatus === "COMPLETED" ? "completed" :
                 ["NEW", "TO_CONTACT"].includes(value.caseStatus) ? "pending-contact" : "in-progress",
-            code: value.caseCode, updatedAt: value.updatedAtUtc, priority: null, contactName: missing,
-            sex: missing, birthDate: missing, nationalId: missing, address: missing, relationship: missing,
+            code: value.caseCode, updatedAt: new Date(value.updatedAtUtc).toISOString(), priority: null, contactName: missing,
+            sex: { MALE: "男", FEMALE: "女", UNKNOWN: "未知" }[value.sex], birthDate: value.birthDate.replaceAll("-", "/"),
+            nationalId: value.nationalId, address: value.address, revision: value.revision, createdAtUtc: value.createdAtUtc, relationship: missing,
             phone: missing, email: missing,
             detailHref: "case-detail.html?source=api&caseId=" + encodeURIComponent(value.caseId) });
     }
@@ -57,13 +58,14 @@
     }
     function createStore(adapter, { onChange = () => {}, canRead = () => true } = {}) {
         let revision = 0;
-        let state = { phase: "loading", rows: [], detail: null, error: null, page: 1, pageSize: 10, hasNext: false, mode: adapter.mode };
+        const defaultPageSize = adapter.mode === "api" ? 20 : 10;
+        let state = { phase: "loading", rows: [], detail: null, error: null, page: 1, pageSize: defaultPageSize, hasNext: false, mode: adapter.mode };
         const snapshot = () => ({ ...state, rows: state.rows.map(row => ({ ...row })), detail: state.detail ? { ...state.detail } : null });
         function publish(patch) { state = { ...state, ...patch }; onChange(snapshot()); }
         function clearData() { publish({ phase: "loading", rows: [], detail: null, hasNext: false, error: null }); }
         function invalidate() { revision++; publish({ phase: "loading", rows: [], detail: null, hasNext: false, error: null }); }
         function fail(error) { revision++; publish({ phase: "error", rows: [], detail: null, hasNext: false, error: errorView(error) }); }
-        async function load(kind, value, pageSize = 10) {
+        async function load(kind, value, pageSize = defaultPageSize) {
             const current = ++revision;
             publish({ phase: "loading", rows: [], detail: null, hasNext: false, error: null,
                 ...(kind === "list" ? { page: value, pageSize } : {}) });
@@ -87,7 +89,7 @@
                 if (current === revision) publish({ phase: "error", rows: [], detail: null, hasNext: false, error: errorView(error) });
             }
         }
-        return { snapshot, clearData, invalidate, fail, list: (page = 1, pageSize = 10) => load("list", page, pageSize), detail: id => load("detail", id) };
+        return { snapshot, clearData, invalidate, fail, list: (page = 1, pageSize = defaultPageSize) => load("list", page, pageSize), detail: id => load("detail", id) };
     }
     return { route, labels, missing, toViewModel, createApiAdapter, createDemoAdapter, selectRows, createStore };
 });

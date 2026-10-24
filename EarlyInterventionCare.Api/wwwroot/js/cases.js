@@ -3,7 +3,7 @@
     const panel = document.querySelector(".cases-panel");
     if (!panel) return;
     const model = window.MedicalCases, route = window.MedicalCaseMode;
-    const apiMode = route.mode === "api", pageSize = 10;
+    const apiMode = route.mode === "api", pageSize = apiMode ? 20 : 10;
     const state = { search: "", status: "all", sort: "default", page: 1 };
     const search = panel.querySelector("#cases-search-input");
     const filters = panel.querySelector(".cases-filters");

@@ -16,10 +16,13 @@ function createMedicalCasePreviewServer() {
       const status = { expired: 401, forbidden: 403, missing: 404, unavailable: 503 }[scenario];
       if (status) return reply(status, { code: 'ISOLATED_TEST_FAILURE' });
       if (url.pathname === '/api/cases') {
-        const page = Number(url.searchParams.get('page') || 1), size = Number(url.searchParams.get('pageSize') || 10);
+        const page = Number(url.searchParams.get('page') || 1), size = Number(url.searchParams.get('pageSize') || 20);
         return reply(200, scenario === 'empty' ? [] : records.slice((page - 1) * size, page * size));
       }
       const found = records.find(record => record.caseId === url.pathname.split('/')[3]);
+      if (found && scenario === 'blank-fields') return reply(200, { ...found, nationalId: '', address: '', sex: 'UNKNOWN' });
+      if (found && scenario === 'null-fields') return reply(200, { ...found, nationalId: null });
+      if (found && scenario === 'utc-boundary') return reply(200, { ...found, birthDate: '2024-02-29', updatedAtUtc: '2026-10-24T23:30:00Z' });
       return found ? reply(200, scenario === 'wrong-id' ? records[1] : found) : reply(404, {});
     }
     handler(req, res);
