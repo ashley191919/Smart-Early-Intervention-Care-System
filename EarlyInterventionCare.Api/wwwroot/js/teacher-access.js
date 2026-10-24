@@ -124,11 +124,11 @@ if (!teacherPreview.hidden && teacherViews.includes(teacherInitialView)) {
   showTeacherView(teacherInitialView, false);
 }
 if(importedTeacherCode!==null){
-  if(!teacherPreview.hidden && /^[0-9a-fA-F]{4}(?:-?[0-9a-fA-F]{4}){3}$/.test(importedTeacherCode)){
+  if(!teacherPreview.hidden && (/^[0-9a-fA-F]{4}(?:-?[0-9a-fA-F]{4}){3}$/.test(importedTeacherCode)||/^DEMO-[A-F0-9]{8}$/.test(importedTeacherCode))){
     teacherCode.value=importedTeacherCode;
     showTeacherView('input');
     const status=document.querySelector('#test-code-status');
-    status.hidden=false;status.textContent='邀請授權碼已帶入，請按「驗證授權碼」。仍需由後端確認授權有效。';
+    status.hidden=false;status.textContent='邀請授權碼已帶入，請按「驗證授權碼」。';
   }else if(!teacherPreview.hidden)showTeacherView('failure');
   importedTeacherCode=null;
 }

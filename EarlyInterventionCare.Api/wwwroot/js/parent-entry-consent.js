@@ -12,8 +12,8 @@
   } catch { return null; }
  }
  let active = null;
- function request() {
-  if (readChoice() || active) return;
+ function request(review=false) {
+  if ((!review && readChoice()) || active) return;
   const dialog = document.createElement("dialog");
   dialog.className = "parent-entry-consent";
   dialog.setAttribute("aria-labelledby", "parent-entry-title");
@@ -27,6 +27,7 @@
    <div class="entry-actions"><button class="entry-primary" type="submit" disabled>確認並進入</button><button class="entry-secondary" type="button" data-entry-exit>返回登入</button></div>
   </form>`;
   const form = dialog.querySelector("form"), confirm = form.querySelector('[type="submit"]');
+  if(review&&readChoice()){form.elements.dataUse.checked=true;form.elements.teacherInvitation.checked=readChoice().teacherInvitation;confirm.disabled=false;}
   form.elements.dataUse.addEventListener("change", () => { confirm.disabled = !form.elements.dataUse.checked; });
   form.addEventListener("submit", event => {
    event.preventDefault();
@@ -84,7 +85,7 @@
    });
   }
  }
- root.EarlyCareParentEntryConsent = Object.freeze({request,ensure,invalidate,hasUiChoice:()=>!!readChoice()});
+ root.EarlyCareParentEntryConsent = Object.freeze({request,ensure,invalidate,hasUiChoice:()=>!!readChoice(),teacherAllowed:()=>readChoice()?.teacherInvitation===true});
  // Direct links to the browser questionnaire get the same entry UI. No API is
  // called and no grant is created by either checkbox.
  if (document.body.classList.contains("parent-fill") && !root.sessionStorage.getItem("earlycare.parent.accessToken")) request();

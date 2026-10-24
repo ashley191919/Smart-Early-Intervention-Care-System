@@ -7,6 +7,12 @@ const {randomUUID}=require('node:crypto');
 function setup(seed){const storage=new Map(seed?[['earlycare.frontend.v1',JSON.stringify(seed)]]:[]),window={dispatchEvent(){}};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../EarlyInterventionCare.Api/wwwroot/js/shared-demo.js'),'utf8'),{window,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},crypto:{randomUUID},Event:class{}});return window.SharedDemo;}
 const answer=(count=26)=>({respondent:'示範填表人',date:'2026-10-11',answers:Object.fromEntries(Array.from({length:count},(_,i)=>[i,0])),submittedAt:1});
+test('presentation invitation excludes another child, round and parent tasks and reuses only a matching grant',()=>{
+ const base={id:'teacher-current',caseId:'DEMO-001',round:2,role:'teacher',status:'pending'};
+ const s=setup({tasks:[base,{...base,id:'other-child',caseId:'DEMO-002'},{...base,id:'old',round:1},{...base,id:'parent',role:'parent'}],grant:{code:'DEMO-OLD',status:'active',taskIds:['other-child']}});
+ const g=s.grant();assert.deepEqual(Array.from(g.taskIds),['teacher-current']);assert.notEqual(g.code,'DEMO-OLD');assert.equal(s.grant().code,g.code);
+ assert.equal(setup().verify(g.code),null);assert.throws(()=>setup().grant(),/尚未指派/);
+});
 
 test('reopening one completed parent presentation form preserves a backup and other roles',()=>{const s=setup();s.assign([{formId:'snap',respondentRole:'parent'},{formId:'clancy',respondentRole:'parent'},{formId:'snap',respondentRole:'teacher'}],'');const task=s.tasks('parent')[0];s.save(task.id,{...answer(),relationship:'GRANDPARENT'},0);const before=s.read();s.restartParent(task.id,1);const data=s.read(),reopened=data.tasks.find(t=>t.id===task.id);assert.equal(reopened.status,'pending');assert.equal(reopened.draft,null);assert.equal(reopened.revision,2);assert.equal(data.parentRetryBackups[task.id].draft.relationship,'GRANDPARENT');assert.equal(data.parentRetryBackups[task.id].status,'done');assert.equal(JSON.stringify(data.tasks.filter(t=>t.id!==task.id)),JSON.stringify(before.tasks.filter(t=>t.id!==task.id)));assert.throws(()=>s.restartParent(task.id,1));});
 test('parent retry cannot reopen a teacher authorization or an unfinished task',()=>{const s=setup();s.assign([{formId:'snap',respondentRole:'teacher'},{formId:'clancy',respondentRole:'parent'}],'');const g=s.grant(),task=s.tasks('teacher')[0];s.save(task.id,answer(),0,g.code);assert.throws(()=>s.restartParent(task.id,1));assert.throws(()=>s.restartParent(s.tasks('parent')[0].id,0));assert.equal(s.read().grant.status,'used');});

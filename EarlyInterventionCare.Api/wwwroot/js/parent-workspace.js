@@ -85,7 +85,7 @@
     if(selected==='empty'&&page!=='help'){content.innerHTML=`<section class="panel empty"><span class="welcome-symbol" style="margin:auto">＋</span><h2>先綁定孩子，開始準備評估資料</h2><p>請使用醫護提供的一次性邀請碼。<br>Email 登入與個案綁定是兩個不同的步驟。</p><button class="btn" data-action="bind">輸入邀請碼</button><p class="privacy-note">本頁不會以姓名、生日或個案編號直接綁定孩子。</p></section>`;return;}
     if(page==='home'){
       const pending=currentTasks().filter(t=>t.status==='pending').length,draft=currentTasks().filter(t=>t.status==='draft').length,done=currentTasks().filter(t=>t.status==='done').length;
-      content.innerHTML=`<div class="welcome"><div><span class="welcome-tag">每一份觀察，都是了解孩子的起點</span><h2>家長您好，今天一起完成 ${esc(current().name)} 的評估準備。</h2><p>${current().id} · ${current().sex} · ${current().age} · ${esc(state().roundLabel)}<br>請依照孩子在家中的實際情況填寫指定問卷。</p></div><span class="welcome-symbol" aria-hidden="true">♡</span></div><div class="stats"><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${pending}</strong><small>份待填寫</small><p>依醫護指定問卷填寫</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${draft}</strong><small>份草稿</small><p>可接續先前填答</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#shield"/></svg></span><div><strong>${done}</strong><small>份已提交</small><p>提交後保留原始答案</p></div></div></div><div class="home-grid"><section class="panel"><div class="section-title"><h2>本次待辦問卷</h2><button class="text-button" data-page="tasks">查看全部 →</button></div>${taskRows(currentTasks().filter(t=>t.status!=='done')) || '<p class="modal-copy">本輪目前沒有待辦問卷。</p>'}<p class="privacy-note">問卷種類、版本與複評輪次由醫護指定，不需自行挑選。</p></section></div>`;
+      content.innerHTML=`<div class="welcome"><div><span class="welcome-tag">每一份觀察，都是了解孩子的起點</span><h2>家長您好，今天一起完成 ${esc(current().name)} 的評估準備。</h2><p>${current().id} · ${current().sex} · ${current().age} · ${esc(state().roundLabel)}<br>請依照孩子在家中的實際情況填寫指定問卷。</p></div><span class="welcome-symbol" aria-hidden="true">♡</span></div><div class="stats"><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${pending}</strong><small>份待填寫</small><p>依醫護指定問卷填寫</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#form"/></svg></span><div><strong>${draft}</strong><small>份草稿</small><p>可接續先前填答</p></div></div><div class="stat"><span class="stat-icon"><svg><use href="#shield"/></svg></span><div><strong>${done}</strong><small>份已提交</small><p>提交後保留原始答案</p></div></div></div><div class="home-grid"><section class="panel"><div class="section-title"><h2>本次待辦問卷</h2><button class="text-button" data-page="tasks">查看全部 →</button></div>${taskRows(currentTasks().filter(t=>t.status!=='done')) || '<p class="modal-copy">本輪目前沒有待辦問卷。</p>'}<p class="privacy-note">問卷種類、版本與複評輪次由醫護指定，不需自行挑選。</p></section><section class="panel teacher-share-card"><h2>邀請老師填寫</h2><p>將授權碼或 QR Code 交給老師，協助提供孩子在校園的觀察。</p><button class="btn" data-action="invite-teacher">邀請老師填寫</button></section></div>`;
     } else if(page==='tasks'){
       const scoped=state().tasks.filter(t=>taskScope==='current'?t.round===state().currentRound:t.round!==state().currentRound);
       const tasks=scoped.filter(t=>filter==='all'||t.status===filter);
@@ -98,9 +98,32 @@
     if(page==='tasks'&&selected==='DEMO-001'){const button=document.createElement('button');button.type='button';button.className='btn secondary';button.dataset.action='try-parent';button.textContent='試填問卷';content.append(button);}
   }
   function navigate(next){page=['home','tasks','children','help'].includes(next)?next:'home';render();document.querySelector('#content').scrollTop=0;document.querySelector('#page-title').focus({preventScroll:true});}
+  // Browser presentation only. Formal account mode exits this script above.
+  async function inviteTeacher(){
+    if(!window.EarlyCareParentEntryConsent.teacherAllowed()){
+      dialog('是否邀請老師協助？','<p class="modal-copy">請先確認教師參與的選擇，再取得邀請資訊。不邀請老師也可以繼續填寫家長問卷。</p><div class="actions"><button class="btn" data-action="review-teacher-choice">查看同意選項</button><button class="btn ghost" data-action="close">稍後再說</button></div>');return;
+    }
+    const rows=SharedDemo.tasks('teacher').filter(t=>t.caseId===selected&&t.round===state().currentRound&&t.status!=='done');
+    if(!rows.length){dialog('邀請老師填寫','<p class="modal-copy">目前沒有需要老師填寫的問卷。請與醫護確認是否已指派。</p><button class="btn" data-action="close">我知道了</button>');return;}
+    if(selected!=='DEMO-001')return;
+    const grant=SharedDemo.grant();
+    const url=new URL('/?role=teacher',location.origin);url.hash=new URLSearchParams({code:grant.code}).toString();
+    dialog('邀請老師填寫',`<div class="teacher-share-body"><p>請將以下任一方式交給老師，由老師驗證後填寫指定問卷。</p><strong class="grant-code">${esc(grant.code)}</strong><button class="btn ghost" data-copy-teacher="code">複製授權碼</button><img id="parent-teacher-qr" alt="教師填答邀請 QR Code" hidden><p id="teacher-qr-status" role="status">正在準備 QR Code…</p><label>教師填答連結<input id="parent-teacher-url" readonly value="${esc(url.href)}"></label><div class="actions"><button class="btn" data-copy-teacher="url">複製連結</button><a class="btn ghost" href="${esc(url.href)}" target="_blank" rel="noopener noreferrer">開啟教師入口</a></div><p class="privacy-note">請只交給協助填答的老師。指定問卷全部提交或授權撤銷後，授權即失效。</p><p class="teacher-share-feedback" role="status" id="teacher-share-feedback"></p></div>`);
+    // This endpoint renders a QR only. It never creates a real Grant or Session.
+    try{
+      const response=await fetch('/api/dev/presentation-invitation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:grant.code}),cache:'no-store'});
+      if(!response.ok)throw new Error('QR unavailable');const result=await response.json();
+      const image=document.querySelector('#parent-teacher-qr'),status=document.querySelector('#teacher-qr-status');
+      if(!modal.open||!image||!status||document.querySelector('#parent-teacher-url')?.value!==url.href)return;
+      if(result.invitationUrl!==url.href||!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(result.qrCodeDataUrl))throw new Error('QR mismatch');
+      image.src=result.qrCodeDataUrl;image.hidden=false;status.textContent='也可請老師掃描 QR Code。';
+    }catch{const status=document.querySelector('#teacher-qr-status');if(status)status.textContent='QR Code 暫時無法載入，請使用授權碼或連結。';}
+  }
   document.querySelector('#close-modal').addEventListener('click',()=>modal.close());
   select.addEventListener('change',()=>{selected=select.value;filter='all';taskScope='current';navigate('home');});
   document.addEventListener('click',event=>{
+    const copyTeacher=event.target.closest('[data-copy-teacher]');
+    if(copyTeacher){const field=document.querySelector('#parent-teacher-url'),feedback=document.querySelector('#teacher-share-feedback');if(!field||!feedback)return;const text=copyTeacher.dataset.copyTeacher==='code'?new URLSearchParams(new URL(field.value).hash.slice(1)).get('code'):field.value;navigator.clipboard.writeText(decodeURIComponent(text)).then(()=>{feedback.textContent='已複製，可以貼給老師。';}).catch(()=>{if(copyTeacher.dataset.copyTeacher==='url'){field.focus();field.select();}feedback.textContent='無法自動複製，請長按上方授權碼或選取連結複製。';});return;}
     const retry=event.target.closest('[data-restart-parent]');
     if(retry){const t=SharedDemo.tasks('parent').find(t=>t.id===retry.dataset.restartParent);if(!t)return;dialog('重新填寫這份問卷？',`<p>只重設「${esc(t.name)}」的填答狀態，其他問卷不變。原內容會保留一份備份。</p><div class="actions"><button class="btn" data-confirm-parent-retry="${esc(t.id)}" data-revision="${t.revision}">確認重新填寫</button><button class="btn secondary" data-action="close">取消</button></div>`);return;}
     const confirmRetry=event.target.closest('[data-confirm-parent-retry]');
@@ -119,6 +142,8 @@
     }
     if(task){const t=state().tasks.find(x=>x.id===task.dataset.task);dialog(t.status==='done'?'提交紀錄':t.name,`<button class="btn" data-action="close">我知道了</button>`);return;}
     const action=event.target.closest('[data-action]')?.dataset.action;if(!action)return;
+    if(action==='invite-teacher'){inviteTeacher().catch(()=>toast('邀請資訊無法載入，請稍後再試。'));return;}
+    if(action==='review-teacher-choice'){modal.close();window.EarlyCareParentEntryConsent.request(true);return;}
     if(action==='try-parent'){
       let t=SharedDemo.tasks('parent').find(t=>t.formId==='snap');
       if(!t){SharedDemo.assign([{formId:'snap',respondentRole:'parent'}],'');t=SharedDemo.tasks('parent').find(t=>t.formId==='snap');}

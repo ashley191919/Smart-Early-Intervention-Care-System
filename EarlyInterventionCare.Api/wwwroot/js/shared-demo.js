@@ -18,9 +18,9 @@
       data.tasks.push({id:crypto.randomUUID(),formId:i.formId,role:i.respondentRole,name:names[i.formId],caseId:'DEMO-001',round:2,version:'demo-1',deadline,status:'pending',revision:0,draft:null});added++;});
     write(data);return added;
   }
-  function grant(){const data=read(),ids=data.tasks.filter(t=>t.role==='teacher'&&t.status!=='done').map(t=>t.id);
+  function grant(){const data=read(),ids=data.tasks.filter(t=>t.role==='teacher'&&t.caseId==='DEMO-001'&&t.round===2&&t.status!=='done').map(t=>t.id);
     if(!ids.length)throw new Error('醫療端尚未指派待完成的教師問卷。');
-    if(data.grant?.status==='active')return data.grant;
+    if(data.grant?.status==='active'&&ids.every(id=>data.grant.taskIds.includes(id))&&data.grant.taskIds.every(id=>data.tasks.some(t=>t.id===id&&t.role==='teacher'&&t.caseId==='DEMO-001'&&t.round===2)))return data.grant;
     data.grant={code:'DEMO-'+crypto.randomUUID().slice(0,8).toUpperCase(),status:'active',taskIds:ids};write(data);return data.grant;
   }
   function verify(code){const data=read();return data.grant?.code===code&&data.grant.status==='active'?data.grant:null;}
