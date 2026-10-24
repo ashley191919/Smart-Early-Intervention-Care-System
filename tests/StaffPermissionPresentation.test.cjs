@@ -36,9 +36,9 @@ function setup() {
     };
     const window = { addEventListener: on, location: { origin: 'https://fixture.invalid', replace(url) { redirects.push(url); } } };
     const pending = deferred(); responses.push(pending.promise);
-    const context = { document, window, Headers, URL, CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+    const context = { document, window, Headers, URL, AbortController, DOMException, setTimeout, clearTimeout, CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
         fetch: async () => { const response = await responses.shift(); if (response instanceof Error) throw response; return response; } };
-    for (const name of ['staff-auth.js', 'staff-permissions.js']) vm.runInNewContext(source('js/' + name), context);
+    for (const name of ['medical-api.js', 'staff-auth.js', 'staff-permissions.js']) vm.runInNewContext(source('js/' + name), context);
     async function login(body = user, status = 200) {
         pending.resolve(new Response(JSON.stringify(body), { status })); await tick();
     }

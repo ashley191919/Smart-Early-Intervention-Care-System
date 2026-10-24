@@ -24,7 +24,7 @@ async function loadStaffAuth(responses) {
     const context = {
         window,
         document,
-        Headers,
+        Headers, AbortController, DOMException, setTimeout, clearTimeout,
         URL,
         CustomEvent: class CustomEvent { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
         fetch: async (url, options = {}) => {
@@ -34,6 +34,7 @@ async function loadStaffAuth(responses) {
             return new Response(next?.body === undefined ? null : JSON.stringify(next.body), { status: next.status });
         }
     };
+    vm.runInNewContext(read('js', 'medical-api.js'), context, { filename: 'medical-api.js' });
     vm.runInNewContext(read('js', 'staff-auth.js'), context, { filename: 'staff-auth.js' });
     await new Promise((resolve) => setImmediate(resolve));
     return { protectedArea, errorArea, redirects, calls, auth: window.StaffAuth };
@@ -69,15 +70,16 @@ async function submitStaffLogin(responses, input = {}) {
     const calls = [];
     const redirects = [];
     const context = {
-        window: { location: { assign: (url) => redirects.push(url) } },
+        window: { MedicalApiConfig: input.apiConfig, location: { origin: 'https://localhost:7127', assign: (url) => redirects.push(url) } },
         document: { querySelector: (selector) => selectors.get(selector) || null },
-        Headers,
+        Headers, URL, AbortController, DOMException, setTimeout, clearTimeout,
         fetch: async (url, options = {}) => {
             calls.push({ url, options });
             const next = responses.shift();
             return new Response(next?.body === undefined ? null : JSON.stringify(next.body), { status: next.status });
         }
     };
+    vm.runInNewContext(read('js', 'medical-api.js'), context, { filename: 'medical-api.js' });
     vm.runInNewContext(read('js', 'staff-login.js'), context, { filename: 'staff-login.js' });
     handlers['loginForm:submit']({ preventDefault() {} });
     await new Promise((resolve) => setImmediate(resolve));
@@ -224,6 +226,32 @@ test('已有 Cookie 時重新登入會先取得並送出 CSRF token，且不讀�
     assert.equal(new Headers(state.calls[1].options.headers).get('X-EarlyCare-CSRF'), 'csrf-token');
     assert.deepEqual(state.redirects, ['/staff-dashboard.html']);
     assert.doesNotMatch(source, /document\.cookie|localStorage|sessionStorage|accessToken/);
+});
+
+test('醫療登入沿用同一 Base URL prefix，匿名 401 只略過 CSRF，不改走 JWT 登入', async () => {
+    const state = await submitStaffLogin([
+        { status: 401 }, { status: 200, body: { ...activeUser, expiresAt: '2026-10-24T00:30:00Z' } }
+    ], { apiConfig: { apiBaseUrl: '/gateway' } });
+    assert.deepEqual(state.calls.map(call => call.url), ['/gateway/api/auth/csrf', '/gateway/api/auth/staff-session']);
+    assert.equal(new Headers(state.calls[1].options.headers).has('X-EarlyCare-CSRF'), false);
+    assert.equal(state.calls[1].options.credentials, 'same-origin');
+    assert.equal(state.calls[1].options.redirect, 'error');
+    assert.deepEqual(state.redirects, ['/staff-dashboard.html']);
+});
+
+for (const status of [400, 403, 409, 429, 503]) {
+    test(`登入 ${status} 不顯示任意後端訊息，也不導入 Demo`, async () => {
+        const state = await submitStaffLogin([{ status: 401 }, { status, body: { message: 'SQL password=secret' } }]);
+        assert.doesNotMatch(state.errorMessage.textContent, /SQL|secret/);
+        assert.deepEqual(state.redirects, []); assert.equal(state.calls.length, 2);
+    });
+}
+
+test('登入的 CSRF 503 或格式錯誤時不送密碼 POST', async () => {
+    for (const response of [{ status: 503 }, { status: 200, body: {} }]) {
+        const state = await submitStaffLogin([response]);
+        assert.equal(state.calls.length, 1); assert.deepEqual(state.redirects, []);
+    }
 });
 
 test('header delegates logout to the common session owner', () => {

@@ -10,6 +10,7 @@ const staffPasswordInput = document.querySelector("#staff-password");
 const loginErrorMessage = loginErrorState?.querySelector("p");
 
 let isSubmitting = false;
+const medicalTransport = window.MedicalApi.createTransport(window.MedicalApiConfig);
 
 function showVerificationState() {
     loginCard.classList.remove("is-login-error");
@@ -53,9 +54,8 @@ function getErrorMessage(response, body) {
         return "登入服務暫時無法使用，請稍後再試。";
     }
 
-    return typeof body?.message === "string" && body.message.trim()
-        ? body.message
-        : "登入服務暫時無法使用，請稍後再試。";
+    // Never display arbitrary backend HTML, SQL or credential-bearing error messages.
+    return new window.MedicalApi.MedicalApiError(response.status, "HTTP_ERROR").message;
 }
 
 function isValidStaffSessionResponse(body) {
@@ -71,7 +71,7 @@ async function addCsrfForExistingSession(headers) {
     // A valid existing HttpOnly session cookie makes this POST subject to the same
     // cookie-write CSRF protection as every other unsafe request. We deliberately
     // do not inspect browser cookies or retain the token after this request.
-    const response = await fetch("/api/auth/csrf", {
+    const response = await medicalTransport.fetch("/api/auth/csrf", {
         method: "GET",
         headers: { "Accept": "application/json" },
         credentials: "same-origin"
@@ -122,7 +122,7 @@ async function submitLogin() {
             "Content-Type": "application/json"
         });
         await addCsrfForExistingSession(headers);
-        const response = await fetch("/api/auth/staff-session", {
+        const response = await medicalTransport.fetch("/api/auth/staff-session", {
             method: "POST",
             headers,
             credentials: "same-origin",

@@ -208,7 +208,7 @@ test('legacy entry scripts neither call authentication APIs nor persist credenti
 
 test('dedicated staff flow still uses cookie login, CSRF and authenticated me, not these legacy scripts', () => {
     const page = read('staff-login.html'), login = read('js/staff-login.js'), auth = read('js/staff-auth.js');
-    assert.match(page, /src="js\/staff-login\.js"/);
+    assert.match(page, /src="js\/staff-login\.js\?v=/);
     assert.doesNotMatch(page, /src="[^\"]*(?:system-demo-ui|\/login)\.js/);
     assert.match(login, /fetch\("\/api\/auth\/staff-session"/);
     assert.match(login, /fetch\("\/api\/auth\/csrf"/); assert.match(login, /X-EarlyCare-CSRF/);

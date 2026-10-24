@@ -14,6 +14,8 @@
 
     class StaffAuthError extends Error {}
 
+    const transport = window.MedicalApi.createTransport(window.MedicalApiConfig);
+
     function invalidatePermissions(state) {
         sessionRevision++;
         currentUser = null;
@@ -61,17 +63,14 @@
     }
 
     function ensureSameOrigin(path) {
-        const url = new URL(path, window.location.origin);
-        if (url.origin !== window.location.origin) {
-            throw new StaffAuthError("Cookie API 請求只能送往本系統。" );
-        }
-        return url.pathname + url.search;
+        transport.resolve(path);
+        return path;
     }
 
     async function getCsrfToken() {
         let response;
         try {
-            response = await fetch("/api/auth/csrf", {
+            response = await transport.fetch("/api/auth/csrf", {
                 method: "GET",
                 headers: { "Accept": "application/json" },
                 credentials: "same-origin"
@@ -98,6 +97,7 @@
     }
 
     async function cookieFetch(path, options = {}) {
+        ensureSameOrigin(path);
         const method = (options.method || "GET").toUpperCase();
         const headers = new Headers(options.headers || {});
         if (isUnsafeMethod(method)) {
@@ -105,7 +105,7 @@
         }
         let response;
         try {
-            response = await fetch(ensureSameOrigin(path), {
+            response = await transport.fetch(path, {
                 ...options,
                 method,
                 headers,
@@ -130,7 +130,7 @@
         const revision = sessionRevision;
         let response;
         try {
-            response = await fetch("/api/auth/me", {
+            response = await transport.fetch("/api/auth/me", {
                 method: "GET",
                 headers: { "Accept": "application/json" },
                 credentials: "same-origin"
