@@ -36,6 +36,8 @@
 .detail-sensitive-toggle:focus-visible { outline: 2px solid var(--brand-teal); outline-offset: 2px; }
 .detail-sensitive-toggle:disabled { opacity: .5; cursor: default; }
 .detail-forms-table { min-width: 780px; }
+[data-case-source="api"] .detail-tab-panel { min-width: 0; }
+[data-case-source="api"] .medical-api-task-table td { overflow-wrap: anywhere; max-width: 260px; }
 .detail-forms-heading { flex-wrap: wrap; }
 .detail-forms-heading > .primary-button { color: #fff; }
 .detail-forms-heading > .primary-button:hover { text-decoration: none; }

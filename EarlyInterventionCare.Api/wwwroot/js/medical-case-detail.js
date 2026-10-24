@@ -4,6 +4,22 @@
     const main = document.querySelector(".case-detail-content");
     if (!main) return;
     const model = window.MedicalCases, route = window.MedicalCaseMode;
+    let taskView = null;
+    let clearingPermissions = false;
+    const client = window.MedicalApi.createClient();
+    const taskStore = window.MedicalTasks.createStore(window.MedicalTasks.createApiAdapter(client), {
+        onChange: state => {
+            if (taskView) taskView(state);
+            // StaffAuth may clear permissions before returning a failed HTTP response.
+            // Keep the safe error visible after clearing the entire Case, never preserve clinical rows.
+            if (state.phase === "error" && state.error?.status !== 401 && !window.StaffAuth?.getCurrentUser()) store.fail(state.error);
+        },
+        canRead: () => Boolean(window.StaffAuth?.getCurrentUser())
+    });
+    function loadTasks() {
+        if (!window.StaffAuth?.getCurrentUser()) void window.StaffAuth?.requireStaffSession();
+        else void taskStore.load(route.caseId);
+    }
     const node = (tag, text, className) => {
         const element = document.createElement(tag);
         if (text !== undefined) element.textContent = text;
@@ -18,6 +34,9 @@
         section.append(dl); return section;
     }
     function render(data) {
+        taskView = null;
+        if (clearingPermissions) taskStore.clearData();
+        else taskStore.invalidate();
         main.replaceChildren(); main.setAttribute("aria-busy", String(data.phase === "loading"));
         const back = node("nav", undefined, "detail-back-nav"), link = node("a", "← 返回個案管理");
         link.href = "cases.html?source=api"; back.append(link); main.append(back);
@@ -70,10 +89,11 @@
         basic.append(panel("兒童基本資料", [["姓名", value.name], ["性別", value.sex], ["出生日期", value.birthDate], ["身分證字號", value.nationalId], ["聯絡地址", value.address]]),
             panel("家長／主要聯絡人", [["聯絡人姓名", value.contactName], ["與兒童關係", value.relationship], ["手機號碼", value.phone], ["電子郵件", value.email]]));
         panels[0].append(basic); panels[1].append(panel("追蹤摘要", [["聯絡紀錄", model.missing], ["預約資訊", model.missing], ["後續待辦", model.missing]]));
-        panels[2].append(panel("表單紀錄", [["表單進度", model.missing], ["填答結果", model.missing]]));
         main.append(tabs, ...panels); activate(0);
+        taskView = window.MedicalTaskView.mount(panels[2], summary.children[1].querySelector("strong"), loadTasks);
+        loadTasks();
     }
-    const store = model.createStore(model.createApiAdapter(window.MedicalApi.createClient()), {
+    const store = model.createStore(model.createApiAdapter(client), {
         onChange: render, canRead: () => Boolean(window.StaffAuth?.getCurrentUser())
     });
     function load() {
@@ -83,6 +103,11 @@
     render(store.snapshot());
     if (window.StaffAuth?.getCurrentUser()) load();
     document.addEventListener("staff-authenticated", load);
-    document.addEventListener("staff-permissions-changed", () => { if (!window.StaffAuth?.getCurrentUser()) store.clearData(); });
+    document.addEventListener("staff-permissions-changed", () => {
+        if (!window.StaffAuth?.getCurrentUser()) {
+            clearingPermissions = true;
+            try { store.clearData(); } finally { clearingPermissions = false; }
+        }
+    });
     window.addEventListener("pagehide", () => store.invalidate());
 })();

@@ -22,7 +22,6 @@
     const invalid = () => { throw new MedicalApiError(0, "INVALID_RESPONSE"); };
     const uuid = value => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(value);
     const text = value => typeof value === "string" && value.trim().length > 0;
-    const time = value => typeof value === "string" && /Z$/.test(value) && Number.isFinite(Date.parse(value));
     const caseStatuses = new Set(["NEW", "TO_CONTACT", "APPOINTED", "WAITING_FORM", "FORM_COMPLETED", "COMPLETED"]);
     const taskStatuses = new Set(["PENDING", "IN_PROGRESS", "SUBMITTED", "CANCELLED"]);
     const birthDate = value => typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) &&
@@ -57,18 +56,25 @@
             caseStatus: value.caseStatus, revision: value.revision, createdAtUtc: value.createdAtUtc, updatedAtUtc: value.updatedAtUtc };
     }
     function taskDto(value, caseId) {
-        if (!value || !uuid(value.taskId) || value.caseId !== caseId || !uuid(value.questionnaireId) ||
+        if (!value || !uuid(caseId) || !uuid(value.taskId) || value.caseId !== caseId || !uuid(value.questionnaireId) ||
             !uuid(value.questionnaireVersionId) || !text(value.questionnaireTitle) || !text(value.versionNumber) ||
             !["PARENT", "TEACHER"].includes(value.respondentRole) || !Number.isSafeInteger(value.assignmentRound) ||
-            value.assignmentRound < 1 || typeof value.isRequired !== "boolean" || !taskStatuses.has(value.taskStatus) ||
-            !time(value.createdAtUtc) || !time(value.updatedAtUtc) ||
-            (value.submittedAtUtc !== null && !time(value.submittedAtUtc)) ||
-            (value.taskStatus === "SUBMITTED" && !time(value.submittedAtUtc)) ||
+            value.assignmentRound < 1 || value.assignmentRound > 4294967295 || typeof value.isRequired !== "boolean" || !taskStatuses.has(value.taskStatus) ||
+            !caseTime(value.createdAtUtc) || !caseTime(value.updatedAtUtc) ||
+            (value.submittedAtUtc !== null && !caseTime(value.submittedAtUtc)) ||
+            (value.taskStatus === "SUBMITTED" && !caseTime(value.submittedAtUtc)) ||
             (value.taskStatus !== "SUBMITTED" && value.submittedAtUtc !== null)) invalid();
         const { taskId, questionnaireId, questionnaireVersionId, questionnaireTitle, versionNumber,
-            respondentRole, assignmentRound, isRequired, taskStatus, submittedAtUtc } = value;
+            respondentRole, assignmentRound, isRequired, taskStatus, createdAtUtc, updatedAtUtc, submittedAtUtc } = value;
         return { taskId, caseId, questionnaireId, questionnaireVersionId, questionnaireTitle, versionNumber,
-            respondentRole, assignmentRound, isRequired, taskStatus, submittedAtUtc };
+            respondentRole, assignmentRound, isRequired, taskStatus, createdAtUtc, updatedAtUtc, submittedAtUtc };
+    }
+    function completionDto(value, caseId) {
+        const counts = ["totalTaskCount", "requiredTaskCount", "requiredSubmittedCount", "requiredPendingCount", "requiredInProgressCount"];
+        if (!value || !uuid(caseId) || value.caseId !== caseId || typeof value.allRequiredSubmitted !== "boolean" ||
+            counts.some(key => !Number.isInteger(value[key]) || value[key] < 0 || value[key] > 2147483647)) invalid();
+        // Do not derive rounds, cancellation denominators, ratios or clinical completion here.
+        return Object.fromEntries(["caseId", ...counts, "allRequiredSubmitted"].map(key => [key, value[key]]));
     }
     async function readJson(response) {
         let data = null;
@@ -155,8 +161,11 @@
                 const values = await get(`/api/cases/${id(caseId)}/tasks`, signal);
                 if (!Array.isArray(values)) invalid();
                 return unique(values.map(value => taskDto(value, caseId)), "taskId");
+            },
+            async taskCompletion(caseId, signal) {
+                return completionDto(await get(`/api/cases/${id(caseId)}/tasks/completion`, signal), caseId);
             }
         });
     }
-    return { createTransport, createClient, readJson, MedicalApiError, uuid, caseDto, taskDto };
+    return { createTransport, createClient, readJson, MedicalApiError, uuid, caseDto, taskDto, completionDto };
 });
