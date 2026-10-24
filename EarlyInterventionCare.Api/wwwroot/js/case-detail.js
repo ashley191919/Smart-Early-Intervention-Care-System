@@ -2,6 +2,7 @@
     "use strict";
 
     // Front-end Demo only: HTML holds static, masked case, contact, appointment and form data.
+    if (window.MedicalCaseMode?.mode === "api") return;
     // Case, contact, appointment and form statuses are separate; tabs do not alter any of them.
     // 個案 status 維持 pending-contact / in-progress / completed。
     // data-contact-status：pending（待聯絡）、contacted（已聯絡）、no-answer（未接）、
@@ -297,6 +298,7 @@
 (() => {
     "use strict";
     const panel = document.getElementById("detail-appointment-panel");
+    if (window.MedicalCaseMode?.mode === "api") return;
     if (!panel) return;
     const summary = document.querySelector(".detail-tracking-summary-grid [data-appointment-status]");
     const modal = document.getElementById("appointment-modal");
@@ -595,6 +597,7 @@
 (() => {
     "use strict";
     const panel = document.getElementById("case-todo-panel");
+    if (window.MedicalCaseMode?.mode === "api") return;
     if (!panel) return;
     const list = document.getElementById("case-todo-list");
     const empty = document.getElementById("case-todo-empty");

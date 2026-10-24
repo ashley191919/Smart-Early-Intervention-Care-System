@@ -66,6 +66,7 @@
             .sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
     }
     function reminderSource() {
+        if (window.MedicalCaseMode?.mode === "api") return [];
         const rows = Array.from(document.querySelectorAll(".todo-panel .todo-item"));
         if (!rows.length) return reminders;
         return rows.map((row) => ({

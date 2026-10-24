@@ -1,5 +1,6 @@
 'use strict';
 (() => {
+  if(window.MedicalCaseMode?.mode==='api')return;
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   // Legacy medical entry events belong to login.js, never to the fixture UI.
   const main=document.querySelector('#main-content');

@@ -1,207 +1,131 @@
 (() => {
     "use strict";
-
-    // De-identified front-end Demo data. Replace this source when an API is added.
-    const demoCases = [
-        { id: "DEMO-001", name: "王○安", status: "in-progress", priority: "high", contactName: "王○美", updatedAt: "2026-10-06" },
-        { id: "DEMO-002", name: "陳○恩", status: "in-progress", priority: "normal", contactName: "陳○芬", updatedAt: "2026-10-05" },
-        { id: "DEMO-003", name: "林○宇", status: "pending-contact", priority: "normal", contactName: "林○婷", updatedAt: "2026-10-04" },
-        { id: "DEMO-004", name: "張○庭", status: "in-progress", priority: "high", contactName: "張○華", updatedAt: "2026-10-03" },
-        { id: "DEMO-005", name: "李○安", status: "completed", priority: "normal", contactName: "李○玲", updatedAt: "2026-10-02" },
-        { id: "DEMO-006", name: "黃○恩", status: "in-progress", priority: "normal", contactName: "黃○珍", updatedAt: "2026-10-01" },
-        { id: "DEMO-007", name: "吳○辰", status: "pending-contact", priority: "high", contactName: "吳○萱", updatedAt: "2026-09-30" },
-        { id: "DEMO-008", name: "劉○晴", status: "in-progress", priority: "normal", contactName: "劉○雅", updatedAt: "2026-09-29" },
-        { id: "DEMO-009", name: "蔡○睿", status: "completed", priority: "normal", contactName: "蔡○慧", updatedAt: "2026-09-28" },
-        { id: "DEMO-010", name: "楊○樂", status: "completed", priority: "normal", contactName: "楊○君", updatedAt: "2026-09-27" },
-        { id: "DEMO-011", name: "王○涵", status: "pending-contact", priority: "normal", contactName: "王○芳", updatedAt: "2026-09-26" },
-        { id: "DEMO-012", name: "陳○佑", status: "in-progress", priority: "high", contactName: "陳○蓉", updatedAt: "2026-09-25" },
-        { id: "DEMO-013", name: "林○希", status: "completed", priority: "normal", contactName: "林○如", updatedAt: "2026-09-24" },
-        { id: "DEMO-014", name: "張○軒", status: "in-progress", priority: "normal", contactName: "張○惠", updatedAt: "2026-09-23" },
-        { id: "DEMO-015", name: "李○妍", status: "completed", priority: "high", contactName: "李○真", updatedAt: "2026-09-22" },
-        { id: "DEMO-016", name: "黃○皓", status: "completed", priority: "normal", contactName: "黃○宜", updatedAt: "2026-09-21" },
-        { id: "DEMO-017", name: "吳○彤", status: "pending-contact", priority: "normal", contactName: "吳○雯", updatedAt: "2026-09-20" },
-        { id: "DEMO-018", name: "劉○宸", status: "in-progress", priority: "normal", contactName: "劉○敏", updatedAt: "2026-09-19" },
-        { id: "DEMO-019", name: "蔡○綺", status: "completed", priority: "normal", contactName: "蔡○靜", updatedAt: "2026-09-18" },
-        { id: "DEMO-020", name: "楊○哲", status: "completed", priority: "normal", contactName: "楊○怡", updatedAt: "2026-09-17" },
-        { id: "DEMO-021", name: "王○寧", status: "completed", priority: "normal", contactName: "王○琪", updatedAt: "2026-09-16" },
-        { id: "DEMO-022", name: "陳○霖", status: "completed", priority: "normal", contactName: "陳○瑄", updatedAt: "2026-09-15" },
-        { id: "DEMO-023", name: "林○柔", status: "completed", priority: "normal", contactName: "林○菁", updatedAt: "2026-09-14" },
-        { id: "DEMO-024", name: "林○樂", status: "pending-contact", priority: "normal", contactName: "林○婷", updatedAt: "2026-10-06" }
-    ];
-
     const panel = document.querySelector(".cases-panel");
     if (!panel) return;
-
-    const pageSize = 10;
-    const statusLabels = { "pending-contact": "待聯繫", "in-progress": "進行中", completed: "已完成" };
-    const state = { search: "", status: "all", page: 1 };
-    const searchInput = panel.querySelector("#cases-search-input");
-    const filterButtons = Array.from(panel.querySelectorAll(".cases-filter"));
-    const caseList = panel.querySelector("#cases-list");
+    const model = window.MedicalCases, route = window.MedicalCaseMode;
+    const apiMode = route.mode === "api", pageSize = 10;
+    const state = { search: "", status: "all", sort: "default", page: 1 };
+    const search = panel.querySelector("#cases-search-input");
+    const filters = panel.querySelector(".cases-filters");
+    const sort = panel.querySelector("#cases-sort");
+    const list = panel.querySelector("#cases-list");
     const range = panel.querySelector("#cases-range");
     const pagination = panel.querySelector("#cases-pagination");
-
-    function getFilteredCases() {
-        const query = state.search.trim().toLocaleLowerCase();
-        return demoCases
-            .filter((item) => item.name.toLocaleLowerCase().includes(query) || item.id.toLocaleLowerCase().includes(query))
-            .filter((item) => state.status === "all" || item.status === state.status)
-            .sort((a, b) => {
-                if (state.status !== "completed") {
-                    const priorityOrder = Number(b.priority === "high") - Number(a.priority === "high");
-                    if (priorityOrder !== 0) return priorityOrder;
-                }
-                // ISO dates compare in chronological order, without timezone conversion.
-                return b.updatedAt.localeCompare(a.updatedAt);
-            });
+    const feedback = panel.querySelector("#cases-feedback");
+    let store;
+    const node = (tag, text, className) => {
+        const element = document.createElement(tag);
+        if (text !== undefined) element.textContent = text;
+        if (className) element.className = className;
+        return element;
+    };
+    const labels = apiMode ? { all: "全部", ...model.labels } :
+        { all: "全部", "pending-contact": "待聯繫", "in-progress": "進行中", completed: "已完成" };
+    filters.replaceChildren();
+    for (const [value, label] of Object.entries(labels)) {
+        const button = node("button", label, "cases-filter"); button.type = "button";
+        button.dataset.filterStatus = value; button.setAttribute("aria-controls", "cases-list");
+        button.addEventListener("click", () => { state.status = value; state.page = 1; render(); });
+        filters.append(button);
     }
-
-    function createCell(text) {
-        const cell = document.createElement("td");
-        if (text !== undefined) cell.textContent = text;
-        return cell;
+    if (apiMode) {
+        search.placeholder = "搜尋本頁姓名或個案編號";
+        panel.querySelector('label[for="cases-search-input"]').textContent = search.placeholder;
+        panel.querySelector("#cases-scope").hidden = false;
+        sort.options[0].textContent = "最近更新（新到舊）";
+        sort.querySelector('option[value="newest"]').remove();
     }
-
-    function createCaseRow(item) {
-        const row = document.createElement("tr");
-        row.dataset.status = item.status;
-        row.dataset.priority = item.priority;
-        row.dataset.updated = item.updatedAt;
-
-        const personCell = createCell();
-        const person = document.createElement("div");
-        person.className = "case-person";
-        const avatar = document.createElement("span");
-        avatar.className = "case-avatar";
-        avatar.textContent = item.name.slice(0, 1);
-        avatar.setAttribute("aria-hidden", "true");
-        const name = document.createElement("strong");
-        name.textContent = item.name;
-        person.append(avatar, name);
-        personCell.append(person);
-
-        const statusCell = createCell();
-        const statusBadge = document.createElement("span");
-        statusBadge.className = `status-badge status-${item.status}`;
-        statusBadge.textContent = statusLabels[item.status];
-        statusCell.append(statusBadge);
-
-        const priorityCell = createCell();
-        const priority = document.createElement("span");
-        const showPriority = item.priority === "high" && state.status !== "completed";
-        priority.className = showPriority ? "priority-badge priority-high" : "priority-normal";
-        priority.textContent = showPriority ? "優先" : "—";
-        priority.setAttribute("aria-label", item.priority === "high" ? "優先個案" : "一般個案");
-        priorityCell.append(priority);
-
-        const updatedCell = createCell();
-        const updated = document.createElement("time");
-        updated.dateTime = item.updatedAt;
-        updated.textContent = item.updatedAt.replaceAll("-", "/");
-        updatedCell.append(updated);
-
-        const actionCell = createCell();
-        // Only these two Demo cases have matching detail pages; do not show another child's data.
-        const detailHref = item.id === "DEMO-001" ? "case-detail.html" :
-            item.id === "DEMO-024" ? "case-detail-empty.html" : null;
-        const detailLink = document.createElement(detailHref ? "a" : "button");
-        detailLink.className = "text-button";
-        // Presentation-only routes; the future API will use one dynamic case-detail.html.
-        if (detailHref) detailLink.href = detailHref;
-        else {
-            detailLink.type = "button";
-            detailLink.disabled = true;
-            const hint = document.createElement("small");
-            hint.className = "cases-detail-hint";
-            hint.id = item.id.toLowerCase() + "-detail-hint";
-            hint.textContent = "Demo：尚未提供此個案詳細頁";
-            detailLink.setAttribute("aria-describedby", hint.id);
-            actionCell.append(hint);
-        }
-        detailLink.textContent = "查看個案 →";
-        detailLink.setAttribute("aria-label", `查看個案：${item.name} ${item.id}`);
-        actionCell.prepend(detailLink);
-
-        row.append(personCell, createCell(item.id), statusCell, priorityCell, createCell(item.contactName), updatedCell, actionCell);
-        return row;
+    function cell(text) { return node("td", text); }
+    function row(item) {
+        const tr = node("tr"); tr.dataset.caseId = item.id;
+        const person = node("div", undefined, "case-person");
+        const avatar = node("span", item.name.slice(0, 1), "case-avatar"); avatar.setAttribute("aria-hidden", "true");
+        person.append(avatar, node("strong", item.name));
+        const first = cell(); first.append(person);
+        const status = cell(); status.append(node("span", item.statusLabel || labels[item.status], "status-badge status-" + (item.statusClass || item.status)));
+        const priority = cell();
+        const showPriority = !apiMode && item.priority === "high" && state.status !== "completed";
+        priority.append(node("span", apiMode ? model.missing : showPriority ? "優先" : "—",
+            showPriority ? "priority-badge priority-high" : "priority-normal"));
+        const updated = cell();
+        const time = node("time", apiMode ? new Date(item.updatedAt).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei" }) : item.updatedAt.replaceAll("-", "/"));
+        time.dateTime = item.updatedAt; updated.append(time);
+        const actions = cell();
+        const href = apiMode ? item.detailHref : item.id === "DEMO-001" ? "case-detail.html" : item.id === "DEMO-024" ? "case-detail-empty.html" : null;
+        const link = node(href ? "a" : "button", "查看個案 →", "text-button");
+        if (href) link.href = href;
+        else { link.type = "button"; link.disabled = true; actions.append(node("small", "尚未提供此個案詳細資料", "cases-detail-hint")); }
+        link.setAttribute("aria-label", "查看個案：" + item.name + " " + (item.code || item.id)); actions.prepend(link);
+        tr.append(first, cell(item.code || item.id), status, priority, cell(item.contactName), updated, actions);
+        Array.from(tr.children).forEach((td, index) => { td.dataset.label = ["個案", "個案編號", "處理狀態", "優先程度", "聯絡人", "最近更新", "操作"][index]; });
+        return tr;
     }
-
-    function createPageButton(label, page, options = {}) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "cases-page-button";
-        button.dataset.page = String(page);
-        button.textContent = label;
-        button.disabled = Boolean(options.disabled);
-        button.setAttribute("aria-controls", "cases-list");
-        button.setAttribute("aria-label", options.ariaLabel || `第 ${page} 頁`);
-        if (options.current) {
-            button.classList.add("is-current");
-            button.setAttribute("aria-current", "page");
-        }
+    function pageButton(label, page, disabled, current = false) {
+        const button = node("button", label, "cases-page-button"); button.type = "button"; button.disabled = disabled;
+        button.setAttribute("aria-label", label === "‹" ? "上一頁" : label === "›" ? "下一頁" : "第 " + page + " 頁");
+        if (current) { button.setAttribute("aria-current", "page"); button.classList.add("is-current"); }
+        button.addEventListener("click", () => {
+            if (apiMode) void store.list(page, pageSize);
+            else { state.page = page; render(); }
+        });
         return button;
     }
-
-    function renderCases() {
-        const keepPaginationFocus = pagination.contains(document.activeElement);
-        const filteredCases = getFilteredCases();
-        const total = filteredCases.length;
-        const pageCount = Math.ceil(total / pageSize);
-        state.page = Math.max(1, Math.min(state.page, pageCount || 1));
-        const start = (state.page - 1) * pageSize;
-        const pageCases = filteredCases.slice(start, start + pageSize);
-        caseList.replaceChildren();
-        pagination.replaceChildren();
-
-        filterButtons.forEach((button) => {
+    function render() {
+        const data = store?.snapshot() || { phase: "loading", rows: [], page: 1 };
+        list.replaceChildren(); pagination.replaceChildren(); range.textContent = ""; feedback.textContent = "";
+        panel.setAttribute("aria-busy", String(data.phase === "loading"));
+        Array.from(filters.children).forEach(button => {
             const selected = button.dataset.filterStatus === state.status;
-            button.classList.toggle("is-selected", selected);
-            button.setAttribute("aria-pressed", String(selected));
+            button.classList.toggle("is-selected", selected); button.setAttribute("aria-pressed", String(selected));
         });
-
-        if (total === 0) {
-            const emptyRow = document.createElement("tr");
-            const emptyCell = createCell("找不到符合條件的個案");
-            emptyCell.colSpan = 7;
-            emptyCell.className = "cases-empty";
-            emptyRow.append(emptyCell);
-            caseList.append(emptyRow);
-            range.textContent = "共 0 筆";
-            pagination.hidden = true;
-            return;
+        if (data.phase === "loading" || data.phase === "error") {
+            const message = data.phase === "error" ? data.error.message : "正在載入個案…";
+            const tr = node("tr"), td = cell(message); td.colSpan = 7; td.className = "cases-empty"; tr.append(td); list.append(tr);
+            feedback.textContent = data.phase === "error" ? message : "";
+            pagination.hidden = true; return;
         }
-
-        pageCases.forEach((item) => caseList.append(createCaseRow(item)));
-        range.textContent = `顯示第 ${start + 1}–${start + pageCases.length} 筆，共 ${total} 筆`;
+        const rows = model.selectRows(data.rows, { ...state, mode: route.mode });
+        const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+        state.page = Math.min(state.page, pageCount);
+        const start = apiMode ? 0 : (state.page - 1) * pageSize;
+        const visible = apiMode ? rows : rows.slice(start, start + pageSize);
+        if (!visible.length) {
+            const tr = node("tr"), td = cell(data.rows.length ? "本頁找不到符合條件的個案" : "目前沒有可顯示的個案");
+            td.colSpan = 7; td.className = "cases-empty"; tr.append(td); list.append(tr);
+        } else visible.forEach(item => list.append(row(item)));
+        range.textContent = apiMode ? "第 " + data.page + " 頁 · 本頁取得 " + data.rows.length + " 筆，篩選後 " + rows.length + " 筆" :
+            rows.length ? "顯示第 " + (start + 1) + "–" + (start + visible.length) + " 筆，共 " + rows.length + " 筆" : "共 0 筆";
         pagination.hidden = false;
-        pagination.append(createPageButton("‹", state.page - 1, { disabled: state.page === 1, ariaLabel: "上一頁" }));
-        for (let page = 1; page <= pageCount; page += 1) {
-            pagination.append(createPageButton(String(page), page, { current: page === state.page }));
-        }
-        pagination.append(createPageButton("›", state.page + 1, { disabled: state.page === pageCount, ariaLabel: "下一頁" }));
-        if (keepPaginationFocus) pagination.querySelector('[aria-current="page"]').focus({ preventScroll: true });
+        const current = apiMode ? data.page : state.page;
+        pagination.append(pageButton("‹", current - 1, current === 1));
+        if (apiMode) pagination.append(pageButton(String(current), current, true, true));
+        else for (let page = 1; page <= pageCount; page++) pagination.append(pageButton(String(page), page, false, page === current));
+        pagination.append(pageButton("›", current + 1, apiMode ? !data.hasNext : current === pageCount));
     }
-
-    searchInput.addEventListener("input", () => {
-        state.search = searchInput.value;
-        state.page = 1;
-        renderCases();
+    search.addEventListener("input", () => { state.search = search.value; state.page = 1; render(); });
+    sort.addEventListener("change", () => { state.sort = sort.value; state.page = 1; render(); });
+    panel.querySelector("#cases-reload").addEventListener("click", () => {
+        if (apiMode && !window.StaffAuth?.getCurrentUser()) void window.StaffAuth.requireStaffSession();
+        else if (store) void store.list(apiMode ? store.snapshot().page : 1, pageSize);
     });
-
-    filterButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            state.status = button.dataset.filterStatus;
-            state.page = 1;
-            renderCases();
-        });
+    function start(adapter) {
+        store = model.createStore(adapter, { onChange: render, canRead: () => !apiMode || Boolean(window.StaffAuth?.getCurrentUser()) });
+        if (route.invalid) { store.fail({ status: 404 }); return; }
+        if (!apiMode || window.StaffAuth?.getCurrentUser()) void store.list();
+        else render();
+    }
+    if (apiMode) start(model.createApiAdapter(window.MedicalApi.createClient()));
+    else {
+        // Demo data is loaded only on this explicit path, never as an API error fallback.
+        const script = document.createElement("script"); script.src = "js/case-demo-data.js?v=20261024-case-read1";
+        script.onload = () => start(model.createDemoAdapter(window.MedicalCaseDemo));
+        script.onerror = () => { start(model.createDemoAdapter([])); store.fail({ status: 503 }); };
+        document.head.append(script); render();
+    }
+    document.addEventListener("staff-authenticated", () => { if (apiMode && store && !route.invalid) void store.list(store.snapshot().page); });
+    document.addEventListener("staff-permissions-changed", () => {
+        if (apiMode && store && !window.StaffAuth?.getCurrentUser()) store.clearData();
     });
-
-    pagination.addEventListener("click", (event) => {
-        const button = event.target.closest("button[data-page]");
-        if (!button || !pagination.contains(button) || button.disabled) return;
-        state.page = Number(button.dataset.page);
-        renderCases();
-    });
-
-    renderCases();
+    window.addEventListener("pagehide", () => store?.invalidate());
+    window.addEventListener("pageshow", event => { if (event.persisted && !apiMode && store) void store.list(); });
 })();

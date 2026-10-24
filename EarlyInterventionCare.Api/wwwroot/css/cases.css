@@ -1,4 +1,8 @@
 /* Keep the Dashboard shell unchanged; only style the case list. */
+.cases-scope { margin: 0 0 14px; color: var(--brand-teal-dark); }
+.cases-read-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.cases-read-actions select { max-width: 100%; padding: 8px; font: inherit; color: var(--text-primary); border: 1px solid #d3e2df; border-radius: 8px; background: white; }
+.cases-table td { overflow-wrap: anywhere; }
 .cases-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-bottom: 24px; }
 .cases-search { position: relative; flex: 1 1 260px; max-width: 390px; }
 .cases-search > svg { position: absolute; top: 50%; left: 13px; width: 18px; height: 18px; color: var(--text-secondary); transform: translateY(-50%); pointer-events: none; }
@@ -47,6 +51,11 @@
     .cases-filters { margin-left: 0; }
 }
 @media (max-width: 520px) {
+    .cases-table { min-width: 0; }
+    .cases-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .cases-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr); padding: 12px 0; border-bottom: 1px solid var(--line-color); }
+    .cases-table tbody td { display: block; padding: 5px 10px; border: 0; }
+    .cases-table td[data-label]::before { content: attr(data-label); display: block; color: var(--text-secondary); }
     .cases-toolbar { gap: 14px; margin-bottom: 20px; }
     .cases-search { flex-basis: 100%; }
     .cases-filter { padding: 5px 10px; }

@@ -1,4 +1,7 @@
 /* Shared Dashboard CSS owns the shell, content alignment, Avatar and Card geometry. */
+[data-case-source="api"] .detail-identity .case-person { min-width: 0; max-width: 100%; }
+[data-case-source="api"] .detail-identity strong,
+[data-case-source="api"] .detail-identity small { overflow-wrap: anywhere; }
 .detail-back-nav { margin-bottom: 12px; font-size: 12px; }
 .detail-back-nav a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .detail-heading { align-items: flex-start; flex-wrap: wrap; }
