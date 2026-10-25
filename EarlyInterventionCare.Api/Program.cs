@@ -195,6 +195,8 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<BearerSecurityOperationFilter>();
 });
 
+// Finalize only after MVC/antiforgery registrations, which can re-add DP warmup.
+LocalIsolationRuntime.Configure(builder);
 var app = builder.Build();
 
 
@@ -229,6 +231,14 @@ app.UseRateLimiter();
 
 app.MapControllers();
 if (isolatedTest)
+{
     app.MapGet("/health/local", () => Results.Json(new { status = "alive", databaseChecked = false }));
+    using var process = System.Diagnostics.Process.GetCurrentProcess();
+    Console.WriteLine($"ISOLATED_TEST_PROCESS pid={process.Id} startedUtc={process.StartTime.ToUniversalTime():O}");
+    // Observation only: never alter CancelKeyPress.Cancel or request shutdown here.
+    Console.CancelKeyPress += (_, _) => Console.WriteLine("ISOLATED_TEST_CTRL_C_RECEIVED");
+    app.Lifetime.ApplicationStopping.Register(() => Console.WriteLine("ISOLATED_TEST_APPLICATION_STOPPING"));
+    app.Lifetime.ApplicationStopped.Register(() => Console.WriteLine("ISOLATED_TEST_APPLICATION_STOPPED"));
+}
 
 app.Run();

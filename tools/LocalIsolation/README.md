@@ -1,4 +1,43 @@
-# V5.3 loopback 隔離測試環境（未啟用）
+# V5.3 loopback 隔離測試環境（Level 1 已驗收，Level 2 未開始）
+
+## 最新結果：2026-10-25 Windows Terminal 手動驗收
+
+**16-11：隔離 API 啟動、健康檢查、合作式正常停止及清理驗收通過；退出碼未取得。**
+
+來源為使用者親自 Windows Terminal／PowerShell 操作回報，不是 agent 本次重跑。基準 ca3b540bdbaa09d42ab1fd6be67a7b5171acae47 加 9 個未提交檔案；PID 55228，startedUtc=2026-10-25T09:01:00.9413685Z，IsolatedTest／127.0.0.1:5186。Build 0 errors／1 NU1900，health HTTP 200、alive／databaseChecked=false，DP 使用 EphemeralDataProtectionProvider。
+
+親自 Ctrl+C 後收到 CTRL_C_RECEIVED、APPLICATION_STOPPING、APPLICATION_STOPPED；提示符號返回，PID與 Listen 5186 查詢無輸出。ENV_RESTORED=True、PRIVATE_SETTINGS_REMOVED=True。**API_EXIT_CODE 空白，未取得明確退出碼，不記為 0。**MySQL80仍 Running；未做 Migration、MySQL寫入或業務 API。資料庫保存、備份還原及正式部署不在此次驗收內。
+
+下方失敗／待核准敘述均保留為歷史，當前 16-11 以本節為準。完整證據見 `docs/v53-16-level1-isolation-fix.md` 最新節。不要因此自行建立 DB、套用 Migration、啟動外部入口或進入 Level 2；仍需另外核准。
+
+## 歷史操作與調查紀錄
+
+## 停止專項補充（本批未開 API）
+
+非 HTTP 停止測試 13 PASS、真實 Program DI 15 PASS：僅一個 ConsoleLifetime，IsolatedTest 停止權杖時限 5 秒；不是強制殺程序時限。工具傳入 U+0003 未能證明 Windows Ctrl+C 訊號到達。先建議在真正 Windows Terminal 的 PowerShell 直接啟動 DLL、實際按鍵 Ctrl+C；不需修改 API lifetime或本腳本。若改受控同程序 StopApplication runner，需另外實作及核准，不加 shutdown HTTP API。完整互動命令、清理及判準見 `docs/v53-16-level1-isolation-fix.md` 最新節，仍待核准，16-11 尚未全通過。
+
+## 2026-10-25 第三次實際驗收（最新）
+
+IsolatedTest 的磁碟 key-ring 預熱修正後，API PID 58404 已成功僅監聽 127.0.0.1:5186；GET /health/local 回 HTTP 200、alive／databaseChecked=false，未見 DPAPI／Event Log 初始化錯誤。
+本次加入只在 IsolatedTest 的 CTRL_C_RECEIVED／APPLICATION_STOPPING／APPLICATION_STOPPED 訊息。透過測試終端送 Ctrl+C 後未見這些訊息，PID 仍監聽；核對 PID、dotnet 路徑與啟動時間後才終止。私人設定及環境已清理，5186 無監聽。
+**啟動與健康檢查通過，停止驗收未通過；Level 1 尚未全部完成。**不要將強制終止等同正常停止，仍需另行核准後驗證訊號傳遞；不自行改權限、不進 Level 2。精確命令／PID／時間／證據限制見 `docs/v53-16-level1-isolation-fix.md` 最新節。
+
+## 2026-10-25 第三批調查補充（優先於下方歷史說明）
+
+已用真實 Program 的 HostBuilt 攔截確認 DataProtectionHostedService 獨立預熱磁碟 key ring。IsolatedTest helper 已移至所有註冊最後，僅移除此預熱服務，記憶體 Provider及其他環境不變。實跑無 HTTP 的真實註冊／重現／回歸 14／11／20 項通過，仍未重做 Level 1；internal type 名稱依賴須隨 runtime 升級重驗。詳細證據、風險與 Ctrl+C 未決事項見 `docs/v53-16-level1-isolation-fix.md` 最新節。再次啟動仍需明確核准。
+
+## 2026-10-25 第二次驗收狀態（優先於歷史說明）
+
+Level 1 再次未通過：Build／16 項離線測試成功，但完整 API PID 7256 仍初始化既有 key ring，發生 DPAPI 解密與寫入權限錯誤；未執行 health、未取得監聽成功證據。Ctrl+C 未正常退出，核對 PID／路徑／啟動時間後終止；設定及環境已還原，5186 無監聽。未見本次 Event Log 錯誤不等於全面驗證成功。**記憶體 provider 的 DI 測試尚不足以保證完整啟動隔離，不要依下方舊說明直接重跑。**
+實際命令、PID／時間、清理及資料庫連線取樣限制見 `docs/v53-16-level1-isolation-fix.md` 最新節。先補完整初始化路徑的測試與修正並審查，再取得下一次啟動核准；不進 Level 2。
+
+## 2026-10-22 修正補充（優先於下方歷史描述）
+
+首次 Level 1 因 DPAPI／Event Log 錯誤未通過；本批不重跑 API。詳見 `docs/v53-16-level1-isolation-fix.md`。
+IsolatedTest 使用記憶體 Data Protection 與 Console-only logging；不碰既有 key ring，重啟須重新取得測試 CSRF token。
+腳本改為直接執行建置 DLL；只解析語法，未繞過 Execution Policy。5 秒 ShutdownTimeout 不保證 Ctrl+C 送達。
+未來核准的互動啟動先設定兩個 environment 為 IsolatedTest、EARLYCARE_LOCAL_SETTINGS 為私人設定絕對路徑，再於 API 目錄執行 `dotnet ./bin/Debug/net8.0/EarlyInterventionCare.Api.dll`，finally 還原環境與工作目錄。
+Level 1 僅安全啟停／health；保存、重讀、重啟及備份還原歸 Level 2。下方 D4 混合保存的舊 Level 定義不作本次驗收標準。
 
 ## D1 本次唯讀結果
 

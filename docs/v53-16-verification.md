@@ -1,5 +1,27 @@
 # V5.3／16 本次驗證紀錄（2026-10-21）
 
+## 最新驗收結論：2026-10-25 使用者 Windows Terminal 手動回報
+
+**16-11：隔離 API 啟動、健康檢查、合作式正常停止及清理驗收通過；退出碼未取得。**
+
+Branch codex/v53-parent-core；基準 ca3b540bdbaa09d42ab1fd6be67a7b5171acae47 加原 9 檔未提交修改。PID 55228，startedUtc=2026-10-25T09:01:00.9413685Z，IsolatedTest 僅 127.0.0.1:5186。Build 成功 0 errors／1 NU1900；health HTTP 200、{"status":"alive","databaseChecked":false}；DP 日誌為 EphemeralDataProtectionProvider。
+
+使用者親自 Ctrl+C，CTRL_C_RECEIVED、APPLICATION_STOPPING、APPLICATION_STOPPED 均出現，PowerShell 返回提示符號；Get-Process PID 55228及 Get-NetTCPConnection Listen 5186 無輸出；ENV_RESTORED=True、PRIVATE_SETTINGS_REMOVED=True。**API_EXIT_CODE 空白，沒有明確退出碼，不記為 0。**MySQL80 Running，未操作 Migration／MySQL寫入，也未呼叫登入、問卷、Audit或其他業務 API。
+
+來源為使用者實際操作回報；agent 本次沒有重啟、Build或重跑測試。下方測試數量／失敗狀態都是歷史批次，非此次新測。真 MySQL、持久化、備份還原、業務流程及正式部署仍未驗收，Level 2未開始。完整證據及限制見 `v53-16-level1-isolation-fix.md` 最新節。
+
+## 歷史調查與測試紀錄（保留當時結論）
+
+2026-10-25 停止專項（非 HTTP）：新增 --stop-lifecycle 13 PASS；真實 Program 註冊擷取增加單一 Lifetime 斷言，15 PASS。確認 StopApplication／WaitForShutdownAsync／StopAsync 合作鏈與 timeout 非強制停止；沒有測實際 Ctrl+C、沒有再次啟動 API。Program／啟動腳本本批未更動。16-11 仍為「啟動與 health 通過，正常停止未驗收」。精確下次操作計畫及三類停止失敗判準見 `v53-16-level1-isolation-fix.md` 最新節。
+
+2026-10-25 第三次實際 Level 1：Build 0 errors／1 NU1900；FullRegistrationProbe 14／重現 11／環境回歸 20 PASS。API PID 58404（startedUtc 2026-10-25T02:30:27.0883143Z）僅 127.0.0.1:5186，GET /health/local HTTP 200、status=alive／databaseChecked=false。記憶體 DP 診斷正常，未見 DPAPI／Event Log 初始化錯誤。Ctrl+C 未觀察到回呼或 ApplicationStopping，程序仍監聽；核對 PID／路徑／時間後終止（exit=-1），設定及環境清理成功、PID／5186 消失。**16-11：啟動與健康檢查通過，停止驗收未通過；Level 1 不列全部完成。**netstat 未觀察 DB 連線不等於完整零連線證明。未 Commit／未進 Level 2；完整命令及限制見 `v53-16-level1-isolation-fix.md` 最新節。
+
+2026-10-25 第三批（非第三次 Level 1）：真實 Program 註冊攔截 14 PASS、測試加回 DataProtectionHostedService 根因重現 11 PASS、隔離／其他環境 20 PASS。根因是獨立 key-ring 預熱服務，不是 Provider 覆蓋；IsolatedTest 最終註冊移除該服務、保留其他 Host。API Build 0 errors／1 NU1900；Parent 126、EF ADO 86、Permission 34、RBAC Offline 22／Policy 43 PASS。無 HTTP／MySQL；完整紀錄見 `v53-16-level1-isolation-fix.md` 最新節，16-11 仍待核准重試。
+
+2026-10-25 第二次 Level 1：Build 0 errors／1 NU1900；LocalIsolationSafety 16 PASS，但實際 PID 7256 再現 DPAPI／key-ring 寫入被拒，未呼叫 health。Ctrl+C 未完成正常停止，核對身分後終止，環境及私人設定已清理，PID／5186 消失。16-11 **未通過**；DI 通過不能代表完整 Web Host 初始化隔離。完整命令／證據／限制見 `v53-16-level1-isolation-fix.md` 最新節；未 Commit、未進 Level 2。
+
+2026-10-22 IsolatedTest 修正與本批實跑結果見 `v53-16-level1-isolation-fix.md`。本批未啟動 API／HTTP，Level 1 尚待重新核准。
+
 基準 533b659；交付固定版本請見本分支最終 HEAD。未 Fetch／Push／Merge，未連 MySQL、Migration、Seed、實體備份或還原。測試均在隔離 Worktree。
 
 ## 已實際執行
