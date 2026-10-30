@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>16 號本機 HTTP 通訊檢查</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; color: #173c46; background: #f2f7f6; font: 18px/1.6 system-ui, sans-serif; }
+    main { max-width: 800px; margin: 5vh auto; padding: 24px; background: white; border: 1px solid #bdd7d4; border-radius: 12px; }
+    h1 { font-size: 26px; margin-top: 0; }
+    button { font: inherit; padding: 10px 20px; background: #176b70; color: white; border: 0; border-radius: 6px; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; background: #edf4f3; }
+    p { overflow-wrap: anywhere; }
+  </style>
+  <script src="/probe.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>本機 HTTP 通訊檢查</h1>
+    <p>僅檢查 5187 測試頁 → 5186 API 存活端點，不執行登入、問卷或資料庫操作。</p>
+    <button id="check" type="button">檢查 API 連線</button>
+    <p id="status" role="status" aria-live="polite">尚未檢查</p>
+    <pre id="response" aria-label="實際回應">尚無回應</pre>
+    <p>databaseChecked=false 表示未檢查資料庫。此頁不代表正式系統登入或資料保存成功。</p>
+  </main>
+</body>
+</html>

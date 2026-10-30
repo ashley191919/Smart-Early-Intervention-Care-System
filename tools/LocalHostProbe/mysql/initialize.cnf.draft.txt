@@ -1,0 +1,19 @@
+# REVIEW ONLY: every line is a comment; this is NOT a loadable configuration.
+# MySQL 8.0.46 / Windows x64. No initialization performed.
+# Candidate dedicated root: C:/Users/Rache/EarlyCareV53Lab (not created).
+# After approval, generate a separate active file outside the repository.
+# Initialization file contains only location and initialization-time settings.
+# Do not use runtime config as an initialization shortcut.
+# [mysqld]
+# basedir=C:/Program Files/MySQL/MySQL Server 8.0
+# datadir=C:/Users/Rache/EarlyCareV53Lab/mysql/data
+# tmpdir=C:/Users/Rache/EarlyCareV53Lab/mysql/tmp
+# log-error=C:/Users/Rache/EarlyCareV53Lab/mysql/logs/initialize.err
+# lower-case-table-names=1
+# No TCP service is started by --initialize; bind/port/mysqlx belong to runtime.
+# Use secure --initialize only, never --initialize-insecure.
+# --defaults-file must be the first mysqld option; review exact path before use.
+# Prerequisites: approved paths/ACL, empty new datadir, sufficient free space,
+# verified binary 8.0.46, and isolation from existing MySQL80 configuration/data.
+# Initialization log may contain a temporary root password: never publish it.
+# No init-file, SQL, account creation scripts, or existing-data upgrade options.

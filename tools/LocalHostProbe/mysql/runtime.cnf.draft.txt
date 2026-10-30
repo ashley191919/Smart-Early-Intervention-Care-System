@@ -1,0 +1,31 @@
+# REVIEW ONLY: every line is a comment; this is NOT a loadable configuration.
+# MySQL 8.0.46 / Windows x64. No server started or Windows Service installed.
+# Active file may only be generated outside the repository after approval.
+# [mysqld]
+# basedir=C:/Program Files/MySQL/MySQL Server 8.0
+# datadir=C:/Users/Rache/EarlyCareV53Lab/mysql/data
+# tmpdir=C:/Users/Rache/EarlyCareV53Lab/mysql/tmp
+# log-error=C:/Users/Rache/EarlyCareV53Lab/mysql/logs/runtime.err
+# pid-file=C:/Users/Rache/EarlyCareV53Lab/mysql/runtime.pid
+# bind-address=127.0.0.1
+# port=33326
+# mysqlx=0
+# named-pipe=OFF
+# shared-memory=OFF
+# local-infile=OFF
+# persist-globals-load=OFF
+# character-set-server=utf8mb4
+# default-time-zone=+00:00
+# default-storage-engine=InnoDB
+# lower-case-table-names=1
+# transaction-isolation=REPEATABLE-READ
+# innodb-flush-log-at-trx-commit=1
+# general-log=OFF
+# slow-query-log=OFF
+# skip-log-bin
+# Initialization/runtime must share exactly the same new datadir and case mode.
+# Do not set admin-address, init-file, plugin-load, replica or alternative paths.
+# InnoDB default storage stays within this dedicated datadir; no existing path.
+# REPEATABLE-READ/durability/binlog choices are candidates, not accepted SLA/PITR.
+# Buffer pool/resource budget remains pending RAM/ACL/capacity review.
+# No password, runtime account, SQL, CREATE DATABASE, or migration is configured.
