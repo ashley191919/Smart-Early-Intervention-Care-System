@@ -1,0 +1,27 @@
+-- REVIEW ONLY. Every operation remains a comment; not a migration or seed.
+-- Target: dedicated 127.0.0.1:33326, never MySQL80 / 3306 / earlycare_dev.
+-- Confirm SHA, approved SQL SHA256, server_uuid, version, datadir and account first.
+-- Future read-only evidence query:
+-- SELECT @@server_uuid, @@port, @@datadir, VERSION(), DATABASE(), CURRENT_USER();
+-- SELECT @@session.time_zone, @@transaction_isolation, @@sql_mode;
+-- SHOW GRANTS FOR CURRENT_USER;
+-- Future bootstrap is performed by a separately approved operator:
+-- CREATE DATABASE <APPROVED_SYNTHETIC_DB> ...;
+-- CREATE USER <EXACT_LOOPBACK_RUNTIME_IDENTITY> IDENTIFIED BY <SECRET_NOT_IN_REPO>;
+-- CREATE USER <EXACT_LOOPBACK_MIGRATION_IDENTITY> IDENTIFIED BY <SECRET_NOT_IN_REPO>;
+-- GRANT SELECT ON <APPROVED_DB>.<EXACT_REFERENCE_TABLE> TO <RUNTIME>;
+-- GRANT SELECT, UPDATE ON <APPROVED_DB>.case_questionnaires TO <RUNTIME>;
+-- GRANT SELECT, INSERT, UPDATE ON <APPROVED_DB>.questionnaire_drafts TO <RUNTIME>;
+-- GRANT SELECT, INSERT ON <APPROVED_DB>.questionnaire_responses TO <RUNTIME>;
+-- Migration grants: enumerate only statements required by reviewed generated SQL.
+-- Do not grant ALL, global privileges, GRANT OPTION, or runtime DDL.
+-- Fixture inserts: resolve logical aliases from mysql-plan.md after agreed FK topology.
+-- No guessed Organization/Guardian/Consent tables, no real personal identifiers.
+-- Transaction test pseudocode:
+-- Connection A: BEGIN; lock authoritative scope then Task; write Response + Task;
+-- Connection B: wait at deterministic barrier; attempt same key or revocation;
+-- A: revalidate authorization; COMMIT or injected failure then explicit ROLLBACK;
+-- B: finish under the same lock protocol; new scope reread and compare invariants.
+-- Constraint tests execute only in the approved synthetic fixture scope.
+-- Restore target must be independently approved earlycare_v53_restorecheck.
+-- Never disable FK checks or auto-repair inconsistent submitted records.

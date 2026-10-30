@@ -1,0 +1,18 @@
+# REVIEW ONLY — comments only, no executable database/process commands.
+# Prerequisites: explicit approval; pinned server version/SHA/Migration IDs;
+# target identity verified as 127.0.0.1:33326 and dedicated synthetic datadir.
+# Use exact approved paths for mysql/mysqldump and a protected temporary option file.
+# Do not put passwords on command lines, in this repository or in logs.
+# Backup command SHAPE (not ready to execute):
+# & <mysqldump> --defaults-extra-file=<protected-file> --protocol=TCP `
+#   --host=127.0.0.1 --port=33326 --single-transaction --no-tablespaces `
+#   --result-file=<approved-backup-file> earlycare_v53_synthetic
+# Review supported GTID/column-statistics options and privileges for exact version.
+# Prohibit concurrent DDL; capture exit code, SHA256, schema/history and row hashes.
+# Inspect dump for source USE/CREATE DATABASE or qualified source writes.
+# Restore only with identity unable to write source DB; verified target restorecheck.
+# Import via reviewed client input handling preserving dump encoding and exit code;
+# no source database switch, implicit pipe, automatic DROP or fallback to 3306.
+# Verify restored FK/index/history/counts/hashes, gateway reread and original-key replay.
+# Record elapsed time/RPO/RTO; source synthetic database must remain unchanged.
+# Stop on failure, retain artifacts, request concrete approval before rebuild/switch.

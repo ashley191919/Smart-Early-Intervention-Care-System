@@ -1,0 +1,16 @@
+# REVIEW ONLY — NOT AN ACTIVE MYSQL CONFIGURATION.
+# Version, paths and startup command must be reviewed after explicit approval.
+[mysqld]
+bind-address=127.0.0.1
+port=33326
+datadir=<APPROVED_DEDICATED_DATADIR>
+tmpdir=<APPROVED_DEDICATED_TMPDIR>
+log-error=<APPROVED_DEDICATED_ERROR_LOG>
+pid-file=<APPROVED_DEDICATED_PID_FILE>
+character-set-server=utf8mb4
+default-time-zone=+00:00
+default-storage-engine=InnoDB
+transaction-isolation=REPEATABLE-READ
+innodb_flush_log_at_trx_commit=1
+# Disable X protocol using the syntax supported by the approved MySQL version.
+# No service installation, firewall changes, binlog or startup performed here.
