@@ -66,6 +66,40 @@ using (var db = new ApplicationDbContextFactory().CreateDbContext([]))
         i.IsUnique && i.Properties.Select(p => p.Name).SequenceEqual(new[] { "TaskId" })));
     Check("response query translation includes new nullable column", () => db.QuestionnaireResponses.ToQueryString().Contains("respondent_relationship", StringComparison.Ordinal));
     Check("draft query translation includes new nullable column", () => db.QuestionnaireDrafts.ToQueryString().Contains("respondent_relationship", StringComparison.Ordinal));
+    var responseEntity = model.FindEntityType(typeof(QuestionnaireResponse))!;
+    var hashVersion = responseEntity.FindProperty("HashVersion")!;
+    var responseTable = StoreObjectIdentifier.Table(responseEntity.GetTableName()!, responseEntity.GetSchema());
+    Check("HashVersion nullable C# string and EF property", () => hashVersion.ClrType == typeof(string) && hashVersion.IsNullable &&
+        new NullabilityInfoContext().Create(typeof(QuestionnaireResponse).GetProperty("HashVersion")!).ReadState == NullabilityState.Nullable);
+    Check("HashVersion column varchar(64) and length", () => hashVersion.GetColumnName(responseTable) == "hash_version" &&
+        hashVersion.GetColumnType() == "varchar(64)" && hashVersion.GetMaxLength() == 64);
+    Check("HashVersion no default/computed/generated value", () =>
+        hashVersion.FindAnnotation(RelationalAnnotationNames.DefaultValue) == null && hashVersion.GetDefaultValueSql() == null &&
+        hashVersion.GetComputedColumnSql() == null && hashVersion.ValueGenerated == ValueGenerated.Never);
+    Check("HashVersion not key/index/FK/concurrency token", () => !hashVersion.IsConcurrencyToken &&
+        !responseEntity.GetKeys().Any(k => k.Properties.Contains(hashVersion)) &&
+        !responseEntity.GetIndexes().Any(k => k.Properties.Contains(hashVersion)) &&
+        !responseEntity.GetForeignKeys().Any(k => k.Properties.Contains(hashVersion)));
+    Check("HashVersion does not set column collation", () => hashVersion.FindAnnotation(RelationalAnnotationNames.Collation) == null);
+    Check("PayloadHash stays required binary(32)", () => responseEntity.FindProperty("PayloadHash") is { IsNullable: false } hash &&
+        hash.GetColumnType() == "binary(32)");
+    Check("all three response unique indexes retained", () => responseEntity.GetIndexes().Where(i => i.IsUnique)
+        .Select(i => i.GetDatabaseName()).OrderBy(n => n, StringComparer.Ordinal).SequenceEqual(
+            new[] { "uq_responses_grant_key", "uq_responses_parent_key", "uq_responses_task" }));
+    Check("Draft has no HashVersion", () => typeof(QuestionnaireDraft).GetProperty("HashVersion") == null &&
+        model.FindEntityType(typeof(QuestionnaireDraft))!.FindProperty("HashVersion") == null);
+    Check("new Response has unknown HashVersion", () => new QuestionnaireResponse().HashVersion == null);
+    Check("tracked legacy response HashVersion stays null", () => response.HashVersion == null);
+    Check("legacy JSON missing HashVersion stays null", () => JsonSerializer.Deserialize<QuestionnaireResponse>("{}")!.HashVersion == null);
+    var originalHash = response.PayloadHash.ToArray();
+    response.HashVersion = ParentCanonicalSubmissionEncoder.FormatVersion;
+    db.ChangeTracker.DetectChanges();
+    Check("explicit v1 value retained with original hash", () => response.HashVersion == "earlycare.parent-submit.canonical/v1" &&
+        response.PayloadHash.SequenceEqual(originalHash));
+    response.HashVersion = null;
+    db.ChangeTracker.DetectChanges();
+    Check("clearing version keeps unknown and does not rewrite hash", () => response.HashVersion == null && response.PayloadHash.SequenceEqual(originalHash));
+    Check("response SQL translation includes hash_version", () => db.QuestionnaireResponses.ToQueryString().Contains("hash_version", StringComparison.Ordinal));
     // Never SaveChanges, EnsureCreated, migrate, execute queries, or open connections.
 }
 
@@ -92,10 +126,13 @@ try
     var expected = new QuestionnaireAnswerValidator().Validate(fixture.Version.DefinitionSnapshot, submission, new(2026, 10, 30), true)
         .SubmissionHash(fixture.Task.TaskId, fixture.Version.QuestionnaireVersionId);
     Check("teacher still uses original shared hash", () => fixture.Response!.PayloadHash.SequenceEqual(expected));
+    Check("teacher submit does not infer HashVersion", () => fixture.Response!.HashVersion == null);
     var again = await service.SubmitAsync(TeacherMemoryStore.Token, fixture.Task.TaskId, key, submission, "synthetic-replay");
     Check("teacher identical retry keeps original receipt/null", () => again.Replayed && again.ResponseId == receipt.ResponseId && fixture.Response!.RespondentRelationship == null);
+    Check("teacher replay preserves null version and original hash", () => fixture.Response!.HashVersion == null && fixture.Response.PayloadHash.SequenceEqual(expected));
     var read = await service.GetReceiptAsync(TeacherMemoryStore.Token, fixture.Task.TaskId);
     Check("teacher receipt reload unchanged", () => read.ResponseId == receipt.ResponseId && fixture.Draft!.RespondentRelationship == null);
+    Check("teacher receipt read leaves version unknown", () => fixture.Response!.HashVersion == null);
 }
 catch (Exception e) { Check($"teacher compatibility unexpected {e.GetType().Name}: {e.Message}", () => false); }
 

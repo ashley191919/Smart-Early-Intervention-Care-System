@@ -23,6 +23,8 @@ internal sealed class ParentResponseConfiguration : IEntityTypeConfiguration<Que
 {
     public void Configure(EntityTypeBuilder<QuestionnaireResponse> entity)
     {
+        entity.Property(e => e.HashVersion).HasColumnName("hash_version")
+            .HasColumnType("varchar(64)").HasMaxLength(64).IsRequired(false);
         entity.Property(e => e.RespondentRelationship).HasColumnName("respondent_relationship")
             .HasColumnType("varchar(32)").HasMaxLength(32).IsRequired(false);
         entity.Property(e => e.ParentAuthorUserId).HasColumnName("parent_author_user_id")

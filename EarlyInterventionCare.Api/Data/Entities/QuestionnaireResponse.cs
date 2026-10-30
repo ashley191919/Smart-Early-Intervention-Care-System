@@ -17,5 +17,7 @@ public sealed class QuestionnaireResponse
     public Guid? ParentAuthorUserId { get; set; }
     public Guid IdempotencyKey { get; set; }
     public byte[] PayloadHash { get; set; } = null!;
+    // Null means no recorded/verified algorithm version, not an inferred legacy version.
+    public string? HashVersion { get; set; }
     public DateTime SubmittedAtUtc { get; set; }
 }
