@@ -9,6 +9,8 @@ internal sealed class ParentDraftConfiguration : IEntityTypeConfiguration<Questi
 {
     public void Configure(EntityTypeBuilder<QuestionnaireDraft> entity)
     {
+        entity.Property(e => e.RespondentRelationship).HasColumnName("respondent_relationship")
+            .HasColumnType("varchar(32)").HasMaxLength(32).IsRequired(false);
         entity.Property(e => e.ParentAuthorUserId).HasColumnName("parent_author_user_id")
             .HasColumnType("char(36)").HasCharSet("ascii").UseCollation("ascii_bin").ValueGeneratedNever();
         entity.HasOne<User>().WithMany().HasForeignKey(e => e.ParentAuthorUserId)
@@ -21,6 +23,8 @@ internal sealed class ParentResponseConfiguration : IEntityTypeConfiguration<Que
 {
     public void Configure(EntityTypeBuilder<QuestionnaireResponse> entity)
     {
+        entity.Property(e => e.RespondentRelationship).HasColumnName("respondent_relationship")
+            .HasColumnType("varchar(32)").HasMaxLength(32).IsRequired(false);
         entity.Property(e => e.ParentAuthorUserId).HasColumnName("parent_author_user_id")
             .HasColumnType("char(36)").HasCharSet("ascii").UseCollation("ascii_bin").ValueGeneratedNever();
         entity.HasOne<User>().WithMany().HasForeignKey(e => e.ParentAuthorUserId)
