@@ -1,0 +1,2 @@
+.teacher-tasks-view #home-page>.welcome,.teacher-tasks-view #home-page>.grid>.aside{display:none}
+.teacher-tasks-view #home-page>.grid{grid-template-columns:minmax(0,1fr)}

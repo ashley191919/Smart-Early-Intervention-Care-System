@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<script src="/js/shared-demo.js" defer></script>
+<script src="/js/shared-demo.js?v=20261025-restore-choice" defer></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>教師填答工作台｜早療智慧動態照顧系統</title>
@@ -9,11 +9,11 @@
 <link rel="stylesheet" href="/css/workspace-theme.css?v=20261011-spacing">
 <meta name="referrer" content="no-referrer">
 <script src="/js/teacher-draft.js?v=20261018-access-guard" defer></script>
-<script src="/js/teacher-workspace.js?v=20261018-history" defer></script>
-<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261011-product1" defer></script>
+<script src="/js/teacher-workspace.js?v=20261025-cancel" defer></script>
+<link rel="stylesheet" href="/css/system-demo.css?v=20261011-login-spacing5"><script src="/js/system-demo-ui.js?v=20261025-cancel" defer></script>
 <link rel="stylesheet" href="/css/system-interface.css?v=20261011-product3">
 <script src="/js/workspace-user-menu.js?v=20261018-unsaved-guard" defer></script>
-<link rel="stylesheet" href="/css/role-mobile-header.css?v=20261024-three-role"></head>
+<link rel="stylesheet" href="/css/role-mobile-header.css?v=20261024-three-role"><link rel="stylesheet" href="/css/teacher-task-list.css?v=20261025-list"></head>
 <body>
 <svg class="sprite" aria-hidden="true"><defs>
 <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M12 21v-9M12 14C4 14 3 8 4 3c7 0 10 5 8 11ZM12 17c0-7 4-10 9-9 0 6-3 10-9 9Z"/></symbol>
@@ -51,7 +51,7 @@
    <div class="privacy"><svg><use href="#i-shield"/></svg><span>教師端僅顯示本次授權內容；填答資料預計供獲授權的醫療團隊評估參考。</span></div>
   </div><aside class="aside">
    <div class="panel deadline"><div class="side-title"><svg><use href="#i-clock"/></svg>本次填答授權</div><div class="deadline-date" id="deadline-date"></div><div class="deadline-time">提交成功或家長撤銷後失效</div><div class="deadline-note"><svg><use href="#i-clock"/></svg><span id="deadline-note">全部指定問卷提交成功或家長撤銷後失效。</span></div></div>
-   <div class="panel tips"><div class="side-title"><svg><use href="#i-help"/></svg>開始前的小提醒</div><ol><li><strong>確認填答對象</strong>確認本次幼兒資訊與家長邀請相符。</li><li><strong>依校園實際觀察填答</strong>各問卷的觀察期間與作答方式，SNAP-IV 依過去一星期；克氏量表依日常行為表現。</li><li><strong>送出前再看一次</strong>完成檢查並確認後，即結束該份問卷的填答。</li></ol><button type="button" class="btn ghost" id="help-link">查看填寫協助 <svg><use href="#i-arrow"/></svg></button></div>
+   <div class="panel tips"><div class="side-title"><svg><use href="#i-help"/></svg>開始前的小提醒</div><ol><li><strong>確認填答對象</strong>確認本次幼兒資訊與家長邀請相符。</li><li><strong>依校園實際觀察填答</strong>依指定問卷說明填寫，SNAP-IV 請依過去一星期的觀察作答。</li><li><strong>送出前再看一次</strong>完成檢查並確認後，即結束該份問卷的填答。</li></ol><button type="button" class="btn ghost" id="help-link">查看填寫協助 <svg><use href="#i-arrow"/></svg></button></div>
   </aside></div>
  </section>
  <section class="page" id="form-page" hidden aria-labelledby="form-title">

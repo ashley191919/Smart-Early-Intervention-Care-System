@@ -19,7 +19,25 @@
       const target=document.querySelector('#detail-panel-forms');if(target){target.replaceChildren(panel);}
     }else{const hero=main.querySelector('.page-heading,.workspace-heading,section');if(hero)hero.after(panel);else main.append(panel);}
     function render(){const tasks=SharedDemo.tasks();const done=tasks.filter(t=>t.status==='done').length;const summary=document.querySelector('.detail-summary-card:nth-child(2)');if(summary){summary.querySelector('strong').textContent=`${done} / ${tasks.length}`;summary.querySelector('small').textContent=`已完成 ${done} 份，共指派 ${tasks.length} 份`;}const detailNote=document.querySelector('.detail-demo-note');if(detailNote)detailNote.textContent='本輪表單進度同步家長與教師提交。';panel.innerHTML='<h2>王○安 · DEMO-001 · 本輪問卷進度</h2><p>第 2 輪複評 · 家長與教師答案分開保存。</p><a href="/form-assign.html">指派問卷 →</a>'+(tasks.length?'<table><thead><tr><th>問卷</th><th>填答者</th><th>狀態</th><th>結果</th></tr></thead><tbody>'+tasks.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.role==='parent'?'家長':'教師'}</td><td>${{pending:'待填寫',draft:'有草稿',done:'已提交'}[t.status]}</td><td>${t.status==='done'?`<button data-demo-result="${t.id}">查看原始答案</button>`:'尚未提交'}</td></tr>`).join('')+'</tbody></table>':'<p>尚未指派問卷，請先按「指派問卷」。</p>');}
-    render();window.addEventListener('storage',render);window.addEventListener('focus',render);
+    const renderActive=render;
+    function renderWithCancellation(){
+      renderActive();
+      const cancelled=SharedDemo.read().tasks.filter(task=>task.status==='cancelled');
+      if(cancelled.length){const note=document.createElement('p');note.textContent='已取消指派：'+cancelled.map(task=>task.name+'（教師）').join('、')+'。原任務與既有草稿保留。';panel.append(note);}
+      for(const row of panel.querySelectorAll('tbody tr')){
+        const task=SharedDemo.tasks()[row.rowIndex-1];
+        if(!task||task.role!=='teacher'||task.formId!=='clancy'||!['pending','draft'].includes(task.status))continue;
+        const button=document.createElement('button');button.textContent='取消指派';
+        button.addEventListener('click',()=>{
+          const dialog=document.createElement('dialog');dialog.innerHTML='<h2>取消教師克氏行為量表？</h2><p>取消後老師不再看到或填寫此份問卷。既有草稿保留，其他問卷不變。</p><div class="dialog-actions"><button data-confirm>確認取消指派</button><button data-keep>保留指派</button></div><p role="alert"></p>';
+          dialog.querySelector('[data-keep]').onclick=()=>{dialog.close();dialog.remove();};
+          dialog.querySelector('[data-confirm]').onclick=()=>{try{SharedDemo.cancelTeacherClancy(task.id,task.revision);dialog.close();dialog.remove();renderWithCancellation();}catch(error){dialog.querySelector('[role=alert]').textContent=error.message;}};
+          dialog.addEventListener('cancel',()=>dialog.remove());document.body.append(dialog);dialog.showModal();
+        });
+        row.lastElementChild.replaceChildren(button);
+      }
+    }
+    renderWithCancellation();window.addEventListener('storage',renderWithCancellation);window.addEventListener('focus',renderWithCancellation);
     panel.addEventListener('click',e=>{const id=e.target.closest('[data-demo-result]')?.dataset.demoResult;if(!id)return;const t=SharedDemo.tasks().find(t=>t.id===id);if(!t||t.status!=='done')return;
       const dialog=document.createElement('dialog');dialog.innerHTML=`<h2>${esc(t.name)} · ${t.role==='parent'?'家長':'教師'}原始答案</h2><p>問卷版本 ${esc(t.version)} · 提交後不能修改</p><p>提交時間：${esc(new Date(t.draft.submittedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}))}</p><ol>${Object.keys(t.draft.answers).sort((a,b)=>Number(a)-Number(b)).map(i=>`<li>${esc(t.draft.questions?.[i]||`第 ${Number(i)+1} 題`)}：<strong>${esc(t.draft.options?.[t.draft.answers[i]]??`選項代碼 ${t.draft.answers[i]}`)}</strong></li>`).join('')}</ol><p>補充觀察：${esc(t.draft.note)}</p><button>關閉</button>`;dialog.querySelector('button').onclick=()=>{dialog.close();dialog.remove();};dialog.addEventListener('cancel',()=>dialog.remove());document.body.append(dialog);dialog.showModal();});
     if(location.hash==='#shared-tasks')document.addEventListener('DOMContentLoaded',()=>{document.querySelector('#detail-tab-forms')?.click();panel.scrollIntoView();});

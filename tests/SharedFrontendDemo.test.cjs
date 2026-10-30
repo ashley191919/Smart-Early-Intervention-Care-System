@@ -7,6 +7,21 @@ const {randomUUID}=require('node:crypto');
 function setup(seed){const storage=new Map(seed?[['earlycare.frontend.v1',JSON.stringify(seed)]]:[]),window={dispatchEvent(){}};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../EarlyInterventionCare.Api/wwwroot/js/shared-demo.js'),'utf8'),{window,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},crypto:{randomUUID},Event:class{}});return window.SharedDemo;}
 const answer=(count=26)=>({respondent:'示範填表人',date:'2026-10-11',answers:Object.fromEntries(Array.from({length:count},(_,i)=>[i,0])),submittedAt:1});
+test('cancel incorrect teacher Clancy preserves draft and other tasks, prunes grant and rejects stale writes',()=>{
+ const base={caseId:'DEMO-001',round:2,role:'teacher',status:'pending',revision:0,formId:'snap'};
+ const s=setup({tasks:[{...base,id:'snap'},{...base,id:'clancy',formId:'clancy',status:'draft',revision:1,draft:{answers:{0:1}}},{...base,id:'parent',role:'parent',formId:'clancy'}],grant:{code:'DEMO-TEST',status:'active',taskIds:['snap','clancy']}});
+ assert.throws(()=>s.cancelTeacherClancy('clancy',0));assert.throws(()=>s.cancelTeacherClancy('parent',0));
+ s.cancelTeacherClancy('clancy',1);const row=s.read().tasks.find(t=>t.id==='clancy');
+ assert.equal(row.status,'cancelled');assert.equal(row.revision,2);assert.equal(row.draft.answers[0],1);assert.ok(row.cancelledAt);
+ assert.deepEqual(Array.from(s.verify('DEMO-TEST').taskIds),['snap']);assert.equal(s.tasks('teacher').length,1);assert.equal(s.tasks('parent').length,1);
+ assert.throws(()=>s.save('clancy',{answers:{0:2}},2,'DEMO-TEST'));assert.throws(()=>s.cancelTeacherClancy('clancy',2));
+});
+test('teacher Clancy can be assigned; cancelling final task revokes grant and reassignment preserves cancelled record',()=>{
+ const s=setup();assert.equal(s.assign([{formId:'snap',respondentRole:'parent'},{formId:'clancy',respondentRole:'teacher'}],''),2);assert.equal(s.tasks('teacher').length,1);
+ const old=setup({tasks:[{id:'old',role:'teacher',formId:'clancy',status:'pending',revision:0}],grant:{code:'old',status:'active',taskIds:['old']}});old.cancelTeacherClancy('old',0);assert.equal(old.verify('old'),null);
+ assert.equal(old.assign([{formId:'clancy',respondentRole:'teacher'}],''),1);assert.equal(old.read().tasks.find(t=>t.id==='old').status,'cancelled');assert.equal(old.tasks('teacher').length,1);assert.notEqual(old.tasks('teacher')[0].id,'old');
+ const done=setup({tasks:[{id:'done',role:'teacher',formId:'clancy',status:'done',revision:1}],grant:null});assert.throws(()=>done.cancelTeacherClancy('done',1));assert.equal(done.read().tasks[0].status,'done');
+});
 test('presentation invitation excludes another child, round and parent tasks and reuses only a matching grant',()=>{
  const base={id:'teacher-current',caseId:'DEMO-001',round:2,role:'teacher',status:'pending'};
  const s=setup({tasks:[base,{...base,id:'other-child',caseId:'DEMO-002'},{...base,id:'old',round:1},{...base,id:'parent',role:'parent'}],grant:{code:'DEMO-OLD',status:'active',taskIds:['other-child']}});
@@ -18,7 +33,7 @@ test('reopening one completed parent presentation form preserves a backup and ot
 test('parent retry cannot reopen a teacher authorization or an unfinished task',()=>{const s=setup();s.assign([{formId:'snap',respondentRole:'teacher'},{formId:'clancy',respondentRole:'parent'}],'');const g=s.grant(),task=s.tasks('teacher')[0];s.save(task.id,answer(),0,g.code);assert.throws(()=>s.restartParent(task.id,1));assert.throws(()=>s.restartParent(s.tasks('parent')[0].id,0));assert.equal(s.read().grant.status,'used');});
 test('role assignments are separate and duplicates do not erase submitted answers',()=>{const s=setup();assert.equal(s.assign([{formId:'snap',respondentRole:'parent'},{formId:'snap',respondentRole:'teacher'}],'2026-10-20'),2);const t=s.tasks('parent')[0];s.save(t.id,answer(),0);assert.equal(s.assign([{formId:'snap',respondentRole:'parent'}],''),0);assert.equal(s.tasks('parent')[0].status,'done');assert.equal(s.tasks('teacher')[0].status,'pending');assert.throws(()=>s.save(t.id,{},1));});
 test('draft revision conflicts and revoked authorization reject writes',()=>{const s=setup();s.assign([{formId:'snap',respondentRole:'teacher'}],'');const g=s.grant(),t=s.tasks()[0];s.save(t.id,{answers:{0:1}},0,g.code);assert.throws(()=>s.save(t.id,{},0,g.code),/其他頁面/);s.revoke();assert.equal(s.verify(g.code),null);assert.throws(()=>s.save(t.id,{},1,g.code),/撤銷/);assert.equal(s.tasks()[0].draft.answers[0],1);const replacement=s.grant();assert.notEqual(replacement.code,g.code);assert.throws(()=>s.save(t.id,{},1,g.code));});
-test('one submitted task keeps grant active; all scoped tasks complete it',()=>{const s=setup();s.assign([{formId:'snap',respondentRole:'teacher'},{formId:'clancy',respondentRole:'teacher'}],'');const g=s.grant(),tasks=s.tasks();assert.throws(()=>s.save(tasks[0].id,{...answer(),answers:{}},0,g.code),/必填/);s.save(tasks[0].id,answer(),0,g.code);assert.ok(s.verify(g.code));s.save(tasks[1].id,answer(14),0,g.code);assert.equal(s.read().grant.status,'used');assert.equal(s.verify(g.code),null);assert.equal(s.tasks().filter(t=>t.status==='done').length,2);});
+test('one submitted task keeps grant active; all scoped tasks complete it',()=>{const base={formId:'snap',role:'teacher',caseId:'DEMO-001',round:2,status:'pending',revision:0,draft:null};const s=setup({tasks:[{...base,id:'one'},{...base,id:'two'}],grant:null});const g=s.grant(),tasks=s.tasks();assert.throws(()=>s.save(tasks[0].id,{...answer(),answers:{}},0,g.code),/必填/);s.save(tasks[0].id,answer(),0,g.code);assert.ok(s.verify(g.code));s.save(tasks[1].id,answer(),0,g.code);assert.equal(s.read().grant.status,'used');assert.equal(s.verify(g.code),null);assert.equal(s.tasks().filter(t=>t.status==='done').length,2);});
 
 test('parent task scope keeps all forms in the same child and round, not only the clicked form',()=>{
  const s=setup();s.assign([{formId:'snap',respondentRole:'parent'},{formId:'clancy',respondentRole:'parent'},{formId:'snap',respondentRole:'teacher'}],'');

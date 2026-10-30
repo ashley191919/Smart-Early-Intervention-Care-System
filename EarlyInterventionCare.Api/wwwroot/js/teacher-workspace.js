@@ -11,6 +11,10 @@ document.querySelectorAll('[data-parent-page]').forEach(button=>button.addEventL
 if(sharedMode)window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 const sharedCode=sessionStorage.getItem('earlycare.demo.teacher');
 let sharedTasks=[],sharedRevisions={};
+if(sharedMode&&sharedRole==='teacher'){
+  const refreshCancelled=()=>{if(sharedTasks.length&&sharedTasks.some(t=>!SharedDemo.tasks('teacher').some(row=>row.id===t.id)))location.reload();};
+  window.addEventListener('storage',refreshCancelled);window.addEventListener('focus',refreshCancelled);
+}
 let assignedTask=null;
 const draftClient=authorizedMode?new TeacherDraftClient((...args)=>fetch(...args)):null;
 let draftBusy=false,formOpenSequence=0,accessBlocked=false,submissionBusy=false;
@@ -80,6 +84,8 @@ let forms=[
  '反覆怪異的動作或玩',
  '對周圍漠不關心']}
 ];
+// The unconnected presentation entry must not preload a parent-only form.
+if(sharedRole==='teacher'&&!sharedMode&&!authorizedMode)forms=forms.filter(form=>form.id!=='clancy');
 let current=null, toastTimer;
 function fresh(){return {forms:{}};}
 let state=fresh();
@@ -94,7 +100,7 @@ function persist(){
   }catch(error){toast(error.message);return false;}
 }
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,3300);}
-function navigate(page){for(const p of document.querySelectorAll('.page'))p.hidden=p.id!==page+'-page';$('crumb').textContent={home:'任務首頁',form:'問卷填寫',success:'完成確認',help:'填寫協助'}[page];for(const b of document.querySelectorAll('[data-nav]')){const active=b.dataset.nav===(page==='help'?'help':page==='form'?'tasks':'home');b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}document.querySelector('.content').scrollTo({top:0,behavior:'instant'});window.scrollTo({top:0,behavior:'instant'});const h=$(page+'-title');if(h)h.focus({preventScroll:true});}
+function navigate(page){document.querySelector('.content').classList.remove('teacher-tasks-view');if(sharedRole==='teacher')document.getElementById("home-title").textContent='教師填答工作台';for(const p of document.querySelectorAll('.page'))p.hidden=p.id!==page+'-page';$('crumb').textContent={home:'任務首頁',form:'問卷填寫',success:'完成確認',help:'填寫協助'}[page];for(const b of document.querySelectorAll('[data-nav]')){const active=b.dataset.nav===(page==='help'?'help':page==='form'?'tasks':'home');b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}document.querySelector('.content').scrollTo({top:0,behavior:'instant'});window.scrollTo({top:0,behavior:'instant'});const h=$(page+'-title');if(h)h.focus({preventScroll:true});}
 function renderHome(){const done=completed();$('today').textContent=new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'long',day:'numeric',weekday:'long'}).format(Date.now());$('deadline-date').textContent='授權不限時';$('task-summary').textContent=`已完成 ${done} / ${forms.length} 份`;$('nav-count').textContent=forms.length-done;if(authorizedMode)$('deadline-note').textContent='請完成指定問卷並提交。';$('completion-banner').hidden=done!==forms.length;$('completion-banner').textContent='本次問卷已全部完成。';$('session-label').textContent=authorizedMode?'本次填答任務':done===forms.length?'示範填答已完成':'教師填答工作台';$('deadline-note').textContent=done===forms.length?'本次問卷已完成。':'全部指定問卷提交成功或家長撤銷後失效。';$('task-list').innerHTML=forms.map(f=>{const d=draft(f.id),n=count(f.id),sent=!!d.submittedAt;const label=sent?'已完成':d.savedAt?'填寫中':'未開始';return `<article class="panel task"><div class="task-top"><div class="task-icon ${f.color}">${icon('form')}</div><div class="task-title"><h3>${f.title}</h3><p>${f.desc}</p></div><span class="status ${sent?'done':d.savedAt?'progress':''}">${label}</span></div><div class="task-bottom"><div class="task-progress"><div class="progress-label"><span>${sent?(authorizedMode?'已保存提交 ':'本機提交 ')+formatter.format(d.submittedAt):`已填題數 ${n} / ${f.questions.length}`}</span><span>${Math.round(n/f.questions.length*100)}%</span></div><div class="track"><span style="width:${n/f.questions.length*100}%"></span></div></div><button type="button" class="btn ${sent?'secondary':''}" data-form="${f.id}" ${sent?'disabled':''}>${sent?'已完成':d.savedAt?'繼續填寫':'開始填寫'} ${icon(sent?'check':'arrow')}</button></div></article>`;}).join('');if(sharedMode){$('session-label').textContent=sharedRole==='parent'?'家長共用填答':'教師填答工作台';$('deadline-note').textContent=sharedRole==='parent'?'每份問卷提交後不可修改。':'提交後不可修改；教師授權不限時。';if(sharedRole==='parent'){$('deadline-date').textContent='本輪問卷';document.querySelector('.deadline-time').textContent='依醫護指派的問卷填寫';document.querySelector('.deadline .side-title').lastChild.textContent='本輪問卷進度';}$('completion-banner').textContent='指定問卷已提交，填答狀態已更新。';}if(authorizedMode){$('deadline-note').textContent=done===forms.length?'本次答案已保存，授權已完成。':'請完成指定問卷並提交。';$('completion-banner').textContent='本次指定問卷已提交。';$('session-label').textContent=done===forms.length?'本次授權已完成':'本次填答任務';}}
 function openAssignedForm(id){$('confirm-submit').disabled=false;current=forms.find(f=>f.id===id);if(!current||draft(id).submittedAt)return;const d=draft(id);$('form-title').textContent=current.title;$('form-instructions').textContent=current.instructions;const source=document.createElement('span');source.className='source-note';source.textContent='題目來源：'+current.source+'。';$('form-instructions').append(source);$('respondent-name').value=d.respondent||'';$('respondent-date').value=authorizedMode?(d.date||''):d.date||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now());$('questions').innerHTML=current.questions.map((q,i)=>`${current.groups[i]?`<h2 class="group-heading">${current.groups[i]}</h2>`:''}<fieldset class="question" id="q-${i}"><legend><span class="qnum">${i+1}</span>${q}<span class="required">必填</span></legend><div class="options ${current.options.length===3?'three':''}">${current.options.map((option,value)=>`<label class="option"><input type="radio" name="q${i}" value="${value}" ${d.answers[i]===value?'checked':''} required><span>${option}</span></label>`).join('')}</div></fieldset>`).join('');if($('respondent-relationship'))$('respondent-relationship').value=d.relationship||'';$('observation').value=d.note;$('form-error').hidden=true;$('save-state').textContent=d.savedAt?(authorizedMode?'已保存至 DB · ':'本頁上次暫存 ')+formatter.format(d.savedAt):'尚未儲存草稿';
 $('reload-draft').hidden=!authorizedMode;$('draft-notice').hidden=true;$('form-deadline').textContent=sharedRole==='parent'?'提交後不能修改原始答案。':authorizedMode?'提交成功後不可修改，全部指定問卷提交後授權失效。':'授權不限時，提交後不可修改。';$('confirm-submit').disabled=false;updateProgress();navigate('form');}
@@ -171,6 +177,15 @@ async function saveDraft(silent=false){
 async function home(){if(draftBusy)return;if(!await saveDraft(true))return;if(sharedMode&&sharedRole==='parent'){location.assign('/parent-workspace.html');return;}renderHome();navigate('home');}
 async function help(){if(draftBusy)return;if(!await saveDraft(true))return;navigate('help');}
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',async()=>{
+  if(sharedRole==='teacher'&&b.dataset.nav==='tasks'){
+    if(draftBusy||submissionBusy||pendingSubmission||!await saveDraft(true))return;
+    renderHome();navigate('home');document.querySelector('.content').classList.add('teacher-tasks-view');
+    $('home-title').textContent='本次問卷';$('crumb').textContent='本次問卷';
+    document.querySelectorAll('[data-nav]').forEach(item=>{const active=item.dataset.nav==='tasks';item.classList.toggle('active',active);if(active)item.setAttribute('aria-current','page');else item.removeAttribute('aria-current');});
+    return;
+  }
+  document.querySelector('.content').classList.remove('teacher-tasks-view');
+  if(sharedRole==='teacher')$('home-title').textContent='教師填答工作台';
   if(sharedMode&&sharedRole==='parent'&&b.dataset.nav==='tasks'){if(!await saveDraft(true))return;renderHome();navigate('home');$('task-heading').scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(b.dataset.nav==='help')await help();else{await home();if(b.dataset.nav==='tasks'&&!$('home-page').hidden)$('task-heading').scrollIntoView({behavior:'smooth',block:'start'});}
 }));
