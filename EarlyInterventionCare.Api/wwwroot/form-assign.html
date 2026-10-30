@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+<script src="js/medical-config.js?v=20261025-v53-ui1" defer></script>
+<script src="js/medical-api.js?v=20261024-case-contract1" defer></script>
+<script src="js/staff-auth.js?v=20261024-client1" defer></script>
+<script src="js/staff-permissions.js" defer></script>
 <script src="/js/shared-demo.js" defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,7 +31,8 @@
         <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
     </svg>
 
-    <div class="dashboard-shell">
+    <p data-staff-auth-error role="alert" aria-live="assertive" hidden></p>
+    <div class="dashboard-shell" data-staff-protected hidden>
         <aside class="sidebar" aria-label="主要導覽">
             <a class="brand" href="staff-dashboard.html" aria-label="早療智慧動態照護系統首頁">
                 <span class="brand-symbol"><svg aria-hidden="true"><use href="#icon-leaf"/></svg></span>
@@ -101,6 +106,8 @@
                     <section class="panel assign-section">
                         <fieldset id="assign-forms-group" class="assign-fieldset" aria-describedby="assign-selection-hint assign-forms-error">
                             <legend class="assign-section-title">選擇表單</legend>
+                            <button class="assign-secondary-button" type="button" disabled aria-describedby="assign-preset-note">套用常用問卷</button>
+                            <p id="assign-preset-note" class="assign-helper">目前沒有預設清單，可手動調整問卷選項。</p>
                             <p id="assign-selection-hint" class="assign-helper">同一份表單可同時勾選家長與幼兒園教師，兩者為不同填答項目。目前可操作 SNAP-IV 與克氏量表；其他表單題目待整合。</p>
                             <div class="assign-list-head">
                                 <span>表單名稱</span><span id="assign-parent-heading">家長</span><span id="assign-teacher-heading">幼兒園教師</span>
@@ -186,8 +193,9 @@
                     </div>
                     <div class="assign-actions">
                         <a class="assign-secondary-button" href="case-detail.html">取消</a>
-                        <button id="assign-confirm" class="primary-button" type="submit" disabled>確認指派</button>
+                        <button id="assign-confirm" class="primary-button" type="submit" disabled data-staff-permission="questionnaire.task.assign" data-permission-hint="assign-permission-hint">確認指派</button>
                     </div>
+                    <p id="assign-permission-hint" class="assign-error" role="status">正在確認操作權限…</p>
                     <noscript><p class="assign-helper">請啟用 JavaScript，以使用填答項目統計與前端驗證。</p></noscript>
                 </form>
             </main>

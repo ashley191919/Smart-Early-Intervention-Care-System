@@ -196,6 +196,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .todo-all-action button { font-size: 12px; }
 .todo-development-note { color: var(--text-secondary); font-size: 11px; }
 .todo-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.todo-case-status { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid #d3e2df; border-radius: 6px; color: #567f7a; background: #f0f6f5; }
 .todo-filter { padding: 5px 12px; color: var(--brand-teal-dark); font-size: 12px; line-height: 1.6; background: #fff; border: 1px solid #d3e2df; border-radius: 8px; }
 .todo-filter:hover { background: var(--brand-teal-pale); }
 .todo-filter.is-selected { color: #fff; background: var(--brand-teal); border-color: var(--brand-teal); }
@@ -212,6 +213,10 @@ tbody tr:last-child td { border-bottom: 0; }
 .todo-item > div { min-width: 0; }
 .todo-details h3 { margin: 0 0 6px; color: #4b5563; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
 .todo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 0; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.todo-reminder-text { margin: 6px 0 0; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.todo-reminder-value { color: var(--brand-teal-dark); }
+.todo-tracking-dates { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; }
+.todo-normal-priority { align-self: center; color: var(--text-secondary); font-size: 12px; }
 .todo-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .todo-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .todo-status, .todo-priority, .todo-overdue { display: inline-block; padding: 3px 8px; font-size: 11px; border: 1px solid #d3e2df; border-radius: 6px; }

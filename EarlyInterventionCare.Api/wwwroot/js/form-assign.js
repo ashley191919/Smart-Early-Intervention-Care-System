@@ -6,6 +6,22 @@
     // Only SNAP-IV and Clancy currently have integrated questionnaire definitions.
     const form = document.querySelector("#form-assign-form");
     if (!form) return;
+    const params = new URLSearchParams(location.search);
+    const apiMode = window.MedicalApiConfig?.caseSource === "api" || params.has("caseId") || params.has("source");
+    if (apiMode) {
+        // Case/Task write contracts and assignment Permission are owned by 11/16.
+        // Do not create a second Task store or navigate an API Case into Demo assignment.
+        const main = document.querySelector(".form-assign-content");
+        const back = document.createElement("a");
+        const caseId = params.getAll("caseId").length === 1 && window.MedicalApi?.uuid(params.get("caseId")) ? params.get("caseId") : null;
+        back.href = caseId ? "case-detail.html?source=api&caseId=" + encodeURIComponent(caseId) : "cases.html?source=api";
+        back.textContent = "← 返回個案資料";
+        const panel = document.createElement("section"); panel.className = "panel";
+        const heading = document.createElement("h1"); heading.textContent = "指派表單";
+        const message = document.createElement("p"); message.textContent = "目前無可指派的問卷。"; message.setAttribute("role", "status");
+        panel.append(heading, message); main.replaceChildren(back, panel);
+        return;
+    }
 
     const checkboxes = Array.from(form.querySelectorAll('input[name="assignmentItems"]'));
     const rows = Array.from(form.querySelectorAll(".assign-form-row"));
@@ -81,6 +97,13 @@
         event.preventDefault();
         feedback.hidden = true;
         invitationDemo.hidden = true;
+        // Presentation is fail-closed. This Permission is not registered yet;
+        // never substitute case.read/task.read or a role name for assignment authority.
+        if (window.StaffAuth?.hasPermission("questionnaire.task.assign") !== true) {
+            feedback.textContent = "您沒有指派問卷的權限。";
+            feedback.hidden = false;
+            return;
+        }
         const hasItems = updateSelection().length > 0;
         setFormsError(hasItems ? "" : "請至少選擇一個填答項目");
         const hasDeadline = validateDeadline();
@@ -103,6 +126,6 @@
     });
 
     updateSelection();
-    // Enable confirmation only after the handler prevents native form submission.
-    confirmButton.disabled = false;
+    // No approved assignment Permission exists in this branch; do not enable the write.
+    confirmButton.disabled = true;
 })();

@@ -1,68 +1,84 @@
 (() => {
     "use strict";
 
+    const caseStatuses = Object.freeze({ "pending-contact": "待聯繫", "in-progress": "進行中", completed: "已完成" });
+    function calendarDate(value) {
+        if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+        const date = new Date(value + "T12:00:00");
+        if (!Number.isFinite(date.getTime())) return "";
+        const local = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+        return local === value ? value : "";
+    }
+    function sortReminders(items, status = "all") {
+        // Display-only ordering: priority, explicitly supplied update date, stable ties.
+        // Assessment dates and reminder wording never participate in sorting.
+        return [...items].sort((a, b) =>
+            (status === "completed" ? 0 : Number(b.priority === "high") - Number(a.priority === "high")) ||
+            (b.updatedAt || "").localeCompare(a.updatedAt || "") || a.originalIndex - b.originalIndex);
+    }
+    if (typeof module === "object" && module.exports) module.exports = { caseStatuses, calendarDate, sortReminders };
+    if (typeof document === "undefined") return;
     const panel = document.querySelector(".todo-panel");
     if (!panel) return;
-    const buttons = Array.from(panel.querySelectorAll(".todo-filter"));
+    const params = new URLSearchParams(location.search);
+    const apiMode = window.MedicalApiConfig?.caseSource === "api" || params.has("source") || params.has("caseId");
+    if (apiMode) {
+        // There is no approved aggregate/reminder producer yet. Never infer totals from
+        // a paginated Case response or show fixture counts as official statistics.
+        document.querySelectorAll(".dashboard-stat-value").forEach(value => { value.textContent = "未提供"; });
+        panel.querySelector("#todo-list").replaceChildren();
+        panel.querySelectorAll(".todo-filter").forEach(button => { button.disabled = true; });
+        panel.querySelector(".todo-result-count").textContent = "未提供";
+        panel.querySelector(".todo-filter-hint").textContent = "";
+        const empty = panel.querySelector(".todo-empty");
+        empty.textContent = "提醒資料尚未提供"; empty.hidden = false;
+        return;
+    }
+    const caseButtons = Array.from(panel.querySelectorAll("[data-filter-case-status]"));
     const list = panel.querySelector("#todo-list");
     // Capture original positions once so every filtering/sorting pass has stable tie-breaks.
     const todos = Array.from(list.querySelectorAll(".todo-item")).map((row, originalIndex) => ({
         row, originalIndex,
-        type: row.dataset.todoType,
-        status: row.dataset.todoStatus,
-        priority: row.dataset.priority,
-        dueDate: row.dataset.dueDate || ""
+        // Original task priority stays intact for its own workflow.
+        priority: row.dataset.casePriority,
+        updatedAt: calendarDate(row.dataset.updatedAt),
+        caseStatus: row.dataset.caseStatus || "",
+        assessmentDate: calendarDate(row.dataset.assessmentDate)
     }));
     const resultCount = panel.querySelector(".todo-result-count");
     const emptyMessage = panel.querySelector(".todo-empty");
-    const dateReference = panel.querySelector("#todo-date-reference");
-
-    // HTML contains six de-identified Demo tasks. No shared state, persistence or API.
-    // Todo type/status/dueDate are NOT case status or case updatedAt.
-    // Future data should reference a case and an independent work item; never infer a due date
-    // from case updatedAt, and never mark a case completed because a task/form is completed.
-    function localToday() {
-        const today = new Date();
-        return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"),
-            String(today.getDate()).padStart(2, "0")].join("-");
-    }
-
-    function isOverdue(todo, today) {
-        return todo.status !== "completed" && Boolean(todo.dueDate) && todo.dueDate < today;
-    }
-
-    function compareTodos(a, b, today) {
-        const priorityOrder = Number(b.priority === "high") - Number(a.priority === "high");
-        if (priorityOrder) return priorityOrder;
-        const overdueOrder = Number(isOverdue(b, today)) - Number(isOverdue(a, today));
-        if (overdueOrder) return overdueOrder;
-        // Local ISO calendar dates: earlier deadlines first; undated items last.
-        const dueOrder = (a.dueDate || "9999-12-31").localeCompare(b.dueDate || "9999-12-31");
-        return dueOrder || a.originalIndex - b.originalIndex;
-    }
-
-    function applyFilter(button) {
-        const today = localToday();
-        const type = button.dataset.filterType;
+    // Synthetic reminder text is supplied directly in HTML, not calculated or persisted.
+    // Existing todo status/deadline attributes remain for Header compatibility only.
+    let selectedCaseStatus = "all";
+    todos.forEach(todo => {
+        const updated = todo.row.querySelector(".todo-updated-at");
+        updated.textContent = todo.updatedAt ? todo.updatedAt.replaceAll("-", "/") : "未提供";
+        if (todo.updatedAt) updated.setAttribute("datetime", todo.updatedAt);
+        todo.row.querySelector(".todo-priority").hidden = todo.priority !== "high";
+        todo.row.querySelector(".todo-normal-priority").hidden = todo.priority === "high";
+        const date = todo.row.querySelector(".todo-assessment-date");
+        todo.row.querySelector(".todo-assessment").hidden = !todo.assessmentDate;
+        date.textContent = todo.assessmentDate ? todo.assessmentDate.replaceAll("-", "/") : "";
+        if (todo.assessmentDate) date.setAttribute("datetime", todo.assessmentDate);
+        todo.row.querySelector(".todo-case-status").textContent = Object.hasOwn(caseStatuses, todo.caseStatus) ? caseStatuses[todo.caseStatus] : "未提供";
+    });
+    function applyFilters() {
         let visibleCount = 0;
-        [...todos].sort((a, b) => compareTodos(a, b, today)).forEach((todo) => {
-            const matches = type === "all" || todo.type === type;
+        sortReminders(todos, selectedCaseStatus).forEach((todo) => {
+            const matches = selectedCaseStatus === "all" || todo.caseStatus === selectedCaseStatus;
             todo.row.hidden = !matches;
-            todo.row.querySelector(".todo-overdue").hidden = !isOverdue(todo, today);
             list.appendChild(todo.row);
             if (matches) visibleCount += 1;
         });
-        buttons.forEach((filterButton) => {
-            const selected = filterButton === button;
-            filterButton.classList.toggle("is-selected", selected);
-            filterButton.setAttribute("aria-pressed", String(selected));
+        caseButtons.forEach(button => {
+            const selected = button.dataset.filterCaseStatus === selectedCaseStatus;
+            button.classList.toggle("is-selected", selected);
+            button.setAttribute("aria-pressed", String(selected));
         });
-        resultCount.textContent = `${button.textContent.trim()}：顯示 ${visibleCount} 筆待辦`;
+        resultCount.textContent = `${caseStatuses[selectedCaseStatus] || "全部"}：顯示 ${visibleCount} 筆提醒`;
         emptyMessage.hidden = visibleCount > 0;
-        dateReference.textContent = "Demo 日期判斷基準（本機日期）：" + today.replaceAll("-", "/");
     }
 
-    buttons.forEach((button) => button.addEventListener("click", () => applyFilter(button)));
-    const allButton = buttons.find((button) => button.dataset.filterType === "all");
-    if (allButton) applyFilter(allButton);
+    caseButtons.forEach(button => button.addEventListener("click", () => { selectedCaseStatus = button.dataset.filterCaseStatus; applyFilters(); }));
+    applyFilters();
 })();

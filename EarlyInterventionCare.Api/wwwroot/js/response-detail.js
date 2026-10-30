@@ -87,8 +87,20 @@
         const current = ++revision;
         try {
             const params = new URLSearchParams(location.search);
-            const fixtures = window.MedicalDemo;
             const caseIds = params.getAll("caseId");
+            // Formal result/exports have no approved Response API adapter yet.
+            // Never call SharedDemo or the protected Development fixture to fill an API result.
+            const apiMode = window.MedicalApiConfig?.caseSource === "api" ||
+                params.getAll("source").includes("api") ||
+                caseIds.some(id => window.MedicalApi?.uuid(id));
+            if (apiMode) {
+                const caseId = caseIds.length === 1 && window.MedicalApi?.uuid(caseIds[0]) ? caseIds[0] : null;
+                const href = caseId ? "case-detail.html?source=api&caseId=" + encodeURIComponent(caseId) + "#shared-tasks" : "cases.html?source=api";
+                $("response-back-top").href = href;
+                $("response-back-bottom").href = href;
+                return showState("尚未提供正式結果");
+            }
+            const fixtures = window.MedicalDemo;
             const returnHref = fixtures.caseHref(caseIds.length === 1 ? caseIds[0] : "DEMO-001", location.search);
             $("response-back-top").href = returnHref;
             $("response-back-bottom").href = returnHref;

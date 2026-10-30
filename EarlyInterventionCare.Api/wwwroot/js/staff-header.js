@@ -2,6 +2,17 @@
     "use strict";
     const header = document.querySelector("[data-staff-header]");
     if (!header || header.dataset.staffHeaderInitialized === "true") return;
+    const routeParams = new URLSearchParams(location.search);
+    const apiMode = window.MedicalCaseMode?.mode === "api" || window.MedicalApiConfig?.caseSource === "api" ||
+        routeParams.has("caseId") && !routeParams.get("caseId")?.startsWith("DEMO-") ||
+        routeParams.getAll("source").includes("api");
+    if (apiMode) {
+        // Keep explicit API navigation from silently reopening static fixture pages.
+        document.querySelectorAll('a[href="cases.html"], a[href="staff-dashboard.html"]').forEach(link => {
+            link.href = link.getAttribute("href") + "?source=api";
+        });
+        document.querySelectorAll('a[href="case-create.html"]').forEach(link => link.remove());
+    }
     const actions = header.querySelector(".header-actions");
     const bell = header.querySelector("#staff-notification-toggle");
     const user = header.querySelector("#staff-user-toggle");
@@ -67,6 +78,7 @@
     }
     function reminderSource() {
         if (window.MedicalCaseMode?.mode === "api") return [];
+        if (apiMode) return [];
         const rows = Array.from(document.querySelectorAll(".todo-panel .todo-item"));
         if (!rows.length) return reminders;
         return rows.map((row) => ({
