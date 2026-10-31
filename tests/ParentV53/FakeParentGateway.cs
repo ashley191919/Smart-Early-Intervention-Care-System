@@ -11,9 +11,12 @@ using Microsoft.EntityFrameworkCore;
 // production storage engine and is never registered in the application.
 public sealed class FakeParentGatewayState
 {
+    public QuestionnaireWorkflowException? CoreFault { get; set; }
+    public QuestionnaireWorkflowException? SubmitFault { get; set; }
     public Dictionary<Guid, (Guid Author, ParentDraftResponse Draft)> Drafts { get; } = new();
     public Dictionary<Guid, (Guid Author, ParentSubmissionReceipt Receipt)> Responses { get; } = new();
-    public Dictionary<(Guid, Guid), (string Hash, ParentSubmissionReceipt Receipt)> Keys { get; } = new();
+    // Version metadata exercises the HTTP contract only; no production Hash implementation.
+    public Dictionary<(Guid, Guid), (string Hash, ParentSubmissionReceipt Receipt, string? HashVersion)> Keys { get; } = new();
 }
 public sealed class FakeParentGateway(ApplicationDbContext db, IParentQuestionnaireAccess access,
     FakeParentGatewayState state, TimeProvider clock, QuestionnaireAnswerValidator validator) : IParentQuestionnaireGateway
@@ -22,16 +25,19 @@ public sealed class FakeParentGateway(ApplicationDbContext db, IParentQuestionna
     async Task<ParentRequestContext> Scope(ParentRequestContext request, Guid taskId, bool writing, CancellationToken ct)
     {
         var fresh = await access.RequireAsync(request.Principal, taskId, writing, db, ct);
+        if (state.CoreFault is not null) throw state.CoreFault;
         if (fresh.ActorUserId != request.ActorUserId || fresh.OrganizationId != request.OrganizationId) throw Error("UNAUTHENTICATED", 401);
+        if (fresh.CaseId != request.CaseId || fresh.GuardianId != request.GuardianId || fresh.ConsentId != request.ConsentId || fresh.DocumentVersionId != request.DocumentVersionId)
+            throw Error("ACCESS_PRECHECK_CHANGED", 409);
         return fresh;
     }
     public async Task<ParentDraftResponse> GetDraftAsync(ParentRequestContext context, Guid taskId, CancellationToken ct = default)
     {
         var actor = await Scope(context, taskId, false, ct); var task = await db.QuestionnaireTasks.AsNoTracking().SingleAsync(t => t.TaskId == taskId, ct);
-        if (task.TaskStatus == "SUBMITTED") throw Error("TASK_NOT_EDITABLE", 409);
+        if (task.TaskStatus == "SUBMITTED") throw Error("TASK_SUBMITTED", 409);
         if (state.Drafts.TryGetValue(taskId, out var saved))
-        { if (saved.Author != actor.ActorUserId) throw Error("DRAFT_OWNERSHIP_CONFLICT", 409); return saved.Draft; }
-        return new(taskId, task.QuestionnaireVersionId, "0", null, null, "", [], null, null, task.TaskStatus);
+        { if (saved.Author != actor.ActorUserId) throw Error("TASK_NOT_FOUND", 404); return saved.Draft; }
+        return new(taskId, task.QuestionnaireVersionId, "0", null, null, null, [], null, null, task.TaskStatus);
     }
     public async Task<ParentDraftResponse> SaveDraftAsync(ParentRequestContext context, Guid taskId, ParentDraftRequest input, CancellationToken ct = default)
     {
@@ -55,13 +61,15 @@ public sealed class FakeParentGateway(ApplicationDbContext db, IParentQuestionna
     public async Task<ParentSubmissionReceipt> SubmitAsync(ParentRequestContext context, Guid taskId, Guid key, ParentSubmitRequest input, CancellationToken ct = default)
     {
         await Scope(context, taskId, true, ct);
+        if (state.SubmitFault is not null) throw state.SubmitFault;
         if (key == Guid.Empty) throw Error("INVALID_IDEMPOTENCY_KEY", 400);
         var hash = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new {taskId, input.QuestionnaireVersionId,
-            input.ExpectedRevision, input.RespondentName, input.FilledOn, input.RespondentRelationship, input.Observation,
+            input.RespondentName, input.FilledOn, input.RespondentRelationship, input.Observation,
             Answers = input.Answers.OrderBy(x => x.QuestionId).ToArray()})));
         if (state.Keys.TryGetValue((context.ActorUserId, key), out var previous))
-        { if (previous.Hash != hash) throw Error("IDEMPOTENCY_CONFLICT", 409); return previous.Receipt with { Replayed = true }; }
-        if (state.Responses.ContainsKey(taskId)) throw Error("TASK_NOT_EDITABLE", 409);
+        { if (previous.HashVersion != "earlycare.parent-submit.canonical/v1") throw Error("IDEMPOTENCY_VERSION_UNSUPPORTED", 409);
+          if (previous.Hash != hash) throw Error("IDEMPOTENCY_CONFLICT", 409); return previous.Receipt with { Replayed = true }; }
+        if (state.Responses.TryGetValue(taskId, out var submitted)) throw Error(submitted.Author != context.ActorUserId ? "TASK_NOT_FOUND" : "TASK_SUBMITTED", submitted.Author != context.ActorUserId ? 404 : 409);
         var draft = await GetDraftAsync(context, taskId, ct);
         if (draft.Revision != input.ExpectedRevision) throw Error("DRAFT_CONFLICT", 409);
         if (draft.QuestionnaireVersionId != input.QuestionnaireVersionId) throw Error("VERSION_MISMATCH", 409);
@@ -70,12 +78,13 @@ public sealed class FakeParentGateway(ApplicationDbContext db, IParentQuestionna
         // SQLite task update is fixture UI data, not production Response storage.
         await db.QuestionnaireTasks.Where(t => t.TaskId == taskId).ExecuteUpdateAsync(s => s.SetProperty(t => t.TaskStatus, "SUBMITTED")
             .SetProperty(t => t.SubmittedAtUtc, receipt.SubmittedAtUtc), ct);
-        state.Keys[(context.ActorUserId, key)] = (hash, receipt); state.Responses[taskId] = (context.ActorUserId, receipt); return receipt;
+        state.Keys[(context.ActorUserId, key)] = (hash, receipt, "earlycare.parent-submit.canonical/v1"); state.Responses[taskId] = (context.ActorUserId, receipt); return receipt;
     }
     public async Task<ParentSubmissionReceipt> GetReceiptAsync(ParentRequestContext context, Guid taskId, CancellationToken ct = default)
     {
         await Scope(context, taskId, false, ct);
-        if (!state.Responses.TryGetValue(taskId, out var result) || result.Author != context.ActorUserId) throw Error("RESPONSE_NOT_FOUND", 404);
+        if (!state.Responses.TryGetValue(taskId, out var result)) throw Error("RESPONSE_NOT_FOUND", 404);
+        if (result.Author != context.ActorUserId) throw Error("TASK_NOT_FOUND", 404);
         return result.Receipt;
     }
 }

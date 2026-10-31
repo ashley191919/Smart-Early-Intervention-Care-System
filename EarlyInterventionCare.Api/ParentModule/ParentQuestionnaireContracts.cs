@@ -9,11 +9,11 @@ namespace EarlyInterventionCare.Api.ParentModule;
 public static class ParentGatewayContract { public const string Version = "parent-v53-1"; }
 // Server-created request context. Never bind this type from an HTTP body.
 public sealed record ParentRequestContext(ClaimsPrincipal Principal, Guid ActorUserId, Guid OrganizationId,
-    Guid CaseId, Guid ConsentId, Guid DocumentVersionId);
+    Guid CaseId, Guid ConsentId, Guid DocumentVersionId, Guid GuardianId);
 public sealed record ParentDraftRequest(Guid QuestionnaireVersionId, string ExpectedRevision, string? RespondentName,
-    string? FilledOn, string RespondentRelationship, QuestionnaireAnswer[] Answers, string? Observation);
+    string? FilledOn, string? RespondentRelationship, QuestionnaireAnswer[] Answers, string? Observation);
 public sealed record ParentDraftResponse(Guid TaskId, Guid QuestionnaireVersionId, string Revision,
-    string? RespondentName, string? FilledOn, string RespondentRelationship, IReadOnlyList<QuestionnaireAnswer> Answers,
+    string? RespondentName, string? FilledOn, string? RespondentRelationship, IReadOnlyList<QuestionnaireAnswer> Answers,
     string? Observation, DateTime? UpdatedAtUtc, string TaskStatus);
 public sealed record ParentSubmitRequest(Guid QuestionnaireVersionId, string ExpectedRevision, string RespondentName,
     string FilledOn, string RespondentRelationship, QuestionnaireAnswer[] Answers, string? Observation);
@@ -67,7 +67,17 @@ public sealed class ParentQuestionnaireAccess(ApplicationDbContext db, IParentAc
         // can return its original receipt. The engine must reject any new write.
         if (task.TaskStatus is not ("PENDING" or "IN_PROGRESS" or "SUBMITTED"))
             throw new CaseAccessException("TASK_NOT_EDITABLE", 409, "問卷目前無法填寫。");
+        // Server-side precheck evidence only. Never select an arbitrary contact or
+        // infer GuardianId from HTTP input. The reviewed transaction adapter must
+        // re-read/lock and compare this result; this query itself is not a lock.
+        var guardians = await (from link in db.CaseGuardians.AsNoTracking()
+            join guardian in db.Guardians.AsNoTracking() on link.GuardianId equals guardian.GuardianId
+            where link.CaseId == task.CaseId && link.LinkStatus == "ACTIVE" && link.BoundAtUtc != null &&
+                link.RevokedAtUtc == null && guardian.OrganizationId == actor.OrganizationId && guardian.ParentUserId == actor.UserId
+            select guardian.GuardianId).Distinct().Take(2).ToArrayAsync(ct);
+        if (guardians.Length != 1)
+            throw new CaseAccessException("TASK_NOT_FOUND", 404, "找不到問卷，或目前已無法存取。");
         var consent = await consents.RequireAsync(actor, task.CaseId, ct);
-        return new(principal, actor.UserId, actor.OrganizationId, task.CaseId, consent.ConsentId, consent.DocumentVersionId);
+        return new(principal, actor.UserId, actor.OrganizationId, task.CaseId, consent.ConsentId, consent.DocumentVersionId, guardians[0]);
     }
 }

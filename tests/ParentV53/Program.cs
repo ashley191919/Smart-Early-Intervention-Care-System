@@ -29,6 +29,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var checks = 0;
 void Check(bool value, string label) { if (!value) throw new Exception(label); checks++; }
+ParentCoreBoundarySuite.Run(Check);
 async Task Error(Func<Task> work, string code) { try { await work(); } catch (CaseAccessException e) { Check(e.Code == code, code); return; } throw new Exception("Expected " + code); }
 var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "."));
 // No User Secrets/configuration, SMTP or MySQL. Only this in-memory SQLite connection.
@@ -107,6 +108,16 @@ await consents.RecordAsync(Principal(users[2]), record with { RequestId = Guid.N
 await Error(async () => { await consents.RequireAsync(await actors.ResolveAsync(Principal(users[2])), child.CaseId); }, "CONSENT_REQUIRED");
 var policy = new ParentQuestionnaireAccess(db, actors, access, consents);
 var context = await policy.RequireAsync(principal, tasks[0].TaskId, true, db);
+Check(context.GuardianId != Guid.Empty && ReferenceEquals(context.Principal, principal), "server guardian precheck retains original principal");
+var duplicateGuardian = new GuardianContact { GuardianId = Guid.NewGuid(), OrganizationId = org.Id,
+    ParentUserId = users[0].Id, DisplayName = "ambiguous synthetic contact", Phone = "0900000999", Email = users[0].Email! };
+db.Guardians.Add(duplicateGuardian);
+var duplicateLink = new CaseGuardian { CaseId = child.CaseId, GuardianId = duplicateGuardian.GuardianId,
+    Relationship = "OTHER", BoundAtUtc = now };
+db.CaseGuardians.Add(duplicateLink); await db.SaveChangesAsync();
+await Error(async () => { await policy.RequireAsync(principal, tasks[0].TaskId, false, db); }, "TASK_NOT_FOUND");
+duplicateLink.LinkStatus = "REVOKED"; duplicateLink.RevokedAtUtc = now; await db.SaveChangesAsync();
+Check((await policy.RequireAsync(principal, tasks[0].TaskId, false, db)).GuardianId == context.GuardianId, "inactive duplicate does not replace current Guardian");
 var other = await policy.RequireAsync(Principal(users[1]), tasks[0].TaskId, true, db);
 await Error(async () => { await policy.RequireInTransactionAsync(principal, tasks[0].TaskId, true, db); }, "PARENT_TRANSACTION_REQUIRED");
 await using (var transaction = await db.Database.BeginTransactionAsync())
@@ -121,6 +132,39 @@ await using (var differentContext = new ApplicationDbContext(options))
 }
 var fakeState = new FakeParentGatewayState(); var fake = new FakeParentGateway(db, policy, fakeState, clock, new QuestionnaireAnswerValidator());
 await ParentGatewayContractSuite.RunAsync(fake, context, other, tasks[0].TaskId, version.QuestionnaireVersionId, "2026-10-22", Check);
+// Unknown hash versions deny replay but do not block an authorized historical receipt.
+// Fake metadata only: this does not implement 16's canonical hash or production schema.
+var originalKey = fakeState.Keys.Single();
+var replayInput = new ParentSubmitRequest(version.QuestionnaireVersionId, "99", "虛構填表人", "2026-10-22", "FATHER", [new("Q1", "0")], null);
+foreach (var unknownVersion in new string?[] { null, "", "unsupported/v99" })
+{
+    fakeState.Keys[originalKey.Key] = (originalKey.Value.Hash, originalKey.Value.Receipt, unknownVersion);
+    await Error(async () => { await fake.SubmitAsync(context, tasks[0].TaskId, originalKey.Key.Item2, replayInput); }, "IDEMPOTENCY_VERSION_UNSUPPORTED");
+    Check((await fake.GetReceiptAsync(context, tasks[0].TaskId)).ResponseId == originalKey.Value.Receipt.ResponseId, "receipt independent of replay hash version");
+    Check(fakeState.Keys.Count == 1 && fakeState.Keys[originalKey.Key].Hash == originalKey.Value.Hash && fakeState.Keys[originalKey.Key].HashVersion == unknownVersion,
+        "unknown hash is neither recomputed nor silently upgraded");
+}
+fakeState.Keys[originalKey.Key] = originalKey.Value;
+// Actual SQLite current-scope checks; restoring rows below is fixture cleanup only,
+// not a production rebind/re-consent policy or ABA-generation certification.
+await db.CaseGuardians.Where(l => l.CaseId == child.CaseId && l.GuardianId == context.GuardianId)
+    .ExecuteUpdateAsync(s => s.SetProperty(l => l.LinkStatus, "REVOKED").SetProperty(l => l.RevokedAtUtc, (DateTime?)now));
+await Error(async () => { await fake.GetReceiptAsync(context, tasks[0].TaskId); }, "TASK_NOT_FOUND");
+await Error(async () => { await fake.SubmitAsync(context, tasks[0].TaskId, originalKey.Key.Item2, replayInput); }, "TASK_NOT_FOUND");
+await db.CaseGuardians.Where(l => l.CaseId == child.CaseId && l.GuardianId == context.GuardianId)
+    .ExecuteUpdateAsync(s => s.SetProperty(l => l.LinkStatus, "ACTIVE").SetProperty(l => l.RevokedAtUtc, (DateTime?)null).SetProperty(l => l.BoundAtUtc, (DateTime?)null));
+await Error(async () => { await policy.RequireAsync(principal, tasks[0].TaskId, false, db); }, "TASK_NOT_FOUND");
+await db.CaseGuardians.Where(l => l.CaseId == child.CaseId && l.GuardianId == context.GuardianId)
+    .ExecuteUpdateAsync(s => s.SetProperty(l => l.BoundAtUtc, (DateTime?)now.AddMinutes(1)));
+Check((await policy.RequireAsync(principal, tasks[0].TaskId, false, db)).GuardianId == context.GuardianId, "completed synthetic rebind restores current scope only; old-generation rejection still pending");
+await db.Set<ParentConsentRecord>().Where(c => c.ConsentId == context.ConsentId)
+    .ExecuteUpdateAsync(s => s.SetProperty(c => c.RevokedAtUtc, (DateTime?)now));
+await Error(async () => { await fake.SubmitAsync(context, tasks[0].TaskId, originalKey.Key.Item2, replayInput); }, "CONSENT_REQUIRED");
+await db.Set<ParentConsentRecord>().Where(c => c.ConsentId == context.ConsentId)
+    .ExecuteUpdateAsync(s => s.SetProperty(c => c.RevokedAtUtc, (DateTime?)null));
+doc.RetiredAtUtc = now; await db.SaveChangesAsync();
+await Error(async () => { await fake.GetReceiptAsync(context, tasks[0].TaskId); }, "CONSENT_NOT_CONFIGURED");
+doc.RetiredAtUtc = null; await db.SaveChangesAsync();
 Check(await db.QuestionnaireResponses.CountAsync() == 0, "Fake never stores production Responses");
 await Error(async () => { await new UnavailableParentQuestionnaireGateway().SaveDraftAsync(context, tasks[1].TaskId,
     new(version.QuestionnaireVersionId, "0", null, null, "FATHER", [], null)); }, "PARENT_GATEWAY_UNAVAILABLE");
@@ -150,6 +194,9 @@ Check((await caseConsents.RequireAsync(actor, child.CaseId)).CaseId == child.Cas
 // HTTP host uses real signed JWT validation, real EF Consent and real Guardian adapter.
 // Only the Questionnaire Gateway is Fake; runtime config and secrets are not loaded.
 var serve = args.Contains("--serve");
+// Explicit isolated browser scenario. Never read by the production application.
+if (serve && args.Contains("--unsupported-replay"))
+    fakeState.SubmitFault = new QuestionnaireWorkflowException("IDEMPOTENCY_VERSION_UNSUPPORTED", "synthetic browser fault", 409);
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Testing", ContentRootPath = Path.GetFullPath("."), Args = [] });
 builder.Configuration.Sources.Clear(); builder.Configuration.AddInMemoryCollection(); builder.Logging.ClearProviders();
 if (serve) builder.WebHost.UseUrls("http://127.0.0.1:5185"); else builder.WebHost.UseTestServer();
@@ -192,16 +239,40 @@ Check(await db.Set<ParentConsentRecord>().AnyAsync(r => r.ActorUserId == users[3
 Check((await http.GetAsync("/api/parent/cases")).IsSuccessStatusCode, "consented clinical read");
 Check((await http.PostAsJsonAsync("/api/cases", new { childName = "不應建立", nationalId = "A123456789", address = "測試", birthDate = "2022-01-01", sex = "UNKNOWN" })).StatusCode == HttpStatusCode.Forbidden, "forged ADMIN claim cannot grant medical CRUD");
 var route = "/api/parent/tasks/" + tasks[1].TaskId;
-var draftHttp = await http.GetFromJsonAsync<ParentDraftResponse>(route + "/draft"); Check(draftHttp?.Revision == "0", "HTTP draft");
-var saveRequest = new ParentDraftRequest(version.QuestionnaireVersionId, "0", "虛構填表人", "2026-10-22", "MOTHER", [new("Q1", "0")], null);
+var draftHttp = await http.GetFromJsonAsync<ParentDraftResponse>(route + "/draft"); Check(draftHttp?.Revision == "0" && draftHttp.RespondentRelationship is null, "HTTP new draft has revision zero and null relationship");
+// Fault injection is test-only. Proves the real Controller/filter HTTP boundary,
+// not 16's Gateway persistence or MySQL lock protocol.
+foreach (var error in new[] { ("INVALID_ANSWERS",400,"INVALID_ANSWERS"), ("AUTHENTICATION_REQUIRED",401,"AUTHENTICATION_REQUIRED"),
+    ("TASK_NOT_FOUND",404,"TASK_NOT_FOUND"), ("DRAFT_CONFLICT",409,"DRAFT_CONFLICT"),
+    ("STORAGE_INCONSISTENT",503,"STORAGE_INCONSISTENT"), ("SQL_INTERNAL_SYNTHETIC",500,"PARENT_CORE_UNAVAILABLE"),
+    ("DRAFT_CONFLICT",200,"PARENT_CORE_UNAVAILABLE"), ("ACCESS_PRECHECK_CHANGED",403,"PARENT_CORE_UNAVAILABLE"),
+    ("ACCESS_PRECHECK_CHANGED",404,"PARENT_CORE_UNAVAILABLE"), ("ACCESS_PRECHECK_CHANGED",409,"ACCESS_PRECHECK_CHANGED"),
+    ("IDEMPOTENCY_VERSION_UNSUPPORTED",409,"IDEMPOTENCY_VERSION_UNSUPPORTED") })
+{
+    fakeState.CoreFault = new QuestionnaireWorkflowException(error.Item1, "synthetic SQL/connection detail MUST NOT LEAK", error.Item2);
+    var failed = await http.GetAsync(route + "/draft"); var body = await failed.Content.ReadAsStringAsync();
+    Check((int)failed.StatusCode == (error.Item3 == "PARENT_CORE_UNAVAILABLE" ? 503 : error.Item2), "core HTTP status " + error.Item1);
+    using var parsed = JsonDocument.Parse(body);
+    Check(parsed.RootElement.GetProperty("code").GetString() == error.Item3 && parsed.RootElement.GetProperty("traceId").GetString()?.Length > 0, "stable error code and traceId");
+    Check(!body.Contains("MUST NOT LEAK") && !body.Contains("SQL_INTERNAL_SYNTHETIC") && !body.Contains("connection detail"), "core exception text never exposed");
+}
+fakeState.CoreFault = null;
+var unfilledRequest = new ParentDraftRequest(version.QuestionnaireVersionId, "0", null, null, null, [], null);
+foreach (var leadingZero in new[] { "00", "01" })
+    Check((await http.PutAsJsonAsync(route + "/draft", unfilledRequest with { ExpectedRevision = leadingZero })).StatusCode == HttpStatusCode.BadRequest, "HTTP rejects noncanonical revision");
+Check((await http.PutAsJsonAsync(route + "/draft", unfilledRequest)).IsSuccessStatusCode, "HTTP can save incomplete relationship-null draft");
+Check((await http.GetFromJsonAsync<ParentDraftResponse>(route + "/draft"))?.RespondentRelationship is null, "HTTP resumes null without inferring Guardian relationship");
+var saveRequest = new ParentDraftRequest(version.QuestionnaireVersionId, "1", "虛構填表人", "2026-10-22", "MOTHER", [new("Q1", "0")], null);
 Check((await http.PutAsJsonAsync(route + "/draft", saveRequest)).IsSuccessStatusCode, "HTTP save through Gateway");
 Check((await http.PutAsJsonAsync(route + "/draft", saveRequest)).StatusCode == HttpStatusCode.Conflict, "HTTP stale revision");
-Check((await http.PutAsJsonAsync(route + "/draft", saveRequest with { ExpectedRevision = "1", RespondentRelationship = "ADMIN" })).StatusCode == HttpStatusCode.BadRequest, "relationship cannot grant authority");
-var submitRequest = new ParentSubmitRequest(version.QuestionnaireVersionId, "1", "虛構填表人", "2026-10-22", "MOTHER", saveRequest.Answers, null);
+Check((await http.PutAsJsonAsync(route + "/draft", saveRequest with { ExpectedRevision = "2", RespondentRelationship = "ADMIN" })).StatusCode == HttpStatusCode.BadRequest, "relationship cannot grant authority");
+var submitRequest = new ParentSubmitRequest(version.QuestionnaireVersionId, "2", "虛構填表人", "2026-10-22", "MOTHER", saveRequest.Answers, null);
 Check((await http.PostAsJsonAsync(route + "/submit", submitRequest)).StatusCode == HttpStatusCode.BadRequest, "idempotency header required");
 http.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString());
+Check((await http.PostAsJsonAsync(route + "/submit", submitRequest with { RespondentRelationship = null! })).StatusCode == HttpStatusCode.BadRequest, "submit requires relationship");
 var submitted = await http.PostAsJsonAsync(route + "/submit", submitRequest); Check(submitted.IsSuccessStatusCode, "HTTP submit");
 Check((await http.PostAsJsonAsync(route + "/submit", submitRequest)).IsSuccessStatusCode, "HTTP repeated submit");
+Check((await http.PostAsJsonAsync(route + "/submit", submitRequest with { ExpectedRevision = "99" })).IsSuccessStatusCode, "HTTP same-content replay excludes Revision from hash");
 Check((await http.GetAsync(route + "/receipt")).IsSuccessStatusCode, "HTTP own receipt");
 Check((await db.QuestionnaireTasks.AsNoTracking().SingleAsync(t => t.TaskId == tasks[1].TaskId)).TaskStatus == "SUBMITTED", "fixture server task state refreshed");
 await db.CaseGuardians.Where(l => l.CaseId == child.CaseId && db.Guardians.Any(g => g.GuardianId == l.GuardianId && g.ParentUserId == users[3].Id))

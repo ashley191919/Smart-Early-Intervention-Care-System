@@ -79,7 +79,10 @@ public sealed class ParentModuleErrors : IExceptionFilter
 {
     public void OnException(ExceptionContext context)
     {
-        if (context.Exception is CaseAccessException e) context.Result = Result(e.Code, e.Message, e.Status, context.HttpContext.TraceIdentifier);
+        if (context.HttpContext.Request.Path.StartsWithSegments("/api/parent") &&
+            context.Exception is Services.Questionnaires.QuestionnaireWorkflowException core)
+            context.Result = ParentCoreHttpErrors.Result(core, context.HttpContext.TraceIdentifier);
+        else if (context.Exception is CaseAccessException e) context.Result = Result(e.Code, e.Message, e.Status, context.HttpContext.TraceIdentifier);
         else if (context.Exception is DbException or DbUpdateException or TimeoutException)
             context.Result = Result("SERVICE_UNAVAILABLE", "資料服務暫時無法使用。", 503, context.HttpContext.TraceIdentifier);
         else return;

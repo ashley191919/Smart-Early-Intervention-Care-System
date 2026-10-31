@@ -202,6 +202,6 @@
   } finally { delete form.dataset.submitting; button.disabled = conflict; }
  });
  document.querySelectorAll(".nav [data-page]").forEach(button=>{const active=button.dataset.page===page;button.classList.toggle("active",active);if(active)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");});
- questionnaireUi=window.EarlyCareParentFormUI.create({api,modal,closeDialog:closeAccountDialog,reload:load,onAccessError:error=>{questionnaireUi.invalidate();if(modal.open)modal.close();loadGate.begin();renderGate.begin();clearData();root.innerHTML=errorPanel(error);}});
+ questionnaireUi=window.EarlyCareParentFormUI.create({api,modal,closeDialog:closeAccountDialog,reload:load,onAccessError:error=>{questionnaireUi.invalidate();window.EarlyCareParentEntryConsent.invalidate();if(modal.open)modal.close();document.querySelector('#modal-body').replaceChildren();loadGate.begin();renderGate.begin();definitionGate.begin();clearData();root.innerHTML=errorPanel(error);}});
  load();
 })();
