@@ -1,61 +1,96 @@
-# Parent Submit／Idempotency 就緒度（離線缺口 Harness）
+# Parent Submit／Idempotency 離線核心與就緒度
 
-固定基準 `7170c475edf31af315a499fa98ed41cf9fc1dfe3`。只新增此測試目錄，不修改正式 Gateway、DI、Controller、模型、教師 Hash 或 Migration。
+本輪修改基準：`fc99eb510917e414522e4ca368603ab188a03e0e`。
+歷史 7 PASS／9 BLOCKED 記錄保留在該 Commit。本輪針對真正的 internal Command 路徑補行為驗證，不再以缺少方法簽章代替測試。
 
-## 執行
+## 執行與結果
 
-從 Worktree 根目錄使用本機快取還原，明確指定本地 source，不向 NuGet 網路來源要求套件：
+```powershell
+dotnet run --project tests/ParentSubmitReadiness/ParentSubmitReadinessHarness.csproj --no-restore
+dotnet build tests/ParentSubmitReadiness/ParentSubmitReadinessHarness.csproj --no-restore
+```
+
+如尚無 restore assets，只能使用本機快取與本地 source；缺少套件時停止，不下載新依賴：
 
 ```powershell
 dotnet restore tests/ParentSubmitReadiness/ParentSubmitReadinessHarness.csproj --source tests/ParentSubmitReadiness -p:NuGetAudit=false
-dotnet run --project tests/ParentSubmitReadiness/ParentSubmitReadinessHarness.csproj --no-restore
 ```
 
-缺少快取套件時停止，不下載或安裝新依賴。ProjectReference 只編譯／載入 API 型別，啟動的是 Harness 的 Main，沒有執行 API 的 Program。所有交易介面注入記憶體 Fake，`DbContext` 為 null，沒有建立 Connection、EF Provider、HTTP Host 或 Socket。
+本輪遮蔽修正後：**71 PASS、0 FAIL、3 BLOCKED**（原 47 項＋24 項遮蔽／相容性情境）。71 項為實際執行的離線情境；3 項是未執行／未交付的整合前置條件，不算已通過。
+程式退出碼：0 = 無阻塞；1 = 非預期失敗；2 = 無 FAIL 但仍有 BLOCKED。`dotnet run` 外層可能呈現 exit 1；須與 SUMMARY 一起判讀。建置為 0 警告、0 錯誤。所有測試皆不啟動 API、不建立 Socket 或資料庫連線、不讀私人設定。
 
-程式設定退出碼：0 = 無 FAIL／BLOCKED；1 = 非預期斷言失敗；2 = 無 FAIL 但仍有 BLOCKED。`dotnet run` 外層可能將非零退出碼呈現為 1；以 SUMMARY 區分原因。**目前預期非零，不是完整 Submit 驗收通過。**
+## 接線範圍與預設拒絕
 
-## 本次執行與狀態
+[ParentQuestionnaireGateway](../../EarlyInterventionCare.Api/Services/Questionnaires/ParentQuestionnaireGateway.cs) 保留公開舊 `SubmitAsync(ClaimsPrincipal, taskId, key, QuestionnaireSubmission, ct)`。
+新增 **internal** `SubmitCommandAsync(ParentGatewayCallContext, taskId, key, ParentSubmitCommand, ct)`，兩者共用同一 SubmitCoreAsync、Store、Task／版本／作者／一致性檢查與收據產生，不建立第二套 Response 引擎。
 
-**7 PASS、0 FAIL、9 BLOCKED**。共 14 個實際探測（含一個方法簽章探測），另列 2 個尚未執行的整合阻塞；不能說成 16 項行為測試全部通過。
+- 公開建構子、既有 DI 不變；其 Command Adapter 固定預設拒絕，在開啟 Store 前拒絕新版提交。即使舊 IParentTaskAccessAdapter 放行，也不能啟用新版。
+- 額外 Adapter 注入建構子為 internal，沒有正式呼叫點。Harness 只透過 reflection 注入合成 IParentTransactionAccessAdapter，未增加 friend assembly、公開注入入口或 DI。
+- 私有 operation-local shim 只轉接既有介面，不實作 Guardian／Consent 授權。傳遞同一原始 ClaimsPrincipal、同一交易，提交前將原始資格證據交回同一 Adapter 重驗；由 Gateway Commit。
+- Expectation／EligibilityStamp 只做必要欄位與全欄位精確一致性比對，**不是授權 Token**，不生成新 Stamp、不替換新資格、不自動重送。真正 Adapter 仍必須從同一 scoped DbContext／既有交易進行權威讀取。
+- 沒有實作新列鎖或資格世代規則。共同鎖序、fresh read、撤綁重綁、Consent 撤銷的所有寫入端協定仍 BLOCKED；本輪不核定舊介面註解中的鎖序。
 
-| 情境 | 結果 | 實際證據與界線 |
-|---|---|---|
-| NULL HashVersion 重送 | BLOCKED | 真正舊 Gateway 回成功收據，尚未實作要求的 `IDEMPOTENCY_VERSION_UNSUPPORTED`／409 |
-| 不支援版本重送 | BLOCKED | 同上，不猜測或重算版本 |
-| 版本大小寫差異 | BLOCKED | 同上，未落實精確版本辨識 |
-| 版本尾端空白 | BLOCKED | 同上，不能當成受支援版本 |
-| 已授權歷史收據讀取 | PASS | 實際 GetReceipt 不等於 Submit 重送核可；不修改 NULL 元資料 |
-| 作者＋Task＋Key 相同且 canonical v1 內容正規化相同 | BLOCKED | 合成 v1 Response 交給真正 Gateway，卻得到舊 Hash 的 `IDEMPOTENCY_CONFLICT`／409 |
-| Command 改變 ExpectedRevision、內容經正規化相同 | PASS（純組合） | 真正 Command → Validator → encoder bytes 相同；沒有實作重送判定 |
-| 跨作者且版本未知 | PASS（Fake scope） | GetReceipt 與 Submit 均 404，不洩漏版本錯誤 |
-| 無授權且版本未知 | PASS（Fake scope） | 404，未查詢 Key、未 Commit |
-| 未提供正式 Adapter | PASS | 使用真正 DenyParentTaskAccessAdapter，讀取與重送均拒絕／503 |
-| 儲存失敗且已有 NULL Relationship 草稿 | PASS（Fake only） | 呼叫真正 Gateway，失敗保留草稿 Revision／關係與 Task，無 Response |
-| 最終 revalidation 拒絕 | PASS（Fake only） | 同上，無 Commit；不代表撤銷並行安全 |
-| 首次 Revision 與成功重送優先順序 | BLOCKED | 真正 Submit 尚無 ParentSubmitCommand／ExpectedRevision 參數；未寫替身 Submit 假裝驗證 |
-| 新提交 Relationship／canonical v1／HashVersion 保存 | BLOCKED | 真正舊 Submit 仍存 NULL 關係／版本與舊 Hash；不得啟用該路徑作為新版入口 |
-| 真正 Guardian／Consent 資格世代與撤銷競態 | BLOCKED（未執行） | Adapter／共同寫入鎖協定未交付 |
-| EF／MySQL 原子性、唯一鍵、併發、死鎖 | BLOCKED（未執行） | Fake copy-on-commit 不具引擎級交易語意 |
+## 新版跨作者遮蔽順序
 
-BLOCKED 行為探測會核對觀察到的已知舊行為；若既有程式變成另一種結果則 FAIL，不能靜默略過。版本拒絕若未來實作正確會成為 PASS；僅增加 Command 簽章時會 FAIL，要求補真正 Revision／順序行為測試，不會因方法存在就通過。
+僅新版 Command 的 Scope 在以下位置新增作者檢查：原始身分／Adapter 授權成功 → Task 存在、Case／角色範圍符合（取消仍回 404）→ 讀取該 Task 的 Draft／Response 並檢查作者 → 狀態／版本檢查 → 既有共用提交核心。原本的核心作者檢查亦保留。
 
-## 重用既有測試，不重做演算法
+這些內部讀取僅在已取得存取證據、確認 Task 範圍後執行；只使用作者資訊決定是否回固定 `TASK_NOT_FOUND`／404，不回傳其他作者的內容或錯誤細節。無授權時不執行 Task／Draft／Response 查詢。沒有新增 FK、Schema、列鎖、Adapter 介面或資格算法。
 
-- [ParentQuestionnaire](../ParentQuestionnaire/Program.cs)：已有舊流程首次提交、同 Key 重送、不同內容 409、另一 Task Key 衝突、作者／授權、Fake Commit 失敗與 revalidation。**本輪未重跑，不能當成新版 Submit 已通過。**其「六個 author schema 操作」舊模型斷言亦不涵蓋後增的 Relationship／HashVersion，未擅自調整該 gate。
-- [ParentCanonicalHash](../ParentCanonicalHash/Program.cs)：既有 canonical bytes golden vector、Relationship、排序、Unicode／Culture／邊界測試，本輪不複製。
-- [RevisionConversion](../RevisionConversion/Program.cs)、[ParentBridgeMapper](../ParentBridgeMapper/Program.cs)：重用現有嚴格 Revision／DTO 元件，不另寫 parsing／Mapper。
-- [ParentIntegrationContract](../ParentIntegrationContract/Program.cs)：固定介面及預設拒絕；本輪不把該新介面假設成舊 Gateway 已採用。
-- [EfParentStore](../EfParentStore/Program.cs)：EF＋替身 ADO 的歷史覆蓋，不是真正資料庫；本輪未重跑。
+新增 24 項情境：Draft／Response 跨作者各搭配異常 Task 狀態、版本不可用、版本不存在、NULL／未知 HashVersion、複合異常（12 項）；無授權搭配同六種異常（6 項）；自己的異常資料仍回原 409，以及舊公開 Submit 保留原順序／409（各 3 項）。Fake 查詢計數確認跨作者不查版本／Key，無授權不讀 Task 或內容，並且無寫入。舊路徑的異常組合遮蔽順序**未於本輪改變**，不將它宣稱為新版保證。
 
-「同 Key 不同內容」的舊流程測試已存在，不複製；**canonical v1 的正式衝突判定仍 BLOCKED**，因相同內容的基線尚不能成功重送。不得用舊 Gateway 的任意 409 當作新版內容比較正確。
+## 已驗證情境（純邏輯／Fake 邊界）
 
-## 最小後續修正建議（本輪未實作）
+| 範圍 | 驗證 |
+|---|---|
+| 首次提交 | 無草稿必須 Revision 0；有草稿精確比對；stale 拒絕；ulong.MaxValue 可提交且不做草稿遞增 |
+| 保存內容 | Validator 正規化後以既有 canonical encoder 建 Hash；Response 同時保存實際 Relationship、版本、Hash、作者；Task 狀態／時間一致 |
+| 重送 | 作者、Task、Key、版本與正規化內容相同回原 ResponseId／時間；在重送完成前不比較 Draft Revision；不新增 Response、不重新寫答案 |
+| 內容衝突 | 同 Key 的 Relationship、姓名、日期、Observation 或答案不同均 409，不覆寫 |
+| 版本 | NULL、不支援、大小寫不同或尾端空白均 `IDEMPOTENCY_VERSION_UNSUPPORTED`／409；採 ordinal，不依賴資料庫 Collation，不嘗試舊 Hash |
+| 關係 | 新提交與重送均須既有合法代碼；空白、別名、null 拒絕；舊草稿 NULL 不推定；v1 收據缺關係不能重送 |
+| 安全邊界 | 跨作者 Task／Draft／Response 與無權限回 404；原始 principal 不由 Context ID 重建；缺資格欄位或 Adapter 返回不同 Task／資格即拒絕 |
+| 資格變動 | 合成 Consent、文件、Guardian、Stamp 改變皆拒絕，不替換／重試；匹配重送也必須通過最後 Revalidate |
+| 儲存失敗 | Fake Commit 失敗或最終資格重驗拒絕，不發布 staged Response／Task；保留原有 nullable 草稿與 Revision |
+| 其他 | 不接受空 Key、不自動換 Key、不覆寫已提交 Task、不跳過 CANCELLED gate；壞 Hash bytes 不回成功收據 |
+| 舊相容 | 舊公開 Submit 的 Hash、NULL 元資料、重送行為保留；授權歷史 GetReceipt 不等於新版重送核可 |
 
-1. 另行核准家長 Command 入口／coordinator；保留教師 SubmissionHash。先真正授權與作者遮蔽，再核對 Task／Key／受支援版本與 canonical 內容。NULL／不支援版本拒絕 409，不回填或猜測。
-2. 只有首次提交才比較 `draft?.Revision ?? 0`；成功重送先通過作者、Task、Key、相同 canonical 內容及資格檢查，不因 ExpectedRevision 改變失敗。
-3. 首次提交保存明確 Relationship、現有 `earlycare.parent-submit.canonical/v1` 與對應 Hash；Relationship 不得由 Guardian 推定。重送也必須核對合法且相同的內容關係。
-4. 未完成正式授權 Adapter、資格變更偵測與共同鎖序前保持預設拒絕。不要將歷史收據讀取的資格與成功重送的 Hash 條件合併。
-5. 模型增量 Migration／Snapshot、唯一鍵／隔離 MySQL 與回滾／併發驗收需另行核准；保留五份 History Migration，禁止連未升級舊庫或使用 MySQL80／3306。
+內部 INVALID_INPUT／400、DRAFT_CONFLICT／409、IDEMPOTENCY_CONFLICT／409 等由現有例外型別回報，尚非正式 HTTP Controller 映射驗收。
+新版錯誤版本會安全拒絕；**舊公開 Submit 仍保留舊版本行為，不可誤當新版入口或舊資料遷移方案**。
 
-內部錯誤碼／Status 是直接觀察 WorkflowException，並非 Controller HTTP 整合驗收。Fake Adapter 沒有驗證真實身分儲存、Consent、Scope 或鎖定；Fake Commit 只在最後複製狀態，不證明 EF SaveChanges 失敗回滾或網路中斷後 Commit 結果。
+## 仍 BLOCKED：不得作為正式上線證據
+
+1. 11 的真正資格世代、Guardian／Consent Adapter、共同寫入端鎖序與撤銷競態。Fake 授權不是正式政策驗收。
+2. 真正 EF／MySQL SaveChanges／Commit／Rollback、唯一鍵、兩個並行 Submit、死鎖與網路中斷後 Commit 結果。Fake 只在 Commit 時複製記憶體狀態，不具資料庫引擎交易語意。
+3. 共同 Schema／增量 Migration／Snapshot 核准、HTTP／DI 接線與跨模組驗收。既有五份 Migration 全保留；未升級庫不可使用新版模型；禁止 MySQL80／3306。
+
+07 Workflow／完成輪次未接入，本輪只更新問卷 Task，不觸發 CaseStatus 或 History。院方 Consent 本文、Scope 與啟用政策未自行決定。
+
+## 回歸與重用
+
+重用 [ParentCanonicalHash](../ParentCanonicalHash/Program.cs)、[ParentIntegrationContract](../ParentIntegrationContract/Program.cs)、[ParentBridgeMapper](../ParentBridgeMapper/Program.cs) 的既有元件／契約與測試，不另寫 Revision parsing、Mapper 或 encoder。教師核心與共用 SubmissionHash 原始碼未修改。
+[ParentQuestionnaire](../ParentQuestionnaire/Program.cs) 與 [Phase22](../QuestionnairePhase22Harness.cs) 的舊 schema gate 本輪不修改、不略過，實際失敗結果如下。既有 ADO Harness 亦不代表本輪真正 MySQL 驗收。
+
+| 回歸 | 本輪結果 |
+|---|---|
+| ParentCanonicalHash | 58 PASS、0 FAIL |
+| ParentIntegrationContract | 34 PASS、0 FAIL |
+| ParentBridgeMapper | 67 PASS、0 FAIL |
+| EfParentStore | 86 PASS；EF／Pomelo＋替身 ADO，非 MySQL |
+| QuestionnairePhase22Harness | FAIL，原檔第 367 行 `no pending schema/model changes`；gate 後續檢查 BLOCKED |
+| ParentQuestionnaireHarness | FAIL，原檔第 198 行 `only six additive author schema operations proposed`；gate 後續檢查 BLOCKED |
+
+後兩項各回 exit 1；模型新增欄位尚未納入 Migration／Snapshot，且舊六項 author schema 預期不含 Relationship／HashVersion，不可當作已驗收或因方便而移除 gate。部分既有專案建置帶 NU1900 套件弱點來源警告；建置皆 0 錯誤，未下載套件。主 Harness 建置 0 警告。
+
+## 安全執行完整舊回歸（捕捉例外，避免 JIT debugger）
+
+不直接啟動會以未處理例外結束的舊測試。先建置，再由本 Harness 的固定白名單入口呼叫完整測試 EntryPoint（無測試篩選、不傳 proposal／skip 參數）：
+
+```powershell
+dotnet build tests/ParentSubmitReadiness/ParentSubmitReadinessHarness.csproj --no-restore
+dotnet build tests/QuestionnairePhase22Harness.csproj --no-restore
+dotnet tests/ParentSubmitReadiness/bin/Debug/net8.0/ParentSubmitReadinessHarness.dll --regression teacher
+dotnet build tests/ParentQuestionnaire/ParentQuestionnaireHarness.csproj --no-restore
+dotnet tests/ParentSubmitReadiness/bin/Debug/net8.0/ParentSubmitReadinessHarness.dll --regression parent
+```
+
+捕捉入口只允許上述兩個已建置測試 assembly，不接受任意路徑，不載入 API 的 EntryPoint。例外保留型別、訊息及堆疊，輸出 REGRESSION_FAIL 並以 exit 1 結束，不重試、不繼續同套件後續測試、不改系統偵錯設定。建置失敗時停止該套件。此 runner 只在獨立 Harness 內，不增加正式服務可達路徑。
