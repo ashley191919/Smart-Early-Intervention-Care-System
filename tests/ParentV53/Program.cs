@@ -49,6 +49,7 @@ foreach (var entity in model.Model.GetEntityTypes())
 }
 var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).UseModel(model.FinalizeModel()).Options;
 await using var db = new ApplicationDbContext(options); await db.Database.EnsureCreatedAsync();
+await ParentReaderEvidenceSuite.RunAsync(db, Check);
 var clock = new FixtureClock(); var now = clock.GetUtcNow().UtcDateTime;
 var org = new Organization { Id = Guid.NewGuid(), Code = "V53_TEST", Name = "Isolated fixture", Status = "ACTIVE" };
 var foreignOrg = new Organization { Id = Guid.NewGuid(), Code = "OTHER", Name = "Other fixture", Status = "ACTIVE" };
@@ -110,6 +111,8 @@ var fakeState = new FakeParentGatewayState();
 var policy = new ParentQuestionnaireAccess(db, actors, access, consents, new FakeAuthorVisibility(fakeState));
 var context = await policy.RequireAsync(principal, tasks[0].TaskId, true, db);
 Check(context.GuardianId != Guid.Empty && ReferenceEquals(context.Principal, principal), "server guardian precheck retains original principal");
+Check(context.Evidence is null, "current precheck does not fabricate missing persistent evidence");
+await Error(async () => { await new UnavailableParentQuestionnaireGateway().GetDraftAsync(context, tasks[0].TaskId); }, "PARENT_GATEWAY_UNAVAILABLE");
 var duplicateGuardian = new GuardianContact { GuardianId = Guid.NewGuid(), OrganizationId = org.Id,
     ParentUserId = users[0].Id, DisplayName = "ambiguous synthetic contact", Phone = "0900000999", Email = users[0].Email! };
 db.Guardians.Add(duplicateGuardian);

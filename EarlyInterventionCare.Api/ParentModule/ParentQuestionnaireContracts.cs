@@ -2,6 +2,7 @@ using System.Security.Claims;
 using EarlyInterventionCare.Api.Data;
 using EarlyInterventionCare.Api.DTOs.Questionnaires;
 using EarlyInterventionCare.Api.Services.Cases;
+using EarlyInterventionCare.Api.Services.Questionnaires;
 using Microsoft.EntityFrameworkCore;
 
 namespace EarlyInterventionCare.Api.ParentModule;
@@ -9,7 +10,7 @@ namespace EarlyInterventionCare.Api.ParentModule;
 public static class ParentGatewayContract { public const string Version = "parent-v53-1"; }
 // Server-created request context. Never bind this type from an HTTP body.
 public sealed record ParentRequestContext(ClaimsPrincipal Principal, Guid ActorUserId, Guid OrganizationId,
-    Guid CaseId, Guid ConsentId, Guid DocumentVersionId, Guid GuardianId);
+    Guid CaseId, Guid ConsentId, Guid DocumentVersionId, Guid GuardianId, ParentEligibilityEvidence? Evidence = null);
 public sealed record ParentDraftRequest(Guid QuestionnaireVersionId, string ExpectedRevision, string? RespondentName,
     string? FilledOn, string? RespondentRelationship, QuestionnaireAnswer[] Answers, string? Observation);
 public sealed record ParentDraftResponse(Guid TaskId, Guid QuestionnaireVersionId, string Revision,
