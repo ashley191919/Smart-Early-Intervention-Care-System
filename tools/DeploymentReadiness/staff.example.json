@@ -1,0 +1,27 @@
+{
+  "profile": "staff-same-origin",
+  "environment": "Development",
+  "dotnetEnvironment": "Development",
+  "frontendOrigin": "https://localhost:7127",
+  "apiOrigin": "https://localhost:7127",
+  "apiBaseUrl": "",
+  "staff": {
+    "enabled": true,
+    "trustedOrigins": ["https://localhost:7127"],
+    "cookieName": "__Host-earlycare-staff",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "Strict",
+    "path": "/",
+    "domain": null,
+    "credentials": "same-origin",
+    "csrfEnabled": true,
+    "csrfHeader": "X-EarlyCare-CSRF"
+  },
+  "requiredSettings": {
+    "jwtIssuerConfigured": true,
+    "jwtAudienceConfigured": true,
+    "jwtSigningKeyConfigured": true,
+    "databaseConnectionConfigured": true
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "profile": "health-probe",
+  "environment": "IsolatedTest",
+  "dotnetEnvironment": "IsolatedTest",
+  "frontendOrigin": "http://127.0.0.1:5187",
+  "apiOrigin": "http://127.0.0.1:5186",
+  "apiBaseUrl": "/health/local",
+  "staff": null,
+  "requiredSettings": {
+    "jwtIssuerConfigured": true,
+    "jwtAudienceConfigured": true,
+    "jwtSigningKeyConfigured": true,
+    "databaseConnectionConfigured": true
+  }
+}
