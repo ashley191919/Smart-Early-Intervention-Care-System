@@ -55,3 +55,33 @@ Stamp 還須涵蓋 Context 的 actor／院所／Case／Guardian／Consent／文�
 未跑 MySQL、SMTP 或真核心並發；未新增作者／世代欄位，未改 Program.cs、DbContext、Migration、Snapshot、正式入口及前端。後續需使用同一套負向案例替換為真作者 Store／Gateway 再驗證。
 
 本輪實際結果：ParentV53Harness 183 PASS，API 專案隨 Harness 建置成功；git diff --check 通過。作者已知部分採 Fake metadata、未知作者拒絕使用真 SQLite Draft／Response 列；不等同真 MySQL 作者／交易驗收。
+
+## 交接決策表（2026/11/04 補充）
+
+以下工作已完成，不需等待後重做：作者預檢遮蔽與 183 項驗證、HTTP 錯誤及 Client 保護、Context 型別草案、資格世代提案。程式固定版本為 2b51d7c；本節僅補文件。
+
+| 請 16 確認／提供 | 11 的具體建議 | 確認後可進行 |
+|---|---|---|
+| Bridge 是否接受 Context.Evidence 的內部型別與 nullable ulong 世代？請提供精確 Command／Adapter 方法簽章及固定 SHA。 | 先沿用本文欄位；未知世代拒絕，不改 HTTP DTO。Evidence 應綁定 TaskId／版本，不能由前端建立。 | 11 建立對應內部 DTO；16 轉接 Bridge。 |
+| 作者預檢能否直接使用 16 的 metadata-only Store？ | 由 16 提供可信作者查詢方法；11 實作 IParentAuthorVisibility wrapper。必須檢查 Draft、Response，foreign／unknown 均拒絕，查詢失敗不放行。 | 11 接真作者 Adapter，重跑四狀態／四操作負向測試。 |
+| 是否同意先固定 Stamp 共同編碼與測試向量，並確認 User／Permission／Task ABA 證據？ | 三個目前提議的世代不足以涵蓋所有 ABA；缺少證據的資格寫入先限制。版本、欄位順序、null 及數值格式由同一編碼器產生。 | 11 寫 encoder／資格讀取；16 使用相同向量與交易內比對。 |
+| 核心提供什麼交易協調接口？ | 請提供同 DbContext／現存交易的鎖資源取得方法、實際 SQL／隔離等級與鎖序；不要讓兩邊各自猜鎖。 | 11 調整下列寫入端，16 整合 Draft／Submit／Receipt。 |
+
+可平行做的事情：16 準備 Bridge／作者 Store／交易協調介面；11 先查明資格寫入端及現存交易邊界（清單如下）。不必等待整個 Adapter 完成才交換介面。
+
+### 11 現存資格寫入端與交易邊界
+
+程式依據：Services/Cases/CaseGuardianService.cs、ParentModule/ConsentService.cs。本輪只讀取分析，未修改寫入行為。
+
+| 方法 | 目前會做什麼 | 待共同協定接入 |
+|---|---|---|
+| AddGuardianAsync | 建立聯絡人與 CaseGuardian | 新關係初始世代、與院所／Case 鎖協調。 |
+| LinkGuardianAsync | 新增關係或重用 REVOKED 列，清除舊綁定時間 | 狀態轉換原子遞增世代；禁止重設／硬刪重建。 |
+| UpdateGuardianAsync | 自行 Begin／Commit，更新聯絡資料及關係 | 分清純文字及資格變更；作為根操作時管理交易，受共用交易呼叫時不能再開巢狀交易。 |
+| InviteAsync／RevokeInviteAsync | 建立或撤銷未消耗邀請，目前各自保存 | 邀請與綁定／撤綁互斥協調，不能邀請讀過舊資格後直接寫入。 |
+| RevokeLinkAsync | 自行 Begin／Commit，撤銷關係與未消耗邀請 | 關係世代遞增、完整共同鎖序、相同請求重送語意。 |
+| BindAsync | 自行 Begin／Commit，消耗邀請、綁定 ParentUserId、設 BoundAtUtc | 身分／指定 Email／院所重新檢查、綁定完成世代遞增。 |
+| RecordAsync（Consent） | 新增同意，RequestId 去重及唯一性衝突處理 | 新同意與提交共用協調鎖；業務根操作自行擁有交易，Adapter 不提交。 |
+| UpdateProfileAsync／UpdateAsync（Case） | 修改姓名，或個案基本資料 | 目前純資料修改不任意增加綁定世代；將來院所／帳號歸屬改動須另受資格協定控制。 |
+
+目前沒有正式 Consent 撤銷／重新同意或文件發布管理 API，不虛構已存在的寫入端。這些需院方政策及正式服務設計後才實作。User／Permission／Task 寫入端由其他模組維護者配合列入清單。
