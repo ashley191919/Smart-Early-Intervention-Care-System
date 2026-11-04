@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <UseAppHost>false</UseAppHost>
+    <DefineConstants>$(DefineConstants);PARENT_DTO_26E8B7F</DefineConstants>
+    <RestoreSources>$(MSBuildThisFileDirectory)</RestoreSources>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Pinned11Dtos.cs" />
+    <Compile Include="Pinned11PayloadMapping.cs" />
+    <Compile Include="Pinned11CaseAccessException.cs" />
+    <Compile Include="../ParentBridgeDtoMapper.cs" Link="ParentBridgeDtoMapper.cs" />
+    <None Include="Pinned11PayloadMapping.cs" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="../../../EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj" />
+  </ItemGroup>
+</Project>
