@@ -29,6 +29,7 @@ public static class ParentModuleRegistration
         services.TryAddSingleton<Services.Email.IParentEmailVerification, Services.Email.ParentEmailVerification>();
         services.AddOptions<ParentModuleOptions>().BindConfiguration("ParentModule");
         services.TryAddScoped<IParentActorProvider, ParentActorProvider>();
+        services.TryAddScoped<IParentAuthorVisibility, LegacyParentAuthorVisibility>();
         services.TryAddScoped<ParentConsentService>();
         services.TryAddScoped<IParentQuestionnaireAccess, ParentQuestionnaireAccess>();
         services.TryAddScoped<IParentQuestionnaireGateway, UnavailableParentQuestionnaireGateway>();

@@ -106,7 +106,8 @@ await Error(async () => { await consents.RecordAsync(principal, record with { Ca
 await consents.RecordAsync(Principal(users[1]), record with { RequestId = Guid.NewGuid(), TeacherParticipation = "UNDECIDED" });
 await consents.RecordAsync(Principal(users[2]), record with { RequestId = Guid.NewGuid(), DataUseDecision = "DECLINED", TeacherParticipation = "UNDECIDED" });
 await Error(async () => { await consents.RequireAsync(await actors.ResolveAsync(Principal(users[2])), child.CaseId); }, "CONSENT_REQUIRED");
-var policy = new ParentQuestionnaireAccess(db, actors, access, consents);
+var fakeState = new FakeParentGatewayState();
+var policy = new ParentQuestionnaireAccess(db, actors, access, consents, new FakeAuthorVisibility(fakeState));
 var context = await policy.RequireAsync(principal, tasks[0].TaskId, true, db);
 Check(context.GuardianId != Guid.Empty && ReferenceEquals(context.Principal, principal), "server guardian precheck retains original principal");
 var duplicateGuardian = new GuardianContact { GuardianId = Guid.NewGuid(), OrganizationId = org.Id,
@@ -130,7 +131,7 @@ await using (var differentContext = new ApplicationDbContext(options))
     try { await policy.RequireAsync(principal, tasks[0].TaskId, true, differentContext); throw new Exception("different context allowed"); }
     catch (InvalidOperationException) { Check(true, "same DbContext contract enforced"); }
 }
-var fakeState = new FakeParentGatewayState(); var fake = new FakeParentGateway(db, policy, fakeState, clock, new QuestionnaireAnswerValidator());
+var fake = new FakeParentGateway(db, policy, fakeState, clock, new QuestionnaireAnswerValidator());
 await ParentGatewayContractSuite.RunAsync(fake, context, other, tasks[0].TaskId, version.QuestionnaireVersionId, "2026-10-22", Check);
 // Unknown hash versions deny replay but do not block an authorized historical receipt.
 // Fake metadata only: this does not implement 16's canonical hash or production schema.
@@ -205,6 +206,7 @@ builder.Services.AddSingleton<TimeProvider>(clock); builder.Services.AddScoped<C
 builder.Services.AddScoped<IQuestionnaireStore, EfQuestionnaireStore>(); builder.Services.AddScoped<QuestionnaireService>();
 builder.Services.AddParentQuestionnaireDefinitions(); builder.Services.PostConfigure<ParentModuleOptions>(o => { o.ConsentEnabled = true; o.DocumentVersionId = doc.DocumentVersionId; o.ScopeCode = "ACCOUNT"; });
 builder.Services.AddSingleton(fakeState); builder.Services.AddScoped<IParentQuestionnaireGateway, FakeParentGateway>();
+builder.Services.AddScoped<IParentAuthorVisibility, FakeAuthorVisibility>();
 builder.Services.AddControllers().AddApplicationPart(typeof(ParentConsentController).Assembly);
 builder.Services.AddRateLimiter(o => o.AddFixedWindowLimiter("parent-binding", x => { x.PermitLimit = 100; x.Window = TimeSpan.FromMinutes(1); }));
 var key = new SymmetricSecurityKey(Enumerable.Range(1, 32).Select(i => (byte)i).ToArray());
@@ -239,6 +241,41 @@ Check(await db.Set<ParentConsentRecord>().AnyAsync(r => r.ActorUserId == users[3
 Check((await http.GetAsync("/api/parent/cases")).IsSuccessStatusCode, "consented clinical read");
 Check((await http.PostAsJsonAsync("/api/cases", new { childName = "不應建立", nationalId = "A123456789", address = "測試", birthDate = "2022-01-01", sex = "UNKNOWN" })).StatusCode == HttpStatusCode.Forbidden, "forged ADMIN claim cannot grant medical CRUD");
 var route = "/api/parent/tasks/" + tasks[1].TaskId;
+// Cross-author responses must not reveal task state even before Gateway execution.
+var hiddenTask = tasks[2]; var hiddenRoute = "/api/parent/tasks/" + hiddenTask.TaskId;
+foreach (var status in new[] { "PENDING", "IN_PROGRESS", "SUBMITTED", "ARCHIVED" })
+{
+    await db.QuestionnaireTasks.Where(t => t.TaskId == hiddenTask.TaskId).ExecuteUpdateAsync(s => s.SetProperty(t => t.TaskStatus, status));
+    fakeState.Drafts[hiddenTask.TaskId] = (users[0].Id, new(hiddenTask.TaskId, version.QuestionnaireVersionId, "1", null, null, null, [], null, null, status));
+    fakeState.Responses[hiddenTask.TaskId] = (users[0].Id, new(Guid.NewGuid(), hiddenTask.TaskId, version.QuestionnaireVersionId, now, "SUBMITTED", false));
+    foreach (var suffix in new[] { "/draft", "/receipt" })
+    {
+        var denied = await http.GetAsync(hiddenRoute + suffix);
+        var deniedBody = await denied.Content.ReadAsStringAsync();
+        Check(denied.StatusCode == HttpStatusCode.NotFound && deniedBody.Contains("TASK_NOT_FOUND") && !deniedBody.Contains(status), "foreign author masks read state " + status + suffix);
+    }
+    var deniedSave = await http.PutAsJsonAsync(hiddenRoute + "/draft", new ParentDraftRequest(version.QuestionnaireVersionId, "0", null, null, null, [], null));
+    Check(deniedSave.StatusCode == HttpStatusCode.NotFound, "foreign author masks save state " + status);
+    using var submitMessage = new HttpRequestMessage(HttpMethod.Post, hiddenRoute + "/submit");
+    submitMessage.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+    submitMessage.Content = JsonContent.Create(new ParentSubmitRequest(version.QuestionnaireVersionId, "0", "synthetic", "2026-10-22", "FATHER", [new("Q1", "0")], null));
+    Check((await http.SendAsync(submitMessage)).StatusCode == HttpStatusCode.NotFound, "foreign author masks submit state " + status);
+}
+fakeState.Drafts.Remove(hiddenTask.TaskId); fakeState.Responses.Remove(hiddenTask.TaskId);
+await Error(async () => { await policy.RequireAsync(principal, hiddenTask.TaskId, false, db); }, "TASK_NOT_EDITABLE");
+await db.QuestionnaireTasks.Where(t => t.TaskId == hiddenTask.TaskId).ExecuteUpdateAsync(s => s.SetProperty(t => t.TaskStatus, "PENDING"));
+// Legacy persistent rows have unknown parent authors: deny even for a current Guardian.
+var legacyDraft = new QuestionnaireDraft { TaskId = hiddenTask.TaskId, QuestionnaireVersionId = version.QuestionnaireVersionId, AnswersJson = "[]", UpdatedAtUtc = now };
+db.QuestionnaireDrafts.Add(legacyDraft); await db.SaveChangesAsync();
+await Error(async () => { await new ParentQuestionnaireAccess(db, actors, access, consents).RequireAsync(principal, hiddenTask.TaskId, false, db); }, "TASK_NOT_FOUND");
+db.QuestionnaireDrafts.Remove(legacyDraft); await db.SaveChangesAsync();
+var legacyResponse = new QuestionnaireResponse { ResponseId = Guid.NewGuid(), TaskId = hiddenTask.TaskId,
+    QuestionnaireVersionId = version.QuestionnaireVersionId, RespondentName = "unknown synthetic author",
+    FilledOn = new DateOnly(2026, 10, 22), AnswersJson = "[]", PayloadHash = new byte[32],
+    IdempotencyKey = Guid.NewGuid(), SubmittedAtUtc = now };
+db.QuestionnaireResponses.Add(legacyResponse); await db.SaveChangesAsync();
+await Error(async () => { await new ParentQuestionnaireAccess(db, actors, access, consents).RequireAsync(principal, hiddenTask.TaskId, false, db); }, "TASK_NOT_FOUND");
+db.QuestionnaireResponses.Remove(legacyResponse); await db.SaveChangesAsync();
 var draftHttp = await http.GetFromJsonAsync<ParentDraftResponse>(route + "/draft"); Check(draftHttp?.Revision == "0" && draftHttp.RespondentRelationship is null, "HTTP new draft has revision zero and null relationship");
 // Fault injection is test-only. Proves the real Controller/filter HTTP boundary,
 // not 16's Gateway persistence or MySQL lock protocol.

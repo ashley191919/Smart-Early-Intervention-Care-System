@@ -46,7 +46,7 @@ public interface IParentQuestionnaireAccess
         ApplicationDbContext transactionContext, CancellationToken ct = default);
 }
 public sealed class ParentQuestionnaireAccess(ApplicationDbContext db, IParentActorProvider actors,
-    CaseAccessService access, ParentConsentService consents) : IParentQuestionnaireAccess
+    CaseAccessService access, ParentConsentService consents, IParentAuthorVisibility? authors = null) : IParentQuestionnaireAccess
 {
     public Task<ParentRequestContext> RequireInTransactionAsync(ClaimsPrincipal principal, Guid taskId, bool writing,
         ApplicationDbContext transactionContext, CancellationToken ct = default)
@@ -63,10 +63,6 @@ public sealed class ParentQuestionnaireAccess(ApplicationDbContext db, IParentAc
         var task = await db.QuestionnaireTasks.AsNoTracking().SingleOrDefaultAsync(t => t.TaskId == taskId &&
             t.RespondentRole == "PARENT" && t.TaskStatus != "CANCELLED" && access.ReadableCases(actor).Any(c => c.CaseId == t.CaseId), ct);
         if (task == null) throw new CaseAccessException("TASK_NOT_FOUND", 404, "找不到問卷，或目前已無法存取。");
-        // SUBMITTED is allowed through to the engine so an identical idempotent retry
-        // can return its original receipt. The engine must reject any new write.
-        if (task.TaskStatus is not ("PENDING" or "IN_PROGRESS" or "SUBMITTED"))
-            throw new CaseAccessException("TASK_NOT_EDITABLE", 409, "問卷目前無法填寫。");
         // Server-side precheck evidence only. Never select an arbitrary contact or
         // infer GuardianId from HTTP input. The reviewed transaction adapter must
         // re-read/lock and compare this result; this query itself is not a lock.
@@ -77,7 +73,13 @@ public sealed class ParentQuestionnaireAccess(ApplicationDbContext db, IParentAc
             select guardian.GuardianId).Distinct().Take(2).ToArrayAsync(ct);
         if (guardians.Length != 1)
             throw new CaseAccessException("TASK_NOT_FOUND", 404, "找不到問卷，或目前已無法存取。");
+        if (!await (authors ?? new LegacyParentAuthorVisibility()).CanRevealAsync(db, actor.UserId, taskId, ct))
+            throw new CaseAccessException("TASK_NOT_FOUND", 404, "找不到問卷，或目前已無法存取。");
         var consent = await consents.RequireAsync(actor, task.CaseId, ct);
+        // Ownership masking precedes state disclosure. SUBMITTED still reaches the
+        // engine for an authorized idempotent replay / historical receipt.
+        if (task.TaskStatus is not ("PENDING" or "IN_PROGRESS" or "SUBMITTED"))
+            throw new CaseAccessException("TASK_NOT_EDITABLE", 409, "問卷目前無法填寫。");
         return new(principal, actor.UserId, actor.OrganizationId, task.CaseId, consent.ConsentId, consent.DocumentVersionId, guardians[0]);
     }
 }
