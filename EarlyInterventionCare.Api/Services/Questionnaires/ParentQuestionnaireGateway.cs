@@ -98,26 +98,50 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
     }
 
     public async Task<QuestionnaireDraftResponse> GetDraftAsync(ClaimsPrincipal principal, Guid taskId, CancellationToken ct = default)
+        => (await GetDraftCoreAsync(principal, taskId, null, ct)).Draft;
+
+    internal Task<ParentDraftResult> GetDraftCommandAsync(ParentGatewayCallContext context,
+        Guid taskId, CancellationToken ct = default)
+    {
+        var guarded = GuardedAccess(context, writing: false);
+        return GetDraftCoreAsync(context.Principal, taskId, guarded, ct);
+    }
+
+    private async Task<ParentDraftResult> GetDraftCoreAsync(ClaimsPrincipal principal, Guid taskId,
+        IParentTaskAccessAdapter? activeAccess, CancellationToken ct)
     {
         UserId(principal);
         await using var tx = await store.OpenAsync(ct);
-        var (scope, task, _) = await Scope(tx, principal, taskId, ct);
+        var (scope, task, _) = await Scope(tx, principal, taskId, ct, activeAccess);
         var draft = await tx.FindDraftAsync(taskId, ct);
         var response = await tx.FindResponseAsync(taskId, ct);
         Owner(draft, response, scope.UserId);
         Consistent(task, draft, response);
         Editable(task, response);
-        var result = Draft(task, draft);
-        await Finish(tx, scope, ct);
+        var result = new ParentDraftResult(Draft(task, draft), draft?.RespondentRelationship);
+        await Finish(tx, scope, ct, activeAccess);
         return result;
     }
 
     public async Task<QuestionnaireDraftResponse> SaveDraftAsync(ClaimsPrincipal principal, Guid taskId,
         SaveQuestionnaireDraftRequest input, CancellationToken ct = default)
+        => (await SaveDraftCoreAsync(principal, taskId, input, null, null, ct)).Draft;
+
+    internal Task<ParentDraftResult> SaveDraftCommandAsync(ParentGatewayCallContext context, Guid taskId,
+        ParentSaveDraftCommand command, CancellationToken ct = default)
+    {
+        var guarded = GuardedAccess(context, writing: true);
+        if (command?.Payload is null) throw Error("INVALID_INPUT", 400);
+        return SaveDraftCoreAsync(context.Principal, taskId, command.Payload, command, guarded, ct);
+    }
+
+    private async Task<ParentDraftResult> SaveDraftCoreAsync(ClaimsPrincipal principal, Guid taskId,
+        SaveQuestionnaireDraftRequest input, ParentSaveDraftCommand? command,
+        IParentTaskAccessAdapter? activeAccess, CancellationToken ct)
     {
         UserId(principal);
         await using var tx = await store.OpenAsync(ct);
-        var (scope, task, version) = await Scope(tx, principal, taskId, ct);
+        var (scope, task, version) = await Scope(tx, principal, taskId, ct, activeAccess);
         var draft = await tx.FindDraftAsync(taskId, ct);
         var response = await tx.FindResponseAsync(taskId, ct);
         Owner(draft, response, scope.UserId);
@@ -127,6 +151,9 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
         if (input.ExpectedRevision is null) throw Error("INVALID_INPUT", 400);
         if (input.ExpectedRevision != (draft?.Revision ?? 0)) throw Error("DRAFT_CONFLICT", 409);
         if (draft?.Revision == ulong.MaxValue) throw Error("DRAFT_CONFLICT", 409);
+        if (command is not null && command.RespondentRelationship is not
+            (null or "FATHER" or "MOTHER" or "GRANDPARENT" or "RELATIVE" or "GUARDIAN" or "CAREGIVER" or "OTHER"))
+            throw Error("INVALID_INPUT", 400);
         var content = Validate(version, new(input.QuestionnaireVersionId,
             input.RespondentName, input.FilledOn, input.Answers, input.Observation), false);
         if (draft is null)
@@ -137,10 +164,11 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
         }
         draft.RespondentName = content.RespondentName; draft.FilledOn = content.FilledOn;
         draft.AnswersJson = content.AnswersJson; draft.Observation = content.Observation;
+        if (command is not null) draft.RespondentRelationship = command.RespondentRelationship;
         draft.Revision++; draft.UpdatedAtUtc = Now;
         task.TaskStatus = "IN_PROGRESS"; task.UpdatedAtUtc = Now;
-        var result = Draft(task, draft);
-        await Finish(tx, scope, ct);
+        var result = new ParentDraftResult(Draft(task, draft), draft.RespondentRelationship);
+        await Finish(tx, scope, ct, activeAccess);
         return result;
     }
 
@@ -234,7 +262,17 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
 
     // Compatibility shim over the already fixed transaction contract, not an authorization
     // implementation. Each operation has its own shim/evidence; never cache across requests.
-    private sealed class CommandAccess(IParentTransactionAccessAdapter adapter, ParentGatewayCallContext context)
+    private IParentTaskAccessAdapter GuardedAccess(ParentGatewayCallContext context, bool writing)
+    {
+        if (context?.Principal is null || context.ExpectedAccess is null) throw Error("INVALID_INPUT", 400);
+        UserId(context.Principal);
+        if (commandAccess is DenyParentTransactionAccessAdapter)
+            throw Error("PARENT_ACCESS_NOT_INTEGRATED", 503);
+        return new CommandAccess(commandAccess, context, writing);
+    }
+
+    private sealed class CommandAccess(IParentTransactionAccessAdapter adapter, ParentGatewayCallContext context,
+        bool writing = true)
         : IParentTaskAccessAdapter
     {
         private IParentQuestionnaireTransaction? authorizedTransaction;
@@ -248,7 +286,7 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
                 expected.ConsentId == Guid.Empty || expected.DocumentVersionId == Guid.Empty ||
                 string.IsNullOrWhiteSpace(expected.EligibilityStamp))
                 throw Error("TASK_NOT_FOUND", 404);
-            var result = await adapter.LockAndAuthorizeAsync(tx, principal, taskId, expected, writing: true, ct);
+            var result = await adapter.LockAndAuthorizeAsync(tx, principal, taskId, expected, writing, ct);
             if (result is null || result.TaskId != taskId || result.Snapshot != expected)
                 throw Error("TASK_NOT_FOUND", 404);
             authorizedTransaction = tx; evidence = result;
@@ -264,16 +302,27 @@ public sealed class ParentQuestionnaireGateway(IParentQuestionnaireStore store,
     }
 
     public async Task<ParentQuestionnaireReceipt> GetReceiptAsync(ClaimsPrincipal principal, Guid taskId, CancellationToken ct = default)
+        => await GetReceiptCoreAsync(principal, taskId, null, ct);
+
+    internal Task<ParentQuestionnaireReceipt> GetReceiptCommandAsync(ParentGatewayCallContext context,
+        Guid taskId, CancellationToken ct = default)
+    {
+        var guarded = GuardedAccess(context, writing: false);
+        return GetReceiptCoreAsync(context.Principal, taskId, guarded, ct);
+    }
+
+    private async Task<ParentQuestionnaireReceipt> GetReceiptCoreAsync(ClaimsPrincipal principal, Guid taskId,
+        IParentTaskAccessAdapter? activeAccess, CancellationToken ct)
     {
         UserId(principal);
         await using var tx = await store.OpenAsync(ct);
-        var (scope, task, _) = await Scope(tx, principal, taskId, ct);
+        var (scope, task, _) = await Scope(tx, principal, taskId, ct, activeAccess);
         var response = await tx.FindResponseAsync(taskId, ct);
         var draft = await tx.FindDraftAsync(taskId, ct);
         Owner(draft, response, scope.UserId);
         Consistent(task, draft, response);
         if (response is null || task.TaskStatus != "SUBMITTED") throw Error("RESPONSE_NOT_FOUND", 404);
-        await Finish(tx, scope, ct);
+        await Finish(tx, scope, ct, activeAccess);
         return Receipt(response, false);
     }
 

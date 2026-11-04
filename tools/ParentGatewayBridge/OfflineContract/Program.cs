@@ -137,7 +137,7 @@ await Check("teacher/common submission DTO is unchanged", () => {
     return Task.CompletedTask;
 });
 Console.WriteLine("BLOCKED real 11 types in API, EligibilityStamp/generation and transaction Adapter are not delivered");
-Console.WriteLine("BLOCKED guarded Draft/Receipt and actual Bridge forwarding are not implemented; no legacy fallback");
+Console.WriteLine("BLOCKED actual Bridge forwarding is not implemented; guarded core awaits real qualification Adapter; no legacy fallback");
 Console.WriteLine("BLOCKED Schema/HTTP/MySQL atomicity, author/version/idempotency integration acceptance is not performed");
 Console.WriteLine($"RESULT: {passed} PASS, {failed} FAIL, 3 BLOCKED; shape/mapping/denial only; no API/socket/database");
 return failed > 0 ? 1 : 2;

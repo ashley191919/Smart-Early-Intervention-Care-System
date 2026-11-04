@@ -249,6 +249,127 @@ foreach (var (anomaly, code) in new[] { ("task-state", "TASK_UNAVAILABLE"), ("ve
         Assert(f.Store.Commits == 0 && f.Store.DraftReads == 0 && f.Store.ResponseReads == 0);
     });
 }
+// Guarded Draft/Receipt use the production shared core, not a second Fake implementation.
+ParentSaveDraftCommand SaveInput(Fixture f, ulong? revision = 0, string? relationship = "MOTHER") =>
+    new(new(f.VersionId, revision, "  Synthetic parent  ", "2026-10-30", [new("q1", "1")], "   "), relationship);
+Task<ParentDraftResult> Read(Fixture f, ParentQuestionnaireGateway? gateway = null) =>
+    CommandCall.Invoke<ParentDraftResult>(gateway ?? CommandCall.Create(f), "GetDraftCommandAsync", f.Context, f.TaskId, CancellationToken.None);
+Task<ParentDraftResult> Save(Fixture f, ParentSaveDraftCommand? input = null, ParentQuestionnaireGateway? gateway = null) =>
+    CommandCall.Invoke<ParentDraftResult>(gateway ?? CommandCall.Create(f), "SaveDraftCommandAsync", f.Context, f.TaskId, input ?? SaveInput(f), CancellationToken.None);
+Task<ParentQuestionnaireReceipt> History(Fixture f, ParentQuestionnaireGateway? gateway = null) =>
+    CommandCall.Invoke<ParentQuestionnaireReceipt>(gateway ?? CommandCall.Create(f), "GetReceiptCommandAsync", f.Context, f.TaskId, CancellationToken.None);
+foreach (var operation in new[] { "read", "save", "receipt" })
+{
+    Task Execute(Fixture f, ParentQuestionnaireGateway? gateway = null) => operation switch {
+        "read" => Read(f, gateway), "save" => Save(f, gateway: gateway), _ => History(f, gateway)
+    };
+    await Check($"guarded {operation}: default construction denies before Store despite legacy allow", async () => {
+        var f = new Fixture(); await Error(() => Execute(f, f.Gateway), "PARENT_ACCESS_NOT_INTEGRATED", 503);
+        Assert(f.Store.Opens == 0 && f.CommandAccess.Authorizations == 0);
+    });
+    await Check($"guarded {operation}: anonymous rejects before Store", async () => {
+        var f = new Fixture(); f.Context = f.Context with { Principal = new ClaimsPrincipal() };
+        await Error(() => Execute(f), "AUTHENTICATION_REQUIRED", 401); Assert(f.Store.Opens == 0);
+    });
+    await Check($"guarded {operation}: no access reads no Task/content even with invalid state/version", async () => {
+        var f = new Fixture(); MaskingAnomaly.Apply(f, "combined"); f.CommandAccess.Allow = false;
+        await Error(() => Execute(f), "TASK_NOT_FOUND", 404);
+        Assert(f.Store.TaskReads == 0 && f.Store.DraftReads == 0 && f.Store.ResponseReads == 0 && f.Store.VersionReads == 0 && f.Store.Commits == 0);
+    });
+    foreach (var owner in new[] { "draft", "response" })
+    foreach (var anomaly in new[] { "task-state", "version-state", "missing-version", "null-hash", "unknown-hash" })
+        await Check($"guarded {operation}: cross-author {owner} + {anomaly} masked before state/version", async () => {
+            var f = new Fixture();
+            if (owner == "draft") { f.SeedDraft(); f.Store.State.Draft!.ParentAuthorUserId = Guid.NewGuid(); }
+            else { f.SeedReceipt(null, false); f.Store.State.Response!.ParentAuthorUserId = Guid.NewGuid(); }
+            MaskingAnomaly.Apply(f, anomaly); var before = f.Store.Snapshot();
+            await Error(() => Execute(f), "TASK_NOT_FOUND", 404);
+            Assert(f.Store.Snapshot() == before && f.Store.Commits == 0 && f.Store.VersionReads == 0 && f.Store.KeyLookups == 0);
+        });
+    await Check($"guarded {operation}: changed precheck is not replaced", async () => {
+        var f = new Fixture(); f.CommandAccess.ChangeSnapshot = x => x with { ConsentId = Guid.NewGuid() };
+        await Error(() => Execute(f), "TASK_NOT_FOUND", 404);
+        Assert(f.Store.TaskReads == 0 && f.Store.Commits == 0);
+    });
+    await Check($"guarded {operation}: final qualification denial exposes no result or staged write", async () => {
+        var f = new Fixture(); if (operation == "receipt") f.SeedReceipt(null, false);
+        f.CommandAccess.RevokeAtFinish = true; var before = f.Store.Snapshot();
+        await Error(() => Execute(f), "TASK_NOT_FOUND", 404);
+        Assert(f.Store.Snapshot() == before && f.Store.Commits == 0 && f.CommandAccess.SameTransaction);
+    });
+    await Check($"guarded {operation}: transaction completion failure never returns success (Fake)", async () => {
+        var f = new Fixture(); if (operation == "receipt") f.SeedReceipt(null, false);
+        f.Store.FailCommit = true; var before = f.Store.Snapshot();
+        try { await Execute(f); throw new Exception("Expected storage failure"); } catch (IOException) { }
+        Assert(f.Store.Snapshot() == before && f.Store.Commits == 0);
+    });
+    await Check($"guarded {operation}: method remains internal", () => {
+        var name = operation == "read" ? "GetDraftCommandAsync" : operation == "save" ? "SaveDraftCommandAsync" : "GetReceiptCommandAsync";
+        Assert(typeof(ParentQuestionnaireGateway).GetMethod(name) is null); return Task.CompletedTask;
+    });
+}
+await Check("guarded absent Draft returns revision 0, empty answers and null relationship", async () => {
+    var f = new Fixture(); var result = await Read(f);
+    Assert(result.Draft.Revision == 0 && result.Draft.Answers.Count == 0 && result.RespondentRelationship is null);
+    Assert(f.Store.State.Draft is null && f.CommandAccess.LastWriting == false && f.CommandAccess.SameTransaction && f.Store.Commits == 1);
+});
+await Check("guarded old Draft preserves unknown relationship, values and revision", async () => {
+    var f = new Fixture(); f.SeedDraft(); var before = f.Store.Snapshot(); var result = await Read(f);
+    Assert(result.RespondentRelationship is null && result.Draft.Revision == 7 && f.Store.Snapshot() == before);
+});
+await Check("guarded Save normalizes and atomically publishes relationship, revision, author and Task (Fake)", async () => {
+    var f = new Fixture(); var r = await Save(f); var stored = f.Store.State.Draft!;
+    Assert(r.RespondentRelationship == "MOTHER" && r.Draft.Revision == 1 && r.Draft.RespondentName == "Synthetic parent");
+    Assert(stored.ParentAuthorUserId == f.UserId && stored.RespondentRelationship == "MOTHER" && stored.Observation is null);
+    Assert(f.Store.State.Task.TaskStatus == "IN_PROGRESS" && f.CommandAccess.LastWriting == true && f.CommandAccess.SameTransaction);
+    var reread = await Read(f); Assert(reread.RespondentRelationship == "MOTHER" && reread.Draft.Revision == 1);
+});
+await Check("guarded Save permits explicit null without inferring Guardian relationship", async () => {
+    var f = new Fixture(); f.SeedDraft(); f.Store.State.Draft!.RespondentRelationship = "FATHER";
+    var r = await Save(f, SaveInput(f, 7, null));
+    Assert(r.RespondentRelationship is null && f.Store.State.Draft!.RespondentRelationship is null && r.Draft.Revision == 8);
+});
+foreach (var relationship in new[] { "", "mother", " MOTHER", "UNKNOWN" })
+    await Check($"guarded Save rejects invalid relationship {relationship}", async () => {
+        var f = new Fixture(); var before = f.Store.Snapshot();
+        await Error(() => Save(f, SaveInput(f, 0, relationship)), "INVALID_INPUT", 400);
+        Assert(f.Store.Snapshot() == before && f.Store.Commits == 0);
+    });
+foreach (var revision in new ulong?[] { null, 0, 6, 8, ulong.MaxValue })
+    await Check($"guarded Save rejects missing/stale revision {revision}", async () => {
+        var f = new Fixture(); f.SeedDraft(); var before = f.Store.Snapshot();
+        await Error(() => Save(f, SaveInput(f, revision)), revision is null ? "INVALID_INPUT" : "DRAFT_CONFLICT", revision is null ? 400 : 409);
+        Assert(f.Store.Snapshot() == before && f.Store.Commits == 0);
+    });
+await Check("guarded Save rejects overflow rather than wrapping revision", async () => {
+    var f = new Fixture(); f.SeedDraft(); f.Store.State.Draft!.Revision = ulong.MaxValue;
+    await Error(() => Save(f, SaveInput(f, ulong.MaxValue)), "DRAFT_CONFLICT", 409); Assert(f.Store.Commits == 0);
+});
+await Check("guarded Save update failure preserves previous relationship/content/revision (Fake)", async () => {
+    var f = new Fixture(); f.SeedDraft(); f.Store.State.Draft!.RespondentRelationship = "FATHER";
+    f.Store.FailCommit = true; var before = f.Store.Snapshot();
+    try { await Save(f, SaveInput(f, 7)); throw new Exception("Expected storage failure"); } catch (IOException) { }
+    Assert(f.Store.Snapshot() == before && f.Store.Commits == 0);
+});
+foreach (var version in new string?[] { null, "unsupported/v99", ParentCanonicalSubmissionEncoder.FormatVersion })
+    await Check($"guarded history is independent of HashVersion {version ?? "NULL"} and key/hash replay validation", async () => {
+        var f = new Fixture(); f.SeedReceipt(version, false); f.Store.State.Response!.PayloadHash = [];
+        var before = f.Store.Snapshot(); var receipt = await History(f);
+        Assert(!receipt.Replayed && receipt.ResponseId == f.Store.State.Response.ResponseId && f.Store.Snapshot() == before);
+        Assert(f.Store.KeyLookups == 0 && f.CommandAccess.LastWriting == false && f.CommandAccess.SameTransaction);
+    });
+await Check("guarded missing history returns RESPONSE_NOT_FOUND/404", async () => {
+    var f = new Fixture(); await Error(() => History(f), "RESPONSE_NOT_FOUND", 404); Assert(f.Store.Commits == 0);
+});
+await Check("guarded read/save cannot edit submitted Task", async () => {
+    var f = new Fixture(); f.SeedReceipt(null, false);
+    await Error(() => Read(f), "TASK_SUBMITTED", 409); await Error(() => Save(f), "TASK_SUBMITTED", 409); Assert(f.Store.Commits == 0);
+});
+await Check("legacy Save preserves preexisting relationship while keeping legacy response DTO", async () => {
+    var f = new Fixture(); f.SeedDraft(); f.Store.State.Draft!.RespondentRelationship = "FATHER";
+    var result = await f.Gateway.SaveDraftAsync(f.Context.Principal, f.TaskId, SaveInput(f, 7).Payload);
+    Assert(result.Revision == 8 && f.Store.State.Draft.RespondentRelationship == "FATHER");
+});
 foreach (var reason in new[] {
     "real Guardian/Consent generation, fresh reads and writer lock protocol are not delivered",
     "actual EF/MySQL rollback, uniqueness, concurrency and deadlocks are not tested",
@@ -280,6 +401,12 @@ static class MaskingAnomaly
 // No friend assembly/public injection is added. Reflection is confined to this test.
 static class CommandCall
 {
+    public static Task<T> Invoke<T>(ParentQuestionnaireGateway gateway, string method, params object?[] arguments)
+    {
+        try { return (Task<T>)typeof(ParentQuestionnaireGateway).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(gateway, arguments)!; }
+        catch (TargetInvocationException e) when (e.InnerException is not null)
+        { ExceptionDispatchInfo.Capture(e.InnerException).Throw(); throw; }
+    }
     public static ParentQuestionnaireGateway Create(Fixture f) => (ParentQuestionnaireGateway)typeof(ParentQuestionnaireGateway)
         .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).Single(c => c.GetParameters().Length == 6)
         .Invoke([f.Store, new DenyParentTaskAccessAdapter(), new QuestionnaireAnswerValidator(), f.Clock,
@@ -418,6 +545,7 @@ sealed class MemoryStore(SyntheticState state) : IParentQuestionnaireStore
 sealed class TransactionAccess : IParentTransactionAccessAdapter
 {
     public bool Allow = true, RevokeAtFinish, SameTransaction, ReturnWrongTask;
+    public bool? LastWriting;
     public int Authorizations, Revalidations;
     public ClaimsPrincipal? Principal;
     public Func<ParentAccessExpectation, ParentAccessExpectation>? ChangeSnapshot;
@@ -426,8 +554,8 @@ sealed class TransactionAccess : IParentTransactionAccessAdapter
     public Task<ParentTransactionAccess> LockAndAuthorizeAsync(IParentQuestionnaireTransaction tx, ClaimsPrincipal principal,
         Guid taskId, ParentAccessExpectation expected, bool writing, CancellationToken ct = default)
     {
-        ct.ThrowIfCancellationRequested(); Authorizations++; Principal = principal; seen = tx;
-        if (!Allow || !writing || tx.DbContext is not null)
+        ct.ThrowIfCancellationRequested(); Authorizations++; Principal = principal; seen = tx; LastWriting = writing;
+        if (!Allow || tx.DbContext is not null)
             throw new QuestionnaireWorkflowException("TASK_NOT_FOUND", "Synthetic denial", 404);
         issued = new(ReturnWrongTask ? Guid.NewGuid() : taskId, ChangeSnapshot?.Invoke(expected) ?? expected);
         return Task.FromResult(issued);
