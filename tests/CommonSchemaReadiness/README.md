@@ -1,5 +1,24 @@
 # V5.3 共同 Schema／Migration 離線就緒度 Harness
 
+## Runtime Model 第一批版本：User stage-one（優先於下方歷史結果）
+
+整合起點為16 `e879649985d62465b5911194850e3a7269140990`；User與IdentityModelConfiguration逐項沿用11 `d268b7d70be33e04d44bdfa044b13339448815f6`。只新增四個nullable屬性及NormalizedEmail非唯一索引；不接登入、Controller、DI或任何資格流程。**新模型不可連接未升級資料庫；沒有產生或執行Migration。**
+
+| 契約版本 | 實際差異與檢查方式 |
+|---|---|
+| author-v1 | 原9項白名單與30組負向案例完全保留。從真實Snapshot→目前模型的14項操作中，分出User操作後仍須精確符合原9項；不是讓14項任意通過舊9項gate |
+| user-v1 | [UserStageOne.cs](UserStageOne.cs)獨立精確要求4個nullable AddColumn＋1個非唯一CreateIndex，檢查provider metadata及相依順序 |
+| model-v2 | 合計必須精確為14項；User分組過寬或出現第六項User變更也會被精確集合拒絕 |
+| 固定11完整模型 | 原40／43重現及23項政策BLOCKED保持不變；User進入本機不等於其餘Case／Guardian／Consent已整合 |
+
+User四欄為phone_verified_at_utc datetime(6) NULL、email varchar(254) NULL、normalized_email varchar(254) NULL（utf8mb4_bin）、email_verified_at_utc datetime(6) NULL；無default／推定驗證時間。Email沿用users表utf8mb4_unicode_ci，屬性未明訂Collation時測試檢查其有效繼承值。索引ix_users_normalized_email(normalized_email)明確非唯一。
+
+本輪新增20項檢查，結果為**158 PASS、0 FAIL、28 BLOCKED，退出碼2**；原138項保留（其中V03／V07改以隔離出的原9項驗證，整體另驗14項）。包含User未設定值保持NULL、既有Username／Password／Status／Role／Organization約束、來源blob及9組User負向案例。原SchemaWhitelist.IsExact不放寬；既有教師／舊家長Schema gate不修改。
+
+正式AuthenticationService、醫療Session／RBAC／Program／DI沒有修改。登入離線回歸的SyntheticIdentityReader僅補四個明確NULL欄位以物化目前User，沒有回填或視為已驗證。本輪測試記錄與實際回歸範圍見本次工作回報；純離線結果不代表真實DB登入或前端驗收。
+
+下方47／138項結果及「實際9項」為前一版本歷史；目前應採上述158項及14項模型差異。
+
 基準：16 `8f03f8bd40e41eaf63dd8d6fd828052430b88113`。共同模型參考為11 `c213e051034c5bd6d82bdd90a6aae7818e600f0c`；本工具不下載、不合併該分支，也不把 Pinned11 當成本機正式模型。
 
 本工具只讀取固定來源與建立 EF 記憶體 relational model／MigrationOperation 清單。**不產生 Migration、Designer、Snapshot 或 SQL，不呼叫 EnsureCreated／Migrate，不啟動 API，不連線任何資料庫。**編譯產物限一般 bin／obj，不修改正式來源。

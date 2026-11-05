@@ -84,7 +84,7 @@ internal static class SchemaWhitelist
         return true;
     }
 
-    private static string Signature(MigrationOperation op)
+    internal static string Signature(MigrationOperation op)
     {
         object details = op switch {
             AddColumnOperation x => new {

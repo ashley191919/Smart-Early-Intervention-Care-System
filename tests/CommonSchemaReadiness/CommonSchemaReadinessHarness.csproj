@@ -16,6 +16,7 @@
     <Compile Include="SchemaWhitelist.cs" />
     <Compile Include="CandidateSuite.cs" />
     <Compile Include="CandidateContract.cs" />
+    <Compile Include="UserStageOne.cs" />
     <Compile Include="../EfParentStore/OfflineAdo.cs" Link="OfflineAdo.cs" />
   </ItemGroup>
 </Project>
