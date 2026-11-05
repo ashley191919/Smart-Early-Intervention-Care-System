@@ -1,0 +1,173 @@
+{
+  "baseline16": "3c0adadc62dc85eaca0858caf5a4d03b2b44a751",
+  "reference11": "b5573b5311641d9b108930cbdf5e461dbc1bcea0",
+  "sources11": [
+    {
+      "upstreamPath": "EarlyInterventionCare.Api/Data/Entities/CaseRecord.cs",
+      "localPath": "tests/ParentModelUnion/Pinned11/Data/Entities/CaseRecord.cs",
+      "blob": "764e7dffb05295695673065200bbef266dea9554"
+    },
+    {
+      "upstreamPath": "EarlyInterventionCare.Api/Models/Authentication/User.cs",
+      "localPath": "tests/ParentModelUnion/Pinned11/Models/Authentication/User.cs",
+      "blob": "41d1e9ee9e5297dce3c61245ab0e16154a232c9a"
+    },
+    {
+      "upstreamPath": "EarlyInterventionCare.Api/Data/Entities/GuardianContact.cs",
+      "localPath": "tests/ParentModelUnion/Pinned11/Data/Entities/GuardianContact.cs",
+      "blob": "e65efdbe1b669c956236b5f22ebb4bfddcfb736a"
+    },
+    {
+      "upstreamPath": "EarlyInterventionCare.Api/Data/GuardianModelConfiguration.cs",
+      "localPath": "tests/ParentModelUnion/Pinned11/Data/GuardianModelConfiguration.cs",
+      "blob": "79f2a2b769e4d59285d4258b2939bee7df8e6a1d"
+    },
+    {
+      "upstreamPath": "EarlyInterventionCare.Api/Data/IdentityModelConfiguration.cs",
+      "localPath": "tests/ParentModelUnion/Pinned11/Data/IdentityModelConfiguration.cs",
+      "blob": "b467d9e575125f522e66ecd2e71316624794dfa8"
+    },
+    {
+      "upstreamPath": "EarlyInterventionCare.Api/ParentModule/ConsentModels.cs",
+      "localPath": "tests/ParentModelUnion/Pinned11/ParentModule/ConsentModels.cs",
+      "blob": "7cf821fe6d6c0b9ffb5c8e64c91224ca6b4eb8bb"
+    },
+    {
+      "upstreamPath": "EarlyInterventionCare.Api/Data/ApplicationDbContext.cs",
+      "localPath": "tests/ParentModelUnion/Pinned11/Data/ApplicationDbContext.cs",
+      "blob": "7670ffa054e9117cd29045555023d6fa8a505a00"
+    }
+  ],
+  "sources16": [
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/AuditRecord.cs",
+      "blob": "b359fd9ad236225c98afe1d512e2d05626b7d4af"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/CaseStatusHistory.cs",
+      "blob": "0c81000a640c5f3e7967eab243db8016bd8f2fe2"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/Questionnaire.cs",
+      "blob": "62ff0e15422188971b25cc6454d0306096049f42"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/QuestionnaireDraft.cs",
+      "blob": "1beb6f631711727129e013989bf0866c6c7ba888"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/QuestionnaireResponse.cs",
+      "blob": "5088761560da4e2de9d25ec97330232a4f9638f6"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/QuestionnaireTask.cs",
+      "blob": "18d80e2022b40923ce9b00ebc244c88caf2780ed"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/QuestionnaireVersion.cs",
+      "blob": "872dad0a42618fd135c21cb34cc33c6ae32a0f44"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/TeacherGrant.cs",
+      "blob": "e9910529fe589435a8aab68158c6156733a61b84"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/TeacherGrantTask.cs",
+      "blob": "4866b212137254696501a6588e91c7337a992d7d"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/TeacherSession.cs",
+      "blob": "52b8bb1b07f6f9f22649a313c61a9f29d313ff79"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Models/Authentication/Organization.cs",
+      "blob": "fe727d0e32172e8e021de4a699eb74babe5407c7"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Models/Authorization/Permission.cs",
+      "blob": "9e4aa259127148bf73bfe9f6878753c50ebef6aa"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Models/Authorization/Role.cs",
+      "blob": "dba9df760d97c2d6aed3c763c93d70f8ed75f7ba"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Models/Authorization/RolePermission.cs",
+      "blob": "2e31199fad30874a7363b27abb4073d335eb1ff7"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/CoreModelConfiguration.cs",
+      "blob": "77a1d891d3e851c6c103dabae357dc399de75803"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/ParentQuestionnaireModelConfiguration.cs",
+      "blob": "0c5e87cc82f96189165d46220cb69568cb009eb5"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/CaseStatusHistoryConfiguration.cs",
+      "blob": "d1f17587789c34e0363d6cf8e28c4561feee596d"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/AuditRecordConfiguration.cs",
+      "blob": "56004b8ed1dc7868c8a278f1488b5b6c9ac5b252"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/AuthorizationSeed.cs",
+      "blob": "ded76194e885d99ff476f2d83615537a49973149"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Services/Cases/CaseStatusPolicy.cs",
+      "blob": "9ad14aee58ab19d4fa2e8484ec22aba503878633"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Services/Cases/CaseStatusHistoryPolicy.cs",
+      "blob": "c87bab75d15364d40e71a7dbf499d10382c16392"
+    }
+  ],
+  "history16": [
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.cs",
+      "blob": "19d7eb0c62c30c764532d8e351f08d3a3034625f"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.Designer.cs",
+      "blob": "05d8bc6042acc4244f7801b99744d7f693c53cac"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.cs",
+      "blob": "987f295a6e97b56d361e4f99a4933e9fb89cead9"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.Designer.cs",
+      "blob": "0b028bfa5906488ac2dca2434b51b20cd493304a"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.cs",
+      "blob": "e082aac5119bf5c374c43d531607ccb046f4631c"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.Designer.cs",
+      "blob": "06cb9c143ba32dd350f8d1dec7dfe4e37a6475b0"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.cs",
+      "blob": "4b9f09faf9898f955c9995944c775d4db71ba244"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.Designer.cs",
+      "blob": "43a7b481b8d95ca03d8e0772c4d6255e332e4e99"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.cs",
+      "blob": "8b7b38b820be0dffe3159821edd5dfd28c3cf8b3"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.Designer.cs",
+      "blob": "9928bd4ad7b88b1f56fbc97a095315835b050e44"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/ApplicationDbContextModelSnapshot.cs",
+      "blob": "5156015938053ea679d2e05c060c89b63e898e61"
+    }
+  ]
+}

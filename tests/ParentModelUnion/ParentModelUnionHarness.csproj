@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <UseAppHost>false</UseAppHost>
+    <RestoreSources>$(MSBuildThisFileDirectory)</RestoreSources>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Pinned11/**/*.cs" />
+    <Compile Include="../EfParentStore/OfflineAdo.cs" Link="OfflineAdo.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/AuditRecord.cs" Link="Linked16/Data/Entities/AuditRecord.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/CaseStatusHistory.cs" Link="Linked16/Data/Entities/CaseStatusHistory.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/Questionnaire.cs" Link="Linked16/Data/Entities/Questionnaire.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/QuestionnaireDraft.cs" Link="Linked16/Data/Entities/QuestionnaireDraft.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/QuestionnaireResponse.cs" Link="Linked16/Data/Entities/QuestionnaireResponse.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/QuestionnaireTask.cs" Link="Linked16/Data/Entities/QuestionnaireTask.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/QuestionnaireVersion.cs" Link="Linked16/Data/Entities/QuestionnaireVersion.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/TeacherGrant.cs" Link="Linked16/Data/Entities/TeacherGrant.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/TeacherGrantTask.cs" Link="Linked16/Data/Entities/TeacherGrantTask.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/Entities/TeacherSession.cs" Link="Linked16/Data/Entities/TeacherSession.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Models/Authentication/Organization.cs" Link="Linked16/Models/Authentication/Organization.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Models/Authorization/Permission.cs" Link="Linked16/Models/Authorization/Permission.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Models/Authorization/Role.cs" Link="Linked16/Models/Authorization/Role.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Models/Authorization/RolePermission.cs" Link="Linked16/Models/Authorization/RolePermission.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/CoreModelConfiguration.cs" Link="Linked16/Data/CoreModelConfiguration.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/ParentQuestionnaireModelConfiguration.cs" Link="Linked16/Data/ParentQuestionnaireModelConfiguration.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/CaseStatusHistoryConfiguration.cs" Link="Linked16/Data/CaseStatusHistoryConfiguration.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/AuditRecordConfiguration.cs" Link="Linked16/Data/AuditRecordConfiguration.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Data/AuthorizationSeed.cs" Link="Linked16/Data/AuthorizationSeed.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Services/Cases/CaseStatusPolicy.cs" Link="Linked16/Services/Cases/CaseStatusPolicy.cs" />
+    <Compile Include="../../EarlyInterventionCare.Api/Services/Cases/CaseStatusHistoryPolicy.cs" Link="Linked16/Services/Cases/CaseStatusHistoryPolicy.cs" />
+  </ItemGroup>
+</Project>
