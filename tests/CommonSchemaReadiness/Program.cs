@@ -66,16 +66,17 @@ Check("V02 fifth TargetModel and Snapshot agree, including History", () => {
     Assert(baseline.GetEntityTypes().Any(e => e.GetTableName() == "case_status_histories"));
     Assert(db.GetService<IMigrationsModelDiffer>().GetDifferences(target.GetRelationalModel(), baseline.GetRelationalModel()).Count == 0);
 });
-Check("V03 author-v1 remains exact 9 operations inside stage-one model", () => {
+var authorKeys = SchemaWhitelist.Expected().Select(CandidateContract.Key).ToHashSet(StringComparer.Ordinal);
+Check("V03 author-v1 remains exact 9 operations inside stage-two model", () => {
     Assert(baseline is not null, "Baseline unavailable");
     current = db.GetService<IDesignTimeModel>().Model;
     actual = db.GetService<IMigrationsModelDiffer>().GetDifferences(baseline!.GetRelationalModel(), current.GetRelationalModel());
-    Assert(SchemaWhitelist.IsExact(actual.Where(o => !UserStageOne.IsUserOperation(o)).ToArray(), out var reason), reason);
+    Assert(SchemaWhitelist.IsExact(actual.Where(o => authorKeys.Contains(CandidateContract.Key(o))).ToArray(), out var reason), reason);
 });
 Check("V07 retained teacher/Task/History relational metadata", () => {
     Assert(current is not null && actual is not null, "Differ unavailable");
-    // An exact additive differ proves no baseline table/key/FK/index alteration.
-    Assert(SchemaWhitelist.IsExact(actual!.Where(o => !UserStageOne.IsUserOperation(o)).ToArray(), out var reason), reason);
+    // Original author subset is exact; ModelStageTwo additionally checks the entire 40-operation differ.
+    Assert(SchemaWhitelist.IsExact(actual!.Where(o => authorKeys.Contains(CandidateContract.Key(o))).ToArray(), out var reason), reason);
     foreach (var name in new[] { "uq_responses_task", "uq_responses_grant_key", "uq_tasks_assignment" })
         Assert(current!.GetEntityTypes().SelectMany(e => e.GetIndexes()).Any(i => i.GetDatabaseName() == name && i.IsUnique));
     foreach (var name in new[] { "fk_drafts_grant_scope", "fk_responses_grant_scope", "fk_drafts_task_version", "fk_responses_task_version", "fk_case_status_histories_case", "fk_case_status_histories_changed_by_user" })
@@ -120,10 +121,12 @@ Reject("duplicate operation", o => o[1] = o[0]);
 Reject("index before column", o => { var index = o.FindIndex(x => x is CreateIndexOperation); var op = o[index]; o.RemoveAt(index); o.Insert(0, op); });
 Reject("FK before column", o => { var index = o.FindIndex(x => x is AddForeignKeyOperation); var op = o[index]; o.RemoveAt(index); o.Insert(0, op); });
 Check("V15 no connection, transaction, SQL or tracked rows", () => Assert(events.Count == 0 && connection.State == ConnectionState.Closed && !db.ChangeTracker.Entries().Any()));
-UserStageOne.Run(Check, actual, current, root);
+// Historical 14-operation sub-contract; ModelStageTwo separately rejects all unexpected operations.
+UserStageOne.Run(Check, actual?.Where(o => authorKeys.Contains(CandidateContract.Key(o)) || UserStageOne.IsUserOperation(o)).ToArray(), current, root);
+ModelStageTwo.Run(Check, actual, current, root);
 var candidateBlocked = CandidateSuite.Run(Check, root);
 var blocked = new[] {
-    "V09/V10 complete 11 model union not present in this production tree; existing Pinned11 is not production integration",
+    "V09/V10 candidate runtime model present; business integration and approved Schema remain incomplete; Pinned11 is reference only",
     "Case legacy required fields and Consent re-consent/history policy need 11/team/hospital decisions",
     "Eligibility generations, ABA, Stamp and global locking protocol remain unapproved/unimplemented",
     "V12/V13 future incremental Migration/Designer/Snapshot/SQL not generated or reviewed; only existing IDs checked",

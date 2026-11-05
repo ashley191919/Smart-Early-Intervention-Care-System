@@ -31,6 +31,9 @@ async Task Error(Func<Task> action, string code, int status)
         result.ChangedByUserId == f.Actor.UserId, "manual change returns trusted actor and statuses");
     Check(f.Store.Case!.CaseStatus == CaseStatusPolicy.ToContact &&
         f.Store.Case.UpdatedAtUtc == FixedClock.Now.UtcDateTime, "case changes at history UTC time");
+    Check(f.Store.Case.OrganizationId == Guid.Parse("10000000-0000-0000-0000-000000000001") &&
+        f.Store.Case.Revision == 7 && f.Store.Case.NationalId == "SYNTHETIC" &&
+        f.Store.Case.Address == "Synthetic offline fixture", "status change preserves new Case metadata in fake transaction");
     var history = f.Store.Histories.Single();
     Check(history.OldStatus == CaseStatusPolicy.New && history.NewStatus == CaseStatusPolicy.ToContact &&
         history.ChangedByUserId == f.Actor.UserId && history.TriggerSource == CaseStatusHistoryPolicy.Manual &&
@@ -112,6 +115,10 @@ sealed class FakeStore : ICaseStatusStore
     public FakeStore(string status) => Case = new CaseRecord
     {
         CaseId = CaseId,
+        OrganizationId = Guid.Parse("10000000-0000-0000-0000-000000000001"),
+        Revision = 7,
+        NationalId = "SYNTHETIC",
+        Address = "Synthetic offline fixture",
         CaseStatus = status,
         CreatedAtUtc = FixedClock.Now.UtcDateTime,
         UpdatedAtUtc = FixedClock.Now.UtcDateTime
@@ -131,6 +138,10 @@ sealed class FakeStore : ICaseStatusStore
     private static CaseRecord Clone(CaseRecord source) => new()
     {
         CaseId = source.CaseId,
+        OrganizationId = source.OrganizationId,
+        Revision = source.Revision,
+        NationalId = source.NationalId,
+        Address = source.Address,
         CaseCode = source.CaseCode,
         ChildName = source.ChildName,
         BirthDate = source.BirthDate,

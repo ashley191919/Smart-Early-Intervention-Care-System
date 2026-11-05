@@ -1,5 +1,23 @@
 # V5.3 共同 Schema／Migration 離線就緒度 Harness
 
+## Runtime Model 第二批：Case／Guardian／Consent候選聯集（目前版本）
+
+基準16 `d6c7c231007a4b613f06e5263f0247936aa9db88`，固定11來源 `d268b7d70be33e04d44bdfa044b13339448815f6`。正式來源限CaseRecord、GuardianContact、GuardianModelConfiguration、ConsentModels及ApplicationDbContext；保留16所有DbSet，僅增加Guardians／CaseGuardians／ParentBindingInvitations。Consent由既有ApplyConfigurationsFromAssembly納入，沒有新增業務Service、Controller、DI或家長授權入口。
+
+目前實跑為 **177 PASS、0 FAIL、28 BLOCKED，退出碼2**。新增19項[ModelStageTwo](ModelStageTwo.cs)檢查；下方158／138／47項為歷史結果，不代表目前整體只有14／9項差異。
+
+- 正式API設計模型對第五筆History TargetModel（與16 Snapshot相同）的實際`IMigrationsModelDiffer`結果，必須精確符合固定11的40項候選。使用真實MigrationOperation及provider metadata驗證型別、NULL、default、charset／collation、索引、Restrict FK、stored computed column及相依順序，並非僅比較數量。
+- 原author-v1九項及user-v1五項仍獨立精確驗證；model-v2十四項改為明確的歷史子契約。完整集合另驗40項，不能藉過濾藏起額外DDL。舊負向案例完整保留。
+- 固定參考仍為9項重疊＋8項候選＋23項政策待決；User五項已在前批納入。**模型結構符合候選與政策核准是兩回事，23個政策BLOCKED逐項保留**，另五個整合阻擋項合計28。
+- Case的OrganizationId可空；Revision為uint concurrency token；NationalId／Address為必填varchar(10)／varchar(300)。EF differ所推導的空字串default及uint零值僅觀察，不代表可用於舊資料回填。Guardian Revision不是BindingGeneration或資格Epoch。
+- CaseGuardian複合PK及ActiveCaseId stored expression／唯一索引、Guardian唯一性、Consent兩組唯一鍵均沿用固定來源；再同意與歷史保存政策未核准。新Consent仍為DRAFT／UNCONFIRMED／UNDECIDED，不代表有效同意。
+- 第五筆History與所有歷史Migration／Designer／Snapshot未修改；沒有重建History，沒有產生Migration／SQL、回填或連線資料庫。**目前EF模型不可連接未完成合法Schema升級的舊庫。**
+
+第二批離線回歸包括登入、Session、RBAC、History／CaseStatus、ParentSubmit及EF Parent Store等，實際結果見本批工作回報。CaseStatusService合成交易僅補複製四個新欄位及保留值斷言；不更改正式Store。教師及舊家長完整套件仍由原Schema gate如實拒絕，不能視為全套通過。
+
+本批仍未完成：共同Migration／Snapshot、Case舊資料處理、Guardian／Consent政策、資格世代／ABA／Stamp／全域鎖序、11正式Adapter／Bridge、07 Workflow及真實MySQL驗收。沒有任何正式入口被啟用。
+
+
 ## Runtime Model 第一批版本：User stage-one（優先於下方歷史結果）
 
 整合起點為16 `e879649985d62465b5911194850e3a7269140990`；User與IdentityModelConfiguration逐項沿用11 `d268b7d70be33e04d44bdfa044b13339448815f6`。只新增四個nullable屬性及NormalizedEmail非唯一索引；不接登入、Controller、DI或任何資格流程。**新模型不可連接未升級資料庫；沒有產生或執行Migration。**
