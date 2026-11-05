@@ -1,0 +1,2785 @@
+{
+  "status": "REVIEW_REQUIRED_NOT_AUTHORIZED",
+  "modelSource": "c213e05",
+  "provider": "Pomelo.EntityFrameworkCore.MySql",
+  "providerVersion": "explicit offline factory MySQL 8.0.46; not an actual server",
+  "historyBaseline": "20261019131342_AddCaseStatusHistories",
+  "historicalMigrations": [
+    "20261005152359_InitialSharedCore",
+    "20261005180101_AddAuditLogs",
+    "20261005184434_AddSubmissionReceiptWindow",
+    "20261006074424_IntegrateIdentityAndAuthorization",
+    "20261019131342_AddCaseStatusHistories"
+  ],
+  "snapshotToUnion": [
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "email",
+        "Table": "users",
+        "ColumnType": "varchar(254)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "email_verified_at_utc",
+        "Table": "users",
+        "ColumnType": "datetime(6)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": null,
+        "charset": null
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "normalized_email",
+        "Table": "users",
+        "ColumnType": "varchar(254)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_bin",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "phone_verified_at_utc",
+        "Table": "users",
+        "ColumnType": "datetime(6)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": null,
+        "charset": null
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "hash_version",
+        "Table": "questionnaire_responses",
+        "ColumnType": "varchar(64)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_author_user_id",
+        "Table": "questionnaire_responses",
+        "ColumnType": "char(36)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "ascii_bin",
+        "charset": "ascii"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "respondent_relationship",
+        "Table": "questionnaire_responses",
+        "ColumnType": "varchar(32)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_author_user_id",
+        "Table": "questionnaire_drafts",
+        "ColumnType": "char(36)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "ascii_bin",
+        "charset": "ascii"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "respondent_relationship",
+        "Table": "questionnaire_drafts",
+        "ColumnType": "varchar(32)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "address",
+        "Table": "cases",
+        "ColumnType": "varchar(300)",
+        "IsNullable": false,
+        "defaultValue": "",
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "national_id",
+        "Table": "cases",
+        "ColumnType": "varchar(10)",
+        "IsNullable": false,
+        "defaultValue": "",
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "organization_id",
+        "Table": "cases",
+        "ColumnType": "char(36)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "ascii_bin",
+        "charset": "ascii"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "revision",
+        "Table": "cases",
+        "ColumnType": "int unsigned",
+        "IsNullable": false,
+        "defaultValue": "0",
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": null,
+        "charset": null
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "case_status_histories",
+        "columns": [
+          {
+            "Name": "history_id",
+            "Table": "case_status_histories",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "case_id",
+            "Table": "case_status_histories",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "old_status",
+            "Table": "case_status_histories",
+            "ColumnType": "ENUM(\u0027NEW\u0027, \u0027TO_CONTACT\u0027, \u0027APPOINTED\u0027, \u0027WAITING_FORM\u0027, \u0027FORM_COMPLETED\u0027, \u0027COMPLETED\u0027)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "new_status",
+            "Table": "case_status_histories",
+            "ColumnType": "ENUM(\u0027NEW\u0027, \u0027TO_CONTACT\u0027, \u0027APPOINTED\u0027, \u0027WAITING_FORM\u0027, \u0027FORM_COMPLETED\u0027, \u0027COMPLETED\u0027)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "changed_at_utc",
+            "Table": "case_status_histories",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "changed_by_user_id",
+            "Table": "case_status_histories",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "trigger_source",
+            "Table": "case_status_histories",
+            "ColumnType": "ENUM(\u0027MANUAL\u0027, \u0027QUESTIONNAIRE_COMPLETION\u0027, \u0027SYSTEM_WORKFLOW\u0027)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "reason",
+            "Table": "case_status_histories",
+            "ColumnType": "text",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          }
+        ],
+        "primaryKey": [
+          "history_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "fk_case_status_histories_case",
+            "Table": "case_status_histories",
+            "Columns": [
+              "case_id"
+            ],
+            "PrincipalTable": "cases",
+            "PrincipalColumns": [
+              "case_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "fk_case_status_histories_changed_by_user",
+            "Table": "case_status_histories",
+            "Columns": [
+              "changed_by_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "consent_document_versions",
+        "columns": [
+          {
+            "Name": "document_version_id",
+            "Table": "consent_document_versions",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "document_code",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "version",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(32)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "title",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(200)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "content",
+            "Table": "consent_document_versions",
+            "ColumnType": "longtext",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "content_hash",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "scope_code",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(32)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "approval_status",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(16)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "approval_reference",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(200)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "approved_at_utc",
+            "Table": "consent_document_versions",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "effective_from_utc",
+            "Table": "consent_document_versions",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "retired_at_utc",
+            "Table": "consent_document_versions",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "document_version_id"
+        ],
+        "foreignKeys": [],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "guardians",
+        "columns": [
+          {
+            "Name": "guardian_id",
+            "Table": "guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "organization_id",
+            "Table": "guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "parent_user_id",
+            "Table": "guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "display_name",
+            "Table": "guardians",
+            "ColumnType": "varchar(100)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "email",
+            "Table": "guardians",
+            "ColumnType": "varchar(254)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "phone",
+            "Table": "guardians",
+            "ColumnType": "varchar(20)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "revision",
+            "Table": "guardians",
+            "ColumnType": "int unsigned",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "created_at_utc",
+            "Table": "guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "updated_at_utc",
+            "Table": "guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "guardian_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_guardians_organizations_organization_id",
+            "Table": "guardians",
+            "Columns": [
+              "organization_id"
+            ],
+            "PrincipalTable": "organizations",
+            "PrincipalColumns": [
+              "organization_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_guardians_users_parent_user_id",
+            "Table": "guardians",
+            "Columns": [
+              "parent_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_consents",
+        "columns": [
+          {
+            "Name": "consent_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "document_version_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "actor_user_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "organization_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "case_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "scope_key",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(40)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "document_content_hash",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "data_use_decision",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(16)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "teacher_participation",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(16)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "request_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "recorded_at_utc",
+            "Table": "parent_consents",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "revoked_at_utc",
+            "Table": "parent_consents",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "consent_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_parent_consents_cases_case_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "case_id"
+            ],
+            "PrincipalTable": "cases",
+            "PrincipalColumns": [
+              "case_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_consents_consent_document_versions_document_version_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "document_version_id"
+            ],
+            "PrincipalTable": "consent_document_versions",
+            "PrincipalColumns": [
+              "document_version_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_consents_organizations_organization_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "organization_id"
+            ],
+            "PrincipalTable": "organizations",
+            "PrincipalColumns": [
+              "organization_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_consents_users_actor_user_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "actor_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "case_guardians",
+        "columns": [
+          {
+            "Name": "case_id",
+            "Table": "case_guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "guardian_id",
+            "Table": "case_guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "relationship",
+            "Table": "case_guardians",
+            "ColumnType": "varchar(32)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "is_primary_contact",
+            "Table": "case_guardians",
+            "ColumnType": "tinyint(1)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "link_status",
+            "Table": "case_guardians",
+            "ColumnType": "varchar(20)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "created_at_utc",
+            "Table": "case_guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "bound_at_utc",
+            "Table": "case_guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "active_case_id",
+            "Table": "case_guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": "CASE WHEN link_status = \u0027ACTIVE\u0027 AND is_primary_contact = 1 THEN case_id ELSE NULL END",
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "revoked_at_utc",
+            "Table": "case_guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "case_id",
+          "guardian_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_case_guardians_cases_case_id",
+            "Table": "case_guardians",
+            "Columns": [
+              "case_id"
+            ],
+            "PrincipalTable": "cases",
+            "PrincipalColumns": [
+              "case_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_case_guardians_guardians_guardian_id",
+            "Table": "case_guardians",
+            "Columns": [
+              "guardian_id"
+            ],
+            "PrincipalTable": "guardians",
+            "PrincipalColumns": [
+              "guardian_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_binding_invitations",
+        "columns": [
+          {
+            "Name": "invitation_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "case_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "guardian_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "code_hash",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "target_phone",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "varchar(20)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "target_email_normalized",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "varchar(254)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_bin",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "issued_by_user_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "created_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "expires_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "consumed_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "consumed_by_user_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "revoked_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "invitation_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_parent_binding_invitations_case_guardians_case_id_guardian_id",
+            "Table": "parent_binding_invitations",
+            "Columns": [
+              "case_id",
+              "guardian_id"
+            ],
+            "PrincipalTable": "case_guardians",
+            "PrincipalColumns": [
+              "case_id",
+              "guardian_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_binding_invitations_users_consumed_by_user_id",
+            "Table": "parent_binding_invitations",
+            "Columns": [
+              "consumed_by_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_binding_invitations_users_issued_by_user_id",
+            "Table": "parent_binding_invitations",
+            "Columns": [
+              "issued_by_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "ix_users_normalized_email",
+        "Table": "users",
+        "Columns": [
+          "normalized_email"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "uq_responses_parent_key",
+        "Table": "questionnaire_responses",
+        "Columns": [
+          "parent_author_user_id",
+          "idempotency_key"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "ix_drafts_parent_author",
+        "Table": "questionnaire_drafts",
+        "Columns": [
+          "parent_author_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_cases_organization_id",
+        "Table": "cases",
+        "Columns": [
+          "organization_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_case_guardians_guardian_id",
+        "Table": "case_guardians",
+        "Columns": [
+          "guardian_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "uq_case_guardians_active_case",
+        "Table": "case_guardians",
+        "Columns": [
+          "active_case_id"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "ix_case_status_histories_case_time",
+        "Table": "case_status_histories",
+        "Columns": [
+          "case_id",
+          "changed_at_utc",
+          "history_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "ix_case_status_histories_changed_by_user",
+        "Table": "case_status_histories",
+        "Columns": [
+          "changed_by_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_consent_document_versions_document_code_version",
+        "Table": "consent_document_versions",
+        "Columns": [
+          "document_code",
+          "version"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_guardians_organization_id_parent_user_id",
+        "Table": "guardians",
+        "Columns": [
+          "organization_id",
+          "parent_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_guardians_parent_user_id",
+        "Table": "guardians",
+        "Columns": [
+          "parent_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "uq_guardians_organization_phone",
+        "Table": "guardians",
+        "Columns": [
+          "organization_id",
+          "phone"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_case_id_guardian_id",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "case_id",
+          "guardian_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_code_hash",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "code_hash"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_consumed_by_user_id",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "consumed_by_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_issued_by_user_id",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "issued_by_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_actor_user_id_organization_id_document_versi~",
+        "Table": "parent_consents",
+        "Columns": [
+          "actor_user_id",
+          "organization_id",
+          "document_version_id",
+          "scope_key"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_actor_user_id_request_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "actor_user_id",
+          "request_id"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_case_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "case_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_document_version_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "document_version_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_organization_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "organization_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "AddForeignKeyOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "FK_cases_organizations_organization_id",
+        "Table": "cases",
+        "Columns": [
+          "organization_id"
+        ],
+        "PrincipalTable": "organizations",
+        "PrincipalColumns": [
+          "organization_id"
+        ],
+        "onDelete": "Restrict"
+      }
+    },
+    {
+      "kind": "AddForeignKeyOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "fk_drafts_parent_author",
+        "Table": "questionnaire_drafts",
+        "Columns": [
+          "parent_author_user_id"
+        ],
+        "PrincipalTable": "users",
+        "PrincipalColumns": [
+          "user_id"
+        ],
+        "onDelete": "Restrict"
+      }
+    },
+    {
+      "kind": "AddForeignKeyOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "fk_responses_parent_author",
+        "Table": "questionnaire_responses",
+        "Columns": [
+          "parent_author_user_id"
+        ],
+        "PrincipalTable": "users",
+        "PrincipalColumns": [
+          "user_id"
+        ],
+        "onDelete": "Restrict"
+      }
+    }
+  ],
+  "historyTargetToUnion": [
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "email",
+        "Table": "users",
+        "ColumnType": "varchar(254)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "email_verified_at_utc",
+        "Table": "users",
+        "ColumnType": "datetime(6)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": null,
+        "charset": null
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "normalized_email",
+        "Table": "users",
+        "ColumnType": "varchar(254)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_bin",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "phone_verified_at_utc",
+        "Table": "users",
+        "ColumnType": "datetime(6)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": null,
+        "charset": null
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "hash_version",
+        "Table": "questionnaire_responses",
+        "ColumnType": "varchar(64)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_author_user_id",
+        "Table": "questionnaire_responses",
+        "ColumnType": "char(36)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "ascii_bin",
+        "charset": "ascii"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "respondent_relationship",
+        "Table": "questionnaire_responses",
+        "ColumnType": "varchar(32)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_author_user_id",
+        "Table": "questionnaire_drafts",
+        "ColumnType": "char(36)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "ascii_bin",
+        "charset": "ascii"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "respondent_relationship",
+        "Table": "questionnaire_drafts",
+        "ColumnType": "varchar(32)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "address",
+        "Table": "cases",
+        "ColumnType": "varchar(300)",
+        "IsNullable": false,
+        "defaultValue": "",
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "national_id",
+        "Table": "cases",
+        "ColumnType": "varchar(10)",
+        "IsNullable": false,
+        "defaultValue": "",
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "utf8mb4_unicode_ci",
+        "charset": "utf8mb4"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "organization_id",
+        "Table": "cases",
+        "ColumnType": "char(36)",
+        "IsNullable": true,
+        "defaultValue": null,
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": "ascii_bin",
+        "charset": "ascii"
+      }
+    },
+    {
+      "kind": "AddColumnOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "revision",
+        "Table": "cases",
+        "ColumnType": "int unsigned",
+        "IsNullable": false,
+        "defaultValue": "0",
+        "DefaultValueSql": null,
+        "ComputedColumnSql": null,
+        "Collation": null,
+        "charset": null
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "consent_document_versions",
+        "columns": [
+          {
+            "Name": "document_version_id",
+            "Table": "consent_document_versions",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "document_code",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "version",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(32)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "title",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(200)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "content",
+            "Table": "consent_document_versions",
+            "ColumnType": "longtext",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "content_hash",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "scope_code",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(32)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "approval_status",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(16)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "approval_reference",
+            "Table": "consent_document_versions",
+            "ColumnType": "varchar(200)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "approved_at_utc",
+            "Table": "consent_document_versions",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "effective_from_utc",
+            "Table": "consent_document_versions",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "retired_at_utc",
+            "Table": "consent_document_versions",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "document_version_id"
+        ],
+        "foreignKeys": [],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "guardians",
+        "columns": [
+          {
+            "Name": "guardian_id",
+            "Table": "guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "organization_id",
+            "Table": "guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "parent_user_id",
+            "Table": "guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "display_name",
+            "Table": "guardians",
+            "ColumnType": "varchar(100)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "email",
+            "Table": "guardians",
+            "ColumnType": "varchar(254)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "phone",
+            "Table": "guardians",
+            "ColumnType": "varchar(20)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "revision",
+            "Table": "guardians",
+            "ColumnType": "int unsigned",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "created_at_utc",
+            "Table": "guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "updated_at_utc",
+            "Table": "guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "guardian_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_guardians_organizations_organization_id",
+            "Table": "guardians",
+            "Columns": [
+              "organization_id"
+            ],
+            "PrincipalTable": "organizations",
+            "PrincipalColumns": [
+              "organization_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_guardians_users_parent_user_id",
+            "Table": "guardians",
+            "Columns": [
+              "parent_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_consents",
+        "columns": [
+          {
+            "Name": "consent_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "document_version_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "actor_user_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "organization_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "case_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "scope_key",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(40)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "document_content_hash",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "data_use_decision",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(16)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "teacher_participation",
+            "Table": "parent_consents",
+            "ColumnType": "varchar(16)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "request_id",
+            "Table": "parent_consents",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "recorded_at_utc",
+            "Table": "parent_consents",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "revoked_at_utc",
+            "Table": "parent_consents",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "consent_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_parent_consents_cases_case_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "case_id"
+            ],
+            "PrincipalTable": "cases",
+            "PrincipalColumns": [
+              "case_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_consents_consent_document_versions_document_version_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "document_version_id"
+            ],
+            "PrincipalTable": "consent_document_versions",
+            "PrincipalColumns": [
+              "document_version_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_consents_organizations_organization_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "organization_id"
+            ],
+            "PrincipalTable": "organizations",
+            "PrincipalColumns": [
+              "organization_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_consents_users_actor_user_id",
+            "Table": "parent_consents",
+            "Columns": [
+              "actor_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "case_guardians",
+        "columns": [
+          {
+            "Name": "case_id",
+            "Table": "case_guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "guardian_id",
+            "Table": "case_guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "relationship",
+            "Table": "case_guardians",
+            "ColumnType": "varchar(32)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "is_primary_contact",
+            "Table": "case_guardians",
+            "ColumnType": "tinyint(1)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "link_status",
+            "Table": "case_guardians",
+            "ColumnType": "varchar(20)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "created_at_utc",
+            "Table": "case_guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "bound_at_utc",
+            "Table": "case_guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "active_case_id",
+            "Table": "case_guardians",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": "CASE WHEN link_status = \u0027ACTIVE\u0027 AND is_primary_contact = 1 THEN case_id ELSE NULL END",
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "revoked_at_utc",
+            "Table": "case_guardians",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "case_id",
+          "guardian_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_case_guardians_cases_case_id",
+            "Table": "case_guardians",
+            "Columns": [
+              "case_id"
+            ],
+            "PrincipalTable": "cases",
+            "PrincipalColumns": [
+              "case_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_case_guardians_guardians_guardian_id",
+            "Table": "case_guardians",
+            "Columns": [
+              "guardian_id"
+            ],
+            "PrincipalTable": "guardians",
+            "PrincipalColumns": [
+              "guardian_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateTableOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "parent_binding_invitations",
+        "columns": [
+          {
+            "Name": "invitation_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "case_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "guardian_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "code_hash",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "varchar(64)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "target_phone",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "varchar(20)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_unicode_ci",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "target_email_normalized",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "varchar(254)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "utf8mb4_bin",
+            "charset": "utf8mb4"
+          },
+          {
+            "Name": "issued_by_user_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "created_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": false,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "expires_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "consumed_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          },
+          {
+            "Name": "consumed_by_user_id",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "char(36)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": "ascii_bin",
+            "charset": "ascii"
+          },
+          {
+            "Name": "revoked_at_utc",
+            "Table": "parent_binding_invitations",
+            "ColumnType": "datetime(6)",
+            "IsNullable": true,
+            "defaultValue": null,
+            "DefaultValueSql": null,
+            "ComputedColumnSql": null,
+            "Collation": null,
+            "charset": null
+          }
+        ],
+        "primaryKey": [
+          "invitation_id"
+        ],
+        "foreignKeys": [
+          {
+            "Name": "FK_parent_binding_invitations_case_guardians_case_id_guardian_id",
+            "Table": "parent_binding_invitations",
+            "Columns": [
+              "case_id",
+              "guardian_id"
+            ],
+            "PrincipalTable": "case_guardians",
+            "PrincipalColumns": [
+              "case_id",
+              "guardian_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_binding_invitations_users_consumed_by_user_id",
+            "Table": "parent_binding_invitations",
+            "Columns": [
+              "consumed_by_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          },
+          {
+            "Name": "FK_parent_binding_invitations_users_issued_by_user_id",
+            "Table": "parent_binding_invitations",
+            "Columns": [
+              "issued_by_user_id"
+            ],
+            "PrincipalTable": "users",
+            "PrincipalColumns": [
+              "user_id"
+            ],
+            "onDelete": "Restrict"
+          }
+        ],
+        "uniqueConstraints": []
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "ix_users_normalized_email",
+        "Table": "users",
+        "Columns": [
+          "normalized_email"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "uq_responses_parent_key",
+        "Table": "questionnaire_responses",
+        "Columns": [
+          "parent_author_user_id",
+          "idempotency_key"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "ix_drafts_parent_author",
+        "Table": "questionnaire_drafts",
+        "Columns": [
+          "parent_author_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_cases_organization_id",
+        "Table": "cases",
+        "Columns": [
+          "organization_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_case_guardians_guardian_id",
+        "Table": "case_guardians",
+        "Columns": [
+          "guardian_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "uq_case_guardians_active_case",
+        "Table": "case_guardians",
+        "Columns": [
+          "active_case_id"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_consent_document_versions_document_code_version",
+        "Table": "consent_document_versions",
+        "Columns": [
+          "document_code",
+          "version"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_guardians_organization_id_parent_user_id",
+        "Table": "guardians",
+        "Columns": [
+          "organization_id",
+          "parent_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_guardians_parent_user_id",
+        "Table": "guardians",
+        "Columns": [
+          "parent_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "uq_guardians_organization_phone",
+        "Table": "guardians",
+        "Columns": [
+          "organization_id",
+          "phone"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_case_id_guardian_id",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "case_id",
+          "guardian_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_code_hash",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "code_hash"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_consumed_by_user_id",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "consumed_by_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_binding_invitations_issued_by_user_id",
+        "Table": "parent_binding_invitations",
+        "Columns": [
+          "issued_by_user_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_actor_user_id_organization_id_document_versi~",
+        "Table": "parent_consents",
+        "Columns": [
+          "actor_user_id",
+          "organization_id",
+          "document_version_id",
+          "scope_key"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_actor_user_id_request_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "actor_user_id",
+          "request_id"
+        ],
+        "IsUnique": true,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_case_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "case_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_document_version_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "document_version_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "CreateIndexOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "IX_parent_consents_organization_id",
+        "Table": "parent_consents",
+        "Columns": [
+          "organization_id"
+        ],
+        "IsUnique": false,
+        "Filter": null
+      }
+    },
+    {
+      "kind": "AddForeignKeyOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "FK_cases_organizations_organization_id",
+        "Table": "cases",
+        "Columns": [
+          "organization_id"
+        ],
+        "PrincipalTable": "organizations",
+        "PrincipalColumns": [
+          "organization_id"
+        ],
+        "onDelete": "Restrict"
+      }
+    },
+    {
+      "kind": "AddForeignKeyOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "fk_drafts_parent_author",
+        "Table": "questionnaire_drafts",
+        "Columns": [
+          "parent_author_user_id"
+        ],
+        "PrincipalTable": "users",
+        "PrincipalColumns": [
+          "user_id"
+        ],
+        "onDelete": "Restrict"
+      }
+    },
+    {
+      "kind": "AddForeignKeyOperation",
+      "IsDestructiveChange": false,
+      "details": {
+        "Name": "fk_responses_parent_author",
+        "Table": "questionnaire_responses",
+        "Columns": [
+          "parent_author_user_id"
+        ],
+        "PrincipalTable": "users",
+        "PrincipalColumns": [
+          "user_id"
+        ],
+        "onDelete": "Restrict"
+      }
+    }
+  ],
+  "proof": {
+    "historyCreatesFromStaleSnapshot": 1,
+    "historyCreatesAfterHistoryTarget": 0,
+    "connectionState": "Closed",
+    "generatedMigration": false,
+    "executedMigration": false,
+    "readDatabase": false
+  }
+}

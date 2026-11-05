@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
+if (args.Length == 2 && args[0] == "--schema-review") { ParentSchemaReview.Write(args[1]); return; }
 var checks = 0;
 void Check(bool value, string label) { if (!value) throw new Exception(label); checks++; }
 ParentModelIntegrationSuite.Run(Check);
