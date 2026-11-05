@@ -1,0 +1,245 @@
+{
+    "reference11":  "d268b7d70be33e04d44bdfa044b13339448815f6",
+    "sources":  [
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/CaseRecord.cs",
+                        "path":  "UnionModel/Pinned11/Data/Entities/CaseRecord.cs",
+                        "blob":  "764e7dffb05295695673065200bbef266dea9554",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Models/Authentication/User.cs",
+                        "path":  "UnionModel/Pinned11/Models/Authentication/User.cs",
+                        "blob":  "41d1e9ee9e5297dce3c61245ab0e16154a232c9a",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/GuardianContact.cs",
+                        "path":  "UnionModel/Pinned11/Data/Entities/GuardianContact.cs",
+                        "blob":  "e65efdbe1b669c956236b5f22ebb4bfddcfb736a",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/GuardianModelConfiguration.cs",
+                        "path":  "UnionModel/Pinned11/Data/GuardianModelConfiguration.cs",
+                        "blob":  "79f2a2b769e4d59285d4258b2939bee7df8e6a1d",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/IdentityModelConfiguration.cs",
+                        "path":  "UnionModel/Pinned11/Data/IdentityModelConfiguration.cs",
+                        "blob":  "b467d9e575125f522e66ecd2e71316624794dfa8",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/ParentModule/ConsentModels.cs",
+                        "path":  "UnionModel/Pinned11/ParentModule/ConsentModels.cs",
+                        "blob":  "7cf821fe6d6c0b9ffb5c8e64c91224ca6b4eb8bb",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/ApplicationDbContext.cs",
+                        "path":  "UnionModel/Pinned11/Data/ApplicationDbContext.cs",
+                        "blob":  "809b896d7ea273820fb6bd490ea35e3e083dece5",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/ApplicationDbContextModelSnapshot.cs",
+                        "path":  "UnionModel/Pinned11/Data/Migrations/ApplicationDbContextModelSnapshot.cs",
+                        "blob":  "c8ad951e49108a62be0974ae377305254bcbbdce",
+                        "kind":  "pinned"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/AuditRecord.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/AuditRecord.cs",
+                        "blob":  "b359fd9ad236225c98afe1d512e2d05626b7d4af",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/CaseStatusHistory.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/CaseStatusHistory.cs",
+                        "blob":  "0c81000a640c5f3e7967eab243db8016bd8f2fe2",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/Questionnaire.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/Questionnaire.cs",
+                        "blob":  "62ff0e15422188971b25cc6454d0306096049f42",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireDraft.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireDraft.cs",
+                        "blob":  "1beb6f631711727129e013989bf0866c6c7ba888",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireResponse.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireResponse.cs",
+                        "blob":  "5088761560da4e2de9d25ec97330232a4f9638f6",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireTask.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireTask.cs",
+                        "blob":  "18d80e2022b40923ce9b00ebc244c88caf2780ed",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireVersion.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/QuestionnaireVersion.cs",
+                        "blob":  "872dad0a42618fd135c21cb34cc33c6ae32a0f44",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/TeacherGrant.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/TeacherGrant.cs",
+                        "blob":  "e9910529fe589435a8aab68158c6156733a61b84",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/TeacherGrantTask.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/TeacherGrantTask.cs",
+                        "blob":  "4866b212137254696501a6588e91c7337a992d7d",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Entities/TeacherSession.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Entities/TeacherSession.cs",
+                        "blob":  "52b8bb1b07f6f9f22649a313c61a9f29d313ff79",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Models/Authentication/Organization.cs",
+                        "path":  "EarlyInterventionCare.Api/Models/Authentication/Organization.cs",
+                        "blob":  "fe727d0e32172e8e021de4a699eb74babe5407c7",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Models/Authorization/Permission.cs",
+                        "path":  "EarlyInterventionCare.Api/Models/Authorization/Permission.cs",
+                        "blob":  "9e4aa259127148bf73bfe9f6878753c50ebef6aa",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Models/Authorization/Role.cs",
+                        "path":  "EarlyInterventionCare.Api/Models/Authorization/Role.cs",
+                        "blob":  "dba9df760d97c2d6aed3c763c93d70f8ed75f7ba",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Models/Authorization/RolePermission.cs",
+                        "path":  "EarlyInterventionCare.Api/Models/Authorization/RolePermission.cs",
+                        "blob":  "2e31199fad30874a7363b27abb4073d335eb1ff7",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/CoreModelConfiguration.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/CoreModelConfiguration.cs",
+                        "blob":  "77a1d891d3e851c6c103dabae357dc399de75803",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/ParentQuestionnaireModelConfiguration.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/ParentQuestionnaireModelConfiguration.cs",
+                        "blob":  "0c5e87cc82f96189165d46220cb69568cb009eb5",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/CaseStatusHistoryConfiguration.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/CaseStatusHistoryConfiguration.cs",
+                        "blob":  "d1f17587789c34e0363d6cf8e28c4561feee596d",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/AuditRecordConfiguration.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/AuditRecordConfiguration.cs",
+                        "blob":  "56004b8ed1dc7868c8a278f1488b5b6c9ac5b252",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/AuthorizationSeed.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/AuthorizationSeed.cs",
+                        "blob":  "ded76194e885d99ff476f2d83615537a49973149",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Services/Cases/CaseStatusPolicy.cs",
+                        "path":  "EarlyInterventionCare.Api/Services/Cases/CaseStatusPolicy.cs",
+                        "blob":  "9ad14aee58ab19d4fa2e8484ec22aba503878633",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Services/Cases/CaseStatusHistoryPolicy.cs",
+                        "path":  "EarlyInterventionCare.Api/Services/Cases/CaseStatusHistoryPolicy.cs",
+                        "blob":  "c87bab75d15364d40e71a7dbf499d10382c16392",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.cs",
+                        "blob":  "19d7eb0c62c30c764532d8e351f08d3a3034625f",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.Designer.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.Designer.cs",
+                        "blob":  "05d8bc6042acc4244f7801b99744d7f693c53cac",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.cs",
+                        "blob":  "987f295a6e97b56d361e4f99a4933e9fb89cead9",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.Designer.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.Designer.cs",
+                        "blob":  "0b028bfa5906488ac2dca2434b51b20cd493304a",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.cs",
+                        "blob":  "e082aac5119bf5c374c43d531607ccb046f4631c",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.Designer.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.Designer.cs",
+                        "blob":  "06cb9c143ba32dd350f8d1dec7dfe4e37a6475b0",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.cs",
+                        "blob":  "4b9f09faf9898f955c9995944c775d4db71ba244",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.Designer.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.Designer.cs",
+                        "blob":  "43a7b481b8d95ca03d8e0772c4d6255e332e4e99",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.cs",
+                        "blob":  "8b7b38b820be0dffe3159821edd5dfd28c3cf8b3",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.Designer.cs",
+                        "path":  "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.Designer.cs",
+                        "blob":  "9928bd4ad7b88b1f56fbc97a095315835b050e44",
+                        "kind":  "linked"
+                    },
+                    {
+                        "source":  "docs/parent-schema-difference-review-20261105.json",
+                        "path":  "candidate-review.json",
+                        "blob":  "2d02cb93293b1df51eceb1dfb263d30fe715cd54",
+                        "kind":  "pinned"
+                    }
+                ]
+}
