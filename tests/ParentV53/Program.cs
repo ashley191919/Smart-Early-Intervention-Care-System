@@ -29,6 +29,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var checks = 0;
 void Check(bool value, string label) { if (!value) throw new Exception(label); checks++; }
+ParentModelIntegrationSuite.Run(Check);
 ParentCoreBoundarySuite.Run(Check);
 async Task Error(Func<Task> work, string code) { try { await work(); } catch (CaseAccessException e) { Check(e.Code == code, code); return; } throw new Exception("Expected " + code); }
 var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "."));
@@ -47,7 +48,8 @@ foreach (var entity in model.Model.GetEntityTypes())
         property.SetColumnType(type == typeof(byte[]) ? "BLOB" : type == typeof(bool) || type == typeof(int) || type == typeof(uint) ? "INTEGER" : "TEXT");
     }
 }
-var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).UseModel(model.FinalizeModel()).Options;
+var readerSql = new ReaderSqlRecorder();
+var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).UseModel(model.FinalizeModel()).AddInterceptors(readerSql).Options;
 await using var db = new ApplicationDbContext(options); await db.Database.EnsureCreatedAsync();
 await ParentReaderEvidenceSuite.RunAsync(db, Check);
 var clock = new FixtureClock(); var now = clock.GetUtcNow().UtcDateTime;
@@ -271,6 +273,28 @@ await db.QuestionnaireTasks.Where(t => t.TaskId == hiddenTask.TaskId).ExecuteUpd
 var legacyDraft = new QuestionnaireDraft { TaskId = hiddenTask.TaskId, QuestionnaireVersionId = version.QuestionnaireVersionId, AnswersJson = "[]", UpdatedAtUtc = now };
 db.QuestionnaireDrafts.Add(legacyDraft); await db.SaveChangesAsync();
 await Error(async () => { await new ParentQuestionnaireAccess(db, actors, access, consents).RequireAsync(principal, hiddenTask.TaskId, false, db); }, "TASK_NOT_FOUND");
+legacyDraft.ParentAuthorUserId = users[0].Id; legacyDraft.RespondentRelationship = "GRANDPARENT"; await db.SaveChangesAsync();
+readerSql.Commands.Clear();
+var realMetadata = await new EfParentAuthorMetadataReader().ReadAsync(db, hiddenTask.TaskId, default);
+Check(realMetadata.Draft.Exists && realMetadata.Draft.ParentAuthorUserId == users[0].Id && !realMetadata.Response.Exists, "real EF reader projects trusted persisted author");
+Check(readerSql.Commands.Count == 2 && readerSql.Commands.All(sql => !sql.Contains("answers_json") && !sql.Contains("respondent_name") && !sql.Contains("payload_hash") && !sql.Contains("hash_version")), "real SQL projects metadata only");
+await using (var readerTransaction = await db.Database.BeginTransactionAsync())
+{
+    await new EfParentAuthorMetadataReader().ReadAsync(db, hiddenTask.TaskId, default);
+    Check(ReferenceEquals(db.Database.CurrentTransaction, readerTransaction), "EF reader preserves caller transaction ownership");
+    await readerTransaction.RollbackAsync();
+}
+using (var unavailableConnection = new SqliteConnection("Data Source=:memory:"))
+{
+    await unavailableConnection.OpenAsync(); // Intentionally no tables in an isolated database.
+    await using var unavailableDb = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
+        .UseSqlite(unavailableConnection).UseModel(db.Model).Options);
+    try { await new MetadataParentAuthorVisibility(new EfParentAuthorMetadataReader()).CanRevealAsync(unavailableDb, users[0].Id, hiddenTask.TaskId, default); throw new Exception("missing schema allowed"); }
+    catch (SqliteException) { Check(true, "real EF query failure is not interpreted as missing rows"); }
+}
+Check((await new ParentQuestionnaireAccess(db, actors, access, consents).RequireAsync(principal, hiddenTask.TaskId, false, db)).GuardianId == context.GuardianId, "real reader permits own known author precheck only");
+await Error(async () => { await policy.RequireAsync(Principal(users[1]), hiddenTask.TaskId, false, db); }, "TASK_NOT_FOUND");
+legacyDraft.ParentAuthorUserId = null; await db.SaveChangesAsync();
 db.QuestionnaireDrafts.Remove(legacyDraft); await db.SaveChangesAsync();
 var legacyResponse = new QuestionnaireResponse { ResponseId = Guid.NewGuid(), TaskId = hiddenTask.TaskId,
     QuestionnaireVersionId = version.QuestionnaireVersionId, RespondentName = "unknown synthetic author",
@@ -278,6 +302,9 @@ var legacyResponse = new QuestionnaireResponse { ResponseId = Guid.NewGuid(), Ta
     IdempotencyKey = Guid.NewGuid(), SubmittedAtUtc = now };
 db.QuestionnaireResponses.Add(legacyResponse); await db.SaveChangesAsync();
 await Error(async () => { await new ParentQuestionnaireAccess(db, actors, access, consents).RequireAsync(principal, hiddenTask.TaskId, false, db); }, "TASK_NOT_FOUND");
+legacyResponse.ParentAuthorUserId = users[0].Id; await db.SaveChangesAsync();
+Check((await new ParentQuestionnaireAccess(db, actors, access, consents).RequireAsync(principal, hiddenTask.TaskId, false, db)).ActorUserId == users[0].Id, "real response author is readable without inferring hash version");
+await Error(async () => { await policy.RequireAsync(Principal(users[1]), hiddenTask.TaskId, false, db); }, "TASK_NOT_FOUND");
 db.QuestionnaireResponses.Remove(legacyResponse); await db.SaveChangesAsync();
 var draftHttp = await http.GetFromJsonAsync<ParentDraftResponse>(route + "/draft"); Check(draftHttp?.Revision == "0" && draftHttp.RespondentRelationship is null, "HTTP new draft has revision zero and null relationship");
 // Fault injection is test-only. Proves the real Controller/filter HTTP boundary,

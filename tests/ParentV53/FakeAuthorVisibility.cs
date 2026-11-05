@@ -11,7 +11,7 @@ public sealed class FakeAuthorVisibility(FakeParentGatewayState state) : IParent
     {
         public async Task<ParentTaskAuthorMetadata> ReadAsync(ApplicationDbContext db, Guid taskId, CancellationToken ct)
         {
-            var legacy = await new LegacyParentAuthorMetadataReader().ReadAsync(db,taskId,ct);
+            var legacy = await new EfParentAuthorMetadataReader().ReadAsync(db,taskId,ct);
             return new(state.Drafts.TryGetValue(taskId,out var d) ? new(true,d.Author,false) : legacy.Draft,
                 state.Responses.TryGetValue(taskId,out var r) ? new(true,r.Author,false) : legacy.Response);
         }

@@ -29,7 +29,7 @@ public static class ParentModuleRegistration
         services.TryAddSingleton<Services.Email.IParentEmailVerification, Services.Email.ParentEmailVerification>();
         services.AddOptions<ParentModuleOptions>().BindConfiguration("ParentModule");
         services.TryAddScoped<IParentActorProvider, ParentActorProvider>();
-        services.TryAddScoped<Services.Questionnaires.IParentAuthorMetadataReader, LegacyParentAuthorMetadataReader>();
+        services.TryAddScoped<Services.Questionnaires.IParentAuthorMetadataReader, Services.Questionnaires.EfParentAuthorMetadataReader>();
         services.TryAddScoped<IParentAuthorVisibility, MetadataParentAuthorVisibility>();
         services.TryAddScoped<ParentConsentService>();
         services.TryAddScoped<IParentQuestionnaireAccess, ParentQuestionnaireAccess>();

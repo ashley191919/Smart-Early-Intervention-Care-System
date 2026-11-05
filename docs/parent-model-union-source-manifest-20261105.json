@@ -1,0 +1,67 @@
+{
+  "source16": "8f03f8bd40e41eaf63dd8d6fd828052430b88113",
+  "base11": "b5573b5311641d9b108930cbdf5e461dbc1bcea0",
+  "importedFiles": [
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/QuestionnaireDraft.cs",
+      "sourceBlob": "1beb6f631711727129e013989bf0866c6c7ba888"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/QuestionnaireResponse.cs",
+      "sourceBlob": "5088761560da4e2de9d25ec97330232a4f9638f6"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/ParentQuestionnaireModelConfiguration.cs",
+      "sourceBlob": "0c5e87cc82f96189165d46220cb69568cb009eb5"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Entities/CaseStatusHistory.cs",
+      "sourceBlob": "0c81000a640c5f3e7967eab243db8016bd8f2fe2"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/CaseStatusHistoryConfiguration.cs",
+      "sourceBlob": "d1f17587789c34e0363d6cf8e28c4561feee596d"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Services/Cases/CaseStatusPolicy.cs",
+      "sourceBlob": "9ad14aee58ab19d4fa2e8484ec22aba503878633"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Services/Cases/CaseStatusHistoryPolicy.cs",
+      "sourceBlob": "c87bab75d15364d40e71a7dbf499d10382c16392"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Services/Questionnaires/EfParentAuthorMetadataReader.cs",
+      "sourceBlob": "b489843e7462d5f1bd18faeec9455bd813a9a04e"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.cs",
+      "sourceBlob": "8b7b38b820be0dffe3159821edd5dfd28c3cf8b3"
+    },
+    {
+      "path": "EarlyInterventionCare.Api/Data/Migrations/20261019131342_AddCaseStatusHistories.Designer.cs",
+      "sourceBlob": "9928bd4ad7b88b1f56fbc97a095315835b050e44"
+    }
+  ],
+  "preservedHistoricalFiles": [
+    "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.Designer.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/20261005152359_InitialSharedCore.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.Designer.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/20261005180101_AddAuditLogs.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.Designer.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/20261005184434_AddSubmissionReceiptWindow.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.Designer.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/20261006074424_IntegrateIdentityAndAuthorization.cs",
+    "EarlyInterventionCare.Api/Data/Migrations/ApplicationDbContextModelSnapshot.cs"
+  ],
+  "preserved11Files": [
+    "EarlyInterventionCare.Api/Data/Entities/CaseRecord.cs",
+    "EarlyInterventionCare.Api/Data/Entities/GuardianContact.cs",
+    "EarlyInterventionCare.Api/Models/Authentication/User.cs",
+    "EarlyInterventionCare.Api/Data/CoreModelConfiguration.cs",
+    "EarlyInterventionCare.Api/Data/GuardianModelConfiguration.cs",
+    "EarlyInterventionCare.Api/Data/IdentityModelConfiguration.cs",
+    "EarlyInterventionCare.Api/ParentModule/ConsentModels.cs",
+    "EarlyInterventionCare.Api/Program.cs"
+  ]
+}

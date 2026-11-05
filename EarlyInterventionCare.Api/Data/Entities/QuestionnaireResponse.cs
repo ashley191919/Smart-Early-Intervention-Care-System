@@ -7,11 +7,17 @@ public sealed class QuestionnaireResponse
     public Guid TaskId { get; set; }
     public Guid QuestionnaireVersionId { get; set; }
     public string RespondentName { get; set; } = null!;
+    // Unknown for legacy/teacher rows. New parent submissions validate this separately.
+    public string? RespondentRelationship { get; set; }
     public DateOnly FilledOn { get; set; }
     public string AnswersJson { get; set; } = null!;
     public string? Observation { get; set; }
     public Guid? SubmittedByGrantId { get; set; }
+    // Null for legacy/teacher rows. Parent authors are supplied by the trusted adapter.
+    public Guid? ParentAuthorUserId { get; set; }
     public Guid IdempotencyKey { get; set; }
     public byte[] PayloadHash { get; set; } = null!;
+    // Null means no recorded/verified algorithm version, not an inferred legacy version.
+    public string? HashVersion { get; set; }
     public DateTime SubmittedAtUtc { get; set; }
 }
