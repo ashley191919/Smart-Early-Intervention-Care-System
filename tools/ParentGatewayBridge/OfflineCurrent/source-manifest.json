@@ -1,0 +1,50 @@
+﻿{
+    "sources":  [
+                    {
+                        "compiled":  "ParentQuestionnaireContracts.cs",
+                        "source":  "EarlyInterventionCare.Api/ParentModule/ParentQuestionnaireContracts.cs",
+                        "prefix":  "using System.Security.Claims;\nusing EarlyInterventionCare.Api.DTOs.Questionnaires;\nusing EarlyInterventionCare.Api.Services.Questionnaires;\nnamespace EarlyInterventionCare.Api.ParentModule;\n",
+                        "start":  315,
+                        "snapshot":  "ParentQuestionnaireContracts.source.txt",
+                        "length":  2188,
+                        "blob":  "0c253d16650f6a552bda9efeb6850be7bc47391c"
+                    },
+                    {
+                        "compiled":  "ParentCorePayloadMapping.cs",
+                        "source":  "EarlyInterventionCare.Api/ParentModule/ParentCorePayloadMapping.cs",
+                        "prefix":  "",
+                        "start":  0,
+                        "snapshot":  "ParentCorePayloadMapping.source.txt",
+                        "length":  3382,
+                        "blob":  "30bfe65d72f56a9eb88a2b18358fc50183fd849e"
+                    },
+                    {
+                        "compiled":  "ParentCoreHttpErrors.cs",
+                        "source":  "EarlyInterventionCare.Api/ParentModule/ParentCoreHttpErrors.cs",
+                        "prefix":  "",
+                        "start":  0,
+                        "snapshot":  "ParentCoreHttpErrors.source.txt",
+                        "length":  1970,
+                        "blob":  "1289a7b967b7f6907d7716e6214c28a9899a6a6c"
+                    },
+                    {
+                        "compiled":  "ParentModuleRegistration.cs",
+                        "source":  "EarlyInterventionCare.Api/ParentModule/ParentModuleRegistration.cs",
+                        "prefix":  "using System.Data.Common;\nusing EarlyInterventionCare.Api.Services.Cases;\nusing Microsoft.EntityFrameworkCore;\nusing Microsoft.AspNetCore.Mvc;\nusing Microsoft.AspNetCore.Mvc.Filters;\nnamespace EarlyInterventionCare.Api.ParentModule;\n",
+                        "start":  5524,
+                        "snapshot":  "ParentModuleRegistration.source.txt",
+                        "length":  1061,
+                        "blob":  "2482591ca53ea205555c8151a2f53f2250069566"
+                    },
+                    {
+                        "compiled":  "CaseAccessException.cs",
+                        "source":  "EarlyInterventionCare.Api/Services/Cases/CaseAccessService.cs",
+                        "prefix":  "namespace EarlyInterventionCare.Api.Services.Cases;\n",
+                        "start":  252,
+                        "snapshot":  "CaseAccessService.source.txt",
+                        "length":  179,
+                        "blob":  "6e3122f03682f9588e423418e8f29f2655f6a449"
+                    }
+                ],
+    "commit":  "d268b7d70be33e04d44bdfa044b13339448815f6"
+}

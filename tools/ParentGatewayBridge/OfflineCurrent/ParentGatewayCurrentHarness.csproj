@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems><UseAppHost>false</UseAppHost>
+    <DefineConstants>$(DefineConstants);PARENT_DTO_26E8B7F</DefineConstants>
+    <RestoreSources>$(MSBuildThisFileDirectory)</RestoreSources><NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs;PipelineSafetyReadiness.cs;CaseAccessException.cs;ParentQuestionnaireContracts.cs;ParentCorePayloadMapping.cs;ParentCoreHttpErrors.cs;ParentModuleRegistration.cs" />
+    <Compile Include="../ParentGatewayBridgeSkeleton.cs" Link="ParentGatewayBridgeSkeleton.cs" />
+    <Compile Include="../../ParentBridgeMapper/ParentBridgeDtoMapper.cs" Link="ParentBridgeDtoMapper.cs" />
+    <ProjectReference Include="../../../EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj" />
+    <None Update="*.source.txt;source-manifest.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
