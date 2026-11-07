@@ -1,5 +1,53 @@
 # V5.3 07-05：醫療端 Task／完成度唯讀消費端
 
+## 2026-11-08：11/09 最小查詢整合準備
+
+07 檢查基準：`feature/medical-backend` / `56eb9f21f8928e4310cb5c5eb7255778b35923bb`。本次只增補本文件及 `tests/MedicalTaskFrontend.test.cjs`，不修改產品 JS／HTML／CSS、後端或既有未追蹤 Workflow Service／Store／Harness；既有 manifest 修改及其他未追蹤成果保持原狀。下方 2026-10-25 的基準、檔案清單與驗收數字保留為歷史紀錄，不代表本次重新執行。
+
+### 固定來源與證據界線
+
+- 16 最新提供的是候選固定版本 `159c27f7790a77eca1ab2d746aac9fd7202b6688`。本機查無該 Git object；本次以 HTTPS 唯讀取得其 [QuestionnairesController](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/159c27f7790a77eca1ab2d746aac9fd7202b6688/EarlyInterventionCare.Api/Controllers/QuestionnairesController.cs)、[QuestionnaireContracts](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/159c27f7790a77eca1ab2d746aac9fd7202b6688/EarlyInterventionCare.Api/DTOs/Questionnaires/QuestionnaireContracts.cs)、[QuestionnaireService](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/159c27f7790a77eca1ab2d746aac9fd7202b6688/EarlyInterventionCare.Api/Services/Questionnaires/QuestionnaireService.cs)、[EfQuestionnaireStore](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/159c27f7790a77eca1ab2d746aac9fd7202b6688/EarlyInterventionCare.Api/Services/Questionnaires/EfQuestionnaireStore.cs)。四檔與 07 本機對應檔案在正規化換行及首尾空白後內容完全相同。
+- 同版 [Workflow 候選文件](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/159c27f7790a77eca1ab2d746aac9fd7202b6688/docs/v53-questionnaire-workflow-integration-proposal.md) 明示 CandidateRoundCompletionDto 等新增設計未實作，不修改既有 HTTP DTO。它不是本次 Task GET 正式交付或 Workflow 驗收。
+- 本機可讀 16 ref 為 `origin/feature/shared-rbac-core` / `a9de56965004921c50de0c306dcecf19da4c8e08`；其 handoff 文件明載較早 `1a87aaba71a49de531f2b118ab5531fc7c9de03b`。這些是歷史可驗證來源，不宣稱為 16 即時最新正式 producer。**目前未取得由 16 核定、已接正式醫療 Scope 的最新 GET producer 固定版。**
+- 沒有 Git Fetch／Pull／Merge，沒有執行候選 producer、正式 Submit、資料庫操作或解除任何限制。
+
+### 現況盤點
+
+|項目|已由現有程式／固定來源證實|交付界線|
+|---|---|---|
+|Task 路由|GET `/api/cases/{caseId:guid}/tasks`，直接陣列、空資料 `[]`，沒有 page／round 參數|Consumer 經 MedicalApi → StaffAuth；不新增第二套 fetch 或自行選輪次|
+|Completion 路由|GET `/api/cases/{caseId:guid}/tasks/completion`，單一七欄 DTO|是全部輪次原始統計，不能作有效輪次完成度或 Workflow 轉態依據|
+|四狀態|PENDING／IN_PROGRESS／SUBMITTED／CANCELLED → 待填／進行中／已提交／已取消|取消任務不被前端改成已提交；未知狀態拒絕|
+|必要／非必要|每列顯示 isRequired；顯示後端必要任務總數、提交、待填及進行中數|HTTP Completion 沒有 optionalCount 或 cancelledRequiredCount；不前端補算缺少的彙總|
+|Case Detail|Case GET 成功後載入 Task／Completion，表單紀錄頁籤顯示任務，上方顯示必要已提交數|清單與 Completion 是兩次讀取，不保證同一快照；不回答案、不提供假的結果連結|
+|Dashboard|API 模式清除既有提醒、統計顯示未提供，不從分頁 Case 或 Task 拼出總數|沒有正式 Dashboard 統計 producer；尚未完成正式統計整合|
+|空資料與錯誤|空列表是空狀態；401／403／404／503、錯誤 DTO 清資料；API 不回退 Demo|401 清登入狀態；實際 StaffAuth 對失敗 HTTP 會清權限，父頁不保留舊 Case／Task|
+|角色|GET Controller 的 CheckUser 重查 ACTIVE 帳號及角色，只接受 ADMIN／CASE_MANAGER|MEDICAL_STAFF 現況被拒絕；staff-session 只接受 CASE_MANAGER／MEDICAL_STAFF，不能自行擴權|
+|Scope／環境|CaseAllowed 仍限 Development 且 CaseId=`10000000-0000-4000-8000-000000000001`|其他環境／Case 回 403 CASE_ACCESS_NOT_INTEGRATED；不是一般 Case 或跨院所正式授權|
+|Permission|候選版 ScopedReadAuthorization 定義 case.read／questionnaire.task.read 加 Scope，預設 Deny|Task／Completion Controller 尚未使用該授權服務；Policy 存在不表示端點已套用|
+
+Task DTO 十三欄：`taskId`、`caseId`、`questionnaireId`、`questionnaireVersionId`（Guid）；`questionnaireTitle`、`versionNumber`、`respondentRole`、`taskStatus`（string）；`assignmentRound`（uint）；`isRequired`（bool）；`createdAtUtc`、`updatedAtUtc`（UTC DateTime）；`submittedAtUtc`（DateTime?）。既有 Consumer 另要求 SUBMITTED 有時間、其他狀態時間為 null；取消後是否可能保留提交時間，仍需 16 ACK，不推定 DTO nullable 宣告等於所有組合皆合法。
+
+Completion DTO 七欄：`caseId`（Guid）；`totalTaskCount`、`requiredTaskCount`、`requiredSubmittedCount`、`requiredPendingCount`、`requiredInProgressCount`（int）；`allRequiredSubmitted`（bool）。現有 Service 對全部輪次 IsRequired 計數、只將 SUBMITTED 算已提交；CANCELLED 必要任務仍在 required 總數，零必要時 bool=false。這是既有查詢行為，不是核定的有效輪次／取消業務政策。前端原值呈現，不產生百分比、有效輪次、CaseStatus 或 History。
+
+### 本次測試
+
+- `node --test tests/MedicalTaskFrontend.test.cjs`：**26 項通過，0 失敗**。原有 21 項加 5 項：混合輪次與取消必要任務、僅非必要任務、非必要未填但必要全提交、拒絕用內部候選 DTO 替換 HTTP DTO、實際 Client／Store 呼叫隔離 HTTP Host。
+- 前端回歸 15 檔（MedicalFrontendPackage、MedicalTaskFrontend、MedicalApiClient、MedicalCaseFrontend、MedicalCaseGetContract、StaffAuthenticationFrontend、StaffPermissionPresentation、StaffLoginEntry、MedicalDemoFixtures、MedicalDemoEntry、ResponseDetailFrontend、SharedFrontendDemo、TeacherDraftClient、MedicalV53Ui、MedicalDashboardReminders）：**249 項通過，0 失敗／跳過**，包含上述 26 項。
+- JavaScript 語法：上述測試檔及 medical-api／medical-task-model／medical-task-view／medical-case-detail／staff-dashboard 共六檔通過。
+- 隔離 HTTP 測試使用 loopback Node Host、虛構 Case／Task、合成 JSON。它實際送 HTTP 並執行產品 Client／Store，但**不執行 ASP.NET Core Controller、JWT／Cookie 驗證、RBAC 或 MySQL**。測試 CaseId 不在正式 Development gate，不把 fixture 回 200 視為授權通過。
+- 本次未修改產品畫面，未重跑瀏覽器視覺驗收或 dotnet build；下方舊瀏覽器／Build 紀錄不是本次結果。
+
+### 需要 16／11 確認後才能正式驗收
+
+1. 請 16 提供並 ACK 醫療 Task／Completion GET 的正式完整 SHA、兩路由、十三／七欄 DTO 與 nullable／時間規則；若保留現有路由，確認本期只呈現跨輪次基本統計。
+2. CASE_MANAGER／MEDICAL_STAFF 的讀取權限各是什麼？Completion 是否同用 questionnaire.task.read？由誰將 Policy 與正式 Case／Task Scope 接到兩個 GET？不要以 Candidate 的 Deny 介面存在代替已接線。
+3. 請 16 與 11 固定 CaseAccess 版本、同院所／指派範圍及不可見個案的 403／404；是否移除 Development 固定 Case gate 須由主責共同核准、實作與測試，07 不自行變更。
+4. GET 是否保留取消任務與全部歷史輪次？CANCELLED 是否可能有 submittedAtUtc？本期無 optionalCount／取消計數時是否接受逐列必要性及既有原始統計，不要求前端推算有效輪次？
+5. 提供整合 Host SHA、同源 HTTPS／可信 Origin、Cookie JWT pipeline、已授權虛構醫療帳號與隔離 MySQL 資料；需具備同院可讀、跨院不可讀、空任務、四狀態及過期／停用案例。測試帳密不寫文件或 Git。
+
+07-05 **Consumer 最小查詢準備及離線契約檢查已具備**；正式「登入 → Case → Task／基本完成狀態」仍受 GET producer／角色／Scope／環境阻塞。Workflow、有效輪次演算法、指派寫入與進階 Dashboard 不屬本次範圍。建議 Commit：`test(medical): verify Task and legacy completion read contracts`；本次未自動 Commit／Push。
+
 日期：2026-10-25（本輪自 10/24 接續）。工作基準：`feature/medical-backend`，`44ec4e4713ae26a2d367d4e64335c949bddfe3ce`。僅核對本機程式，未 Fetch／Pull／Merge。這是正式路由的前端消費端準備，不是正式 MySQL 驗收。
 
 ## 一、本機實際 API 與限制

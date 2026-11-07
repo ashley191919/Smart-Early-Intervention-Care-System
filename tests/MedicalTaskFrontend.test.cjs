@@ -1,4 +1,6 @@
 'use strict';
+// Consumer checks against unchanged legacy GET sources read at candidate
+// 159c27f7790a77eca1ab2d746aac9fd7202b6688. No producer/RBAC/MySQL acceptance is implied.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -92,6 +94,49 @@ test('completion 503 cannot cause locally calculated counts; valid tasks stay in
   assert.equal(f.store.snapshot().phase, 'ready'); assert.equal(f.store.snapshot().completion, null);
   assert.equal(f.store.snapshot().completionError.status, 503);
 });
+
+test('legacy completion preserves mixed rounds and required CANCELLED tasks without choosing an effective round', async () => {
+  const rows = [tasks[0], tasks[2], { ...tasks[3], isRequired: true }, { ...tasks[1], isRequired: false }];
+  const stats = { ...completion, requiredInProgressCount: 0 };
+  const f = fixture({ rows, stats }); await f.store.load(caseId);
+  const state = f.store.snapshot();
+  assert.deepEqual(state.rows.map(row => row.round), [1, 3, 4, 2]);
+  assert.equal(state.rows[2].status, 'CANCELLED'); assert.equal(state.rows[2].required, '必要');
+  assert.equal(state.rows[3].required, '非必要'); assert.deepEqual(state.completion, stats);
+  assert.equal(state.completion.allRequiredSubmitted, false);
+  for (const key of ['effectiveRound', 'currentRound', 'optionalCount', 'cancelledRequiredCount', 'decision'])
+    assert.equal(key in state.completion, false);
+  assert.ok(f.calls.every(call => !call.url.includes('?')));
+});
+
+test('optional-only tasks remain visible while zero-required completion stays the explicit server value', async () => {
+  const stats = { caseId, totalTaskCount: 1, requiredTaskCount: 0, requiredSubmittedCount: 0,
+    requiredPendingCount: 0, requiredInProgressCount: 0, allRequiredSubmitted: false };
+  const f = fixture({ rows: [{ ...tasks[0], isRequired: false }], stats }); await f.store.load(caseId);
+  assert.equal(f.store.snapshot().phase, 'ready'); assert.equal(f.store.snapshot().rows[0].required, '非必要');
+  assert.deepEqual(f.store.snapshot().completion, stats);
+});
+
+test('server allRequiredSubmitted is displayed with pending optional tasks without becoming a Workflow decision', async () => {
+  const stats = { caseId, totalTaskCount: 2, requiredTaskCount: 1, requiredSubmittedCount: 1,
+    requiredPendingCount: 0, requiredInProgressCount: 0, allRequiredSubmitted: true };
+  const f = fixture({ rows: [tasks[2], { ...tasks[0], isRequired: false }], stats }); await f.store.load(caseId);
+  const state = f.store.snapshot();
+  assert.equal(state.rows[1].status, 'PENDING'); assert.equal(state.rows[1].required, '非必要');
+  assert.deepEqual(state.completion, stats);
+  assert.equal('caseStatus' in state, false); assert.equal('decision' in state, false);
+  assert.ok(f.calls.every(call => call.options.method === 'GET'));
+});
+
+test('the internal candidate round DTO cannot silently replace the legacy HTTP completion contract', async () => {
+  const candidate = { caseId, effectiveRound: 3, roundRevision: '1', requiredCount: 1, submittedRequiredCount: 1,
+    pendingRequiredCount: 0, inProgressRequiredCount: 0, cancelledRequiredCount: 0, optionalCount: 1,
+    allRequiredSubmitted: true, decision: 'Complete', pendingReasons: [], source: 'TransactionalRoundSnapshot',
+    observedAtUtc: '2026-11-08T00:00:00Z', isCommitted: false };
+  const f = fixture({ stats: candidate }); await f.store.load(caseId);
+  assert.equal(f.store.snapshot().completionPhase, 'error'); assert.equal(f.store.snapshot().completion, null);
+  assert.match(f.store.snapshot().completionError.message, /格式異常/);
+});
 test('a new Case selection clears rows and late list/completion cannot overwrite it', async () => {
   const lateList = deferred(), lateStats = deferred();
   const store = model.createStore({ list: id => id === caseId ? lateList.promise : tasks.map(t => ({ ...t, caseId: id })),
@@ -177,6 +222,38 @@ test('isolated HTTP host serves fixed Task paths and error/empty fixtures withou
         assert.equal(response.status, expected); const data = await response.json();
         if (!scenario) assert.deepEqual(data, suffix ? completion : tasks);
         if (scenario === 'empty' && !suffix) assert.deepEqual(data, []);
+      }
+    }
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('actual Client and Task Store consume the synthetic HTTP host without any Demo fallback', async () => {
+  const { createMedicalCasePreviewServer } = require('./MedicalCasePreviewServer.cjs');
+  const server = createMedicalCasePreviewServer(); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const origin = 'http://127.0.0.1:' + server.address().port;
+    for (const [scenario, status] of [['', 200], ['empty', 200], ['expired', 401], ['forbidden', 403], ['missing', 404], ['unavailable', 503]]) {
+      const calls = [];
+      const transport = api.createTransport({ origin, fetchImpl: (url, options) => {
+        calls.push({ url, options });
+        const headers = new Headers(options.headers);
+        // Test-host scenario selection only; production code never sends this fixture parameter.
+        headers.set('Referer', origin + '/case-detail.html?source=api&taskScenario=' + scenario);
+        return fetch(origin + url, { ...options, headers });
+      } });
+      const store = model.createStore(model.createApiAdapter(api.createClient({ cookieFetch: transport.fetch })));
+      await store.load(caseId); const state = store.snapshot();
+      if (status === 200) {
+        assert.equal(state.phase, scenario ? 'empty' : 'ready'); assert.equal(state.completionPhase, 'ready');
+        assert.equal(state.rows.length, scenario ? 0 : 4);
+      } else {
+        assert.equal(state.error.status, status); assert.equal(state.completionError.status, status);
+        assert.deepEqual(state.rows, []); assert.equal(state.completion, null);
+      }
+      assert.deepEqual(calls.map(call => call.url).sort(), [`/api/cases/${caseId}/tasks`, `/api/cases/${caseId}/tasks/completion`]);
+      for (const call of calls) {
+        assert.equal(call.options.method, 'GET'); assert.equal(call.options.credentials, 'same-origin');
+        assert.equal(call.options.headers.has('Authorization'), false); assert.equal(call.options.headers.has('Cookie'), false);
       }
     }
   } finally { await new Promise(resolve => server.close(resolve)); }
