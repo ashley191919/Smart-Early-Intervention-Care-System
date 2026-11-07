@@ -21,6 +21,8 @@
     }
     const invalid = () => { throw new MedicalApiError(0, "INVALID_RESPONSE"); };
     const uuid = value => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(value);
+    // CaseGuardianService.ListAsync at producer d268b7d rejects pages above this limit.
+    const casePageLimit = 100000;
     const text = value => typeof value === "string" && value.trim().length > 0;
     const caseStatuses = new Set(["NEW", "TO_CONTACT", "APPOINTED", "WAITING_FORM", "FORM_COMPLETED", "COMPLETED"]);
     const taskStatuses = new Set(["PENDING", "IN_PROGRESS", "SUBMITTED", "CANCELLED"]);
@@ -147,7 +149,8 @@
         }
         return Object.freeze({
             async cases(page = 1, pageSize = 20, signal) {
-                if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100)
+                if (!Number.isSafeInteger(page) || page < 1 || page > casePageLimit ||
+                    !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100)
                     throw new MedicalApiError(400, "INVALID_PAGE");
                 const values = await get(`/api/cases?page=${page}&pageSize=${pageSize}`, signal);
                 if (!Array.isArray(values) || values.length > pageSize) invalid();
@@ -167,5 +170,5 @@
             }
         });
     }
-    return { createTransport, createClient, readJson, MedicalApiError, uuid, caseDto, taskDto, completionDto };
+    return { createTransport, createClient, readJson, MedicalApiError, uuid, casePageLimit, caseDto, taskDto, completionDto };
 });

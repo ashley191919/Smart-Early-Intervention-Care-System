@@ -1,6 +1,6 @@
 'use strict';
-// Consumer contract supplied by the user for 11 commit 0e4e16939b2fb711190aa490ca80098f0615ff47.
-// That commit is NOT locally available. These tests do not execute or verify its producer.
+// Consumer contract reviewed against GitHub source at 11 commit d268b7d70be33e04d44bdfa044b13339448815f6.
+// The Git object is NOT locally available. These synthetic tests do not execute its producer.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../EarlyInterventionCare.Api/wwwroot/js/medical-api.js');
@@ -29,12 +29,44 @@ test('fixed full CaseDto[] and single CaseDto are consumed with unchanged route 
 });
 
 test('default page=1/pageSize=20 and explicit page/pageSize up to 100 are transmitted as the only list parameters', async () => {
-  const f = fakeApi(); await f.client.cases(); await f.client.cases(3, 100); await f.client.cases(2, 10); await f.client.cases(100001, 20);
-  assert.deepEqual(f.calls.map(c => c.url), ['/api/cases?page=1&pageSize=20', '/api/cases?page=3&pageSize=100', '/api/cases?page=2&pageSize=10', '/api/cases?page=100001&pageSize=20']);
+  const f = fakeApi(); await f.client.cases(); await f.client.cases(3, 100); await f.client.cases(2, 10); await f.client.cases(100000, 20);
+  assert.deepEqual(f.calls.map(c => c.url), ['/api/cases?page=1&pageSize=20', '/api/cases?page=3&pageSize=100', '/api/cases?page=2&pageSize=10', '/api/cases?page=100000&pageSize=20']);
   for (const call of f.calls) {
     assert.equal(call.options.method, 'GET'); assert.equal(call.options.credentials, 'same-origin');
     assert.equal(call.options.redirect, 'error'); assert.equal(call.options.cache, 'no-store');
+    assert.equal(call.options.headers.has('Authorization'), false);
+    assert.equal(call.options.headers.has('Cookie'), false);
   }
+});
+
+test('producer page bounds reject invalid pages and sizes before sending any request', async () => {
+  const f = fakeApi();
+  for (const page of [0, -1, 1.5, '1', null, 100001, Number.MAX_SAFE_INTEGER])
+    await assert.rejects(f.client.cases(page, 20), rejected(400));
+  for (const pageSize of [0, -1, 1.5, '20', null, 101])
+    await assert.rejects(f.client.cases(1, pageSize), rejected(400));
+  assert.equal(f.calls.length, 0);
+});
+
+test('a full page permits trying the next page; an empty next page can return without inventing totals', async () => {
+  const calls = [], fullPage = Array.from({ length: 20 }, (_, index) => ({ ...record,
+    caseId: '20000000-0000-4000-8000-' + String(index + 1).padStart(12, '0') }));
+  const transport = api.createTransport({ origin: 'https://case-test.invalid', fetchImpl: async url => {
+    calls.push(url);
+    const page = Number(new URL(url, 'https://case-test.invalid').searchParams.get('page'));
+    return new Response(JSON.stringify(page === 2 ? [] : fullPage));
+  } });
+  const store = model.createStore(model.createApiAdapter(api.createClient({ cookieFetch: transport.fetch })));
+  await store.list();
+  assert.equal(store.snapshot().rows.length, 20); assert.equal(store.snapshot().hasNext, true);
+  await store.list(2);
+  assert.equal(store.snapshot().phase, 'empty'); assert.equal(store.snapshot().hasNext, false);
+  assert.equal(store.snapshot().page, 2); assert.equal('totalCount' in store.snapshot(), false);
+  await store.list(1);
+  assert.equal(store.snapshot().rows.length, 20);
+  await store.list(100000);
+  assert.equal(store.snapshot().rows.length, 20); assert.equal(store.snapshot().hasNext, false);
+  assert.deepEqual(calls, [1, 2, 1, 100000].map(page => `/api/cases?page=${page}&pageSize=20`));
 });
 
 test('200 [] is empty; paged envelopes with totalCount are not silently accepted as CaseDto[]', async () => {
@@ -123,6 +155,42 @@ for (const status of [401, 403, 404, 503]) {
     assert.equal(store.snapshot().detail, null); assert.equal(store.snapshot().error.status, status);
   });
 }
+
+test('CASE_NOT_FOUND clears an earlier detail without revealing whether a case exists outside scope', async () => {
+  const calls = [];
+  const client = api.createClient({ cookieFetch: async url => {
+    calls.push(url);
+    return calls.length === 1 ? new Response(JSON.stringify(record)) :
+      new Response(JSON.stringify({ code: 'CASE_NOT_FOUND', message: 'SENSITIVE_DIAGNOSTIC' }), { status: 404 });
+  } });
+  const store = model.createStore(model.createApiAdapter(client));
+  await store.detail(record.caseId); assert.equal(store.snapshot().phase, 'ready');
+  await store.detail(records[1].caseId);
+  const state = store.snapshot();
+  assert.equal(state.phase, 'error'); assert.equal(state.error.status, 404); assert.equal(state.detail, null);
+  assert.deepEqual(state.rows, []); assert.match(state.error.message, /找不到指定個案，或此個案目前不可見/);
+  assert.equal(JSON.stringify(state).includes('SENSITIVE_DIAGNOSTIC'), false);
+  assert.deepEqual(calls, [record.caseId, records[1].caseId].map(id => '/api/cases/' + id));
+});
+
+test('network failure and non-JSON success clear API data without a request to a Demo endpoint', async () => {
+  for (const failure of ['network', 'html']) {
+    const calls = [];
+    const transport = api.createTransport({ origin: 'https://case-test.invalid', fetchImpl: async url => {
+      calls.push(url);
+      if (calls.length === 1) return new Response(JSON.stringify([record]));
+      if (failure === 'network') throw new TypeError('SENSITIVE_DIAGNOSTIC');
+      return new Response('<html>unavailable</html>');
+    } });
+    const store = model.createStore(model.createApiAdapter(api.createClient({ cookieFetch: transport.fetch })));
+    await store.list(); assert.equal(store.snapshot().phase, 'ready');
+    await store.list(2);
+    assert.equal(store.snapshot().phase, 'error'); assert.deepEqual(store.snapshot().rows, []);
+    assert.equal(store.snapshot().detail, null);
+    assert.equal(JSON.stringify(store.snapshot()).includes('SENSITIVE_DIAGNOSTIC'), false);
+    assert.deepEqual(calls, ['/api/cases?page=1&pageSize=20', '/api/cases?page=2&pageSize=20']);
+  }
+});
 
 test('UUID paths reject DEMO-001 and malformed IDs before network; a different Case UUID is never displayed', async () => {
   const f = fakeApi({ wrongId: true });

@@ -83,7 +83,8 @@
                     if (!Array.isArray(result) || (adapter.mode === "api" && result.length > pageSize)) throw new api.MedicalApiError(0, "INVALID_RESPONSE");
                     const rows = adapter.mode === "api" ? result.map(toViewModel) : result;
                     if (new Set(rows.map(row => row.id)).size !== rows.length) throw new api.MedicalApiError(0, "INVALID_RESPONSE");
-                    publish({ phase: rows.length ? "ready" : "empty", rows, hasNext: adapter.mode === "api" && rows.length === pageSize });
+                    publish({ phase: rows.length ? "ready" : "empty", rows,
+                        hasNext: adapter.mode === "api" && rows.length === pageSize && value < api.casePageLimit });
                 }
             } catch (error) {
                 if (current === revision) publish({ phase: "error", rows: [], detail: null, hasNext: false, error: errorView(error) });

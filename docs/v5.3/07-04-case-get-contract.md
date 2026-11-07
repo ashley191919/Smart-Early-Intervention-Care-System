@@ -1,5 +1,65 @@
 # V5.3 07-04：Case GET 固定契約消費端
 
+## 2026-11-07：d268b7d 固定契約核對與最小修正
+
+07 基準：`feature/medical-backend` / `b9f11330f756747ee6cd9e6fcdf0488ea520d773`。
+
+11 指定分支：`codex/integration-parent-model-union`。GitHub Commit API 將 `d268b7d` 解析為完整 SHA `d268b7d70be33e04d44bdfa044b13339448815f6`；下列固定來源已透過 HTTPS 唯讀檢查：
+
+- [CasesController.cs](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/d268b7d70be33e04d44bdfa044b13339448815f6/EarlyInterventionCare.Api/Controllers/CasesController.cs)
+- [CaseContracts.cs](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/d268b7d70be33e04d44bdfa044b13339448815f6/EarlyInterventionCare.Api/DTOs/Cases/CaseContracts.cs)
+- [CaseGuardianService.cs](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/d268b7d70be33e04d44bdfa044b13339448815f6/EarlyInterventionCare.Api/Services/Cases/CaseGuardianService.cs)
+- [CaseAccessService.cs](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/d268b7d70be33e04d44bdfa044b13339448815f6/EarlyInterventionCare.Api/Services/Cases/CaseAccessService.cs)
+- [Program.cs](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/d268b7d70be33e04d44bdfa044b13339448815f6/EarlyInterventionCare.Api/Program.cs)
+
+本機仍無該 Git object，也無指定分支 ref；未 Fetch/Pull/Merge，未編譯或執行該 producer。這次 DTO、路由、授權與頁碼上限的核對有固定原始碼依據，不只是文字契約；實際部署、資料庫及跨版本執行相容性尚未驗證。遠端 Git 物件的完整取得仍待團隊後續安排。
+
+### 已確認的契約與消費端行為
+
+|項目|固定 producer 與消費端核對|
+|---|---|
+|列表|GET `/api/cases?page=1&pageSize=20`；直接陣列，空值為 `[]`，沒有 totalCount|
+|分頁|producer `ListAsync` 實際限制 page 1–100000、pageSize 1–100；此次補上 Client 的 page 上限及最後一頁 hasNext=false。滿頁只代表可嘗試下一頁，不代表下一頁一定有資料；空頁可返回|
+|詳細|GET `/api/cases/{caseId:guid}`；Client 先驗證非空 GUID，詳細回應須對應同一 caseId；頁面不改顯示其他 Demo 個案|
+|CaseDto|十一個欄位一致；birthDate 為非 nullable DateOnly，revision 為 uint，字串及 UTC DateTime 均為非 nullable；缺漏/null/不合法日期維持安全拒絕，不猜測預設值|
+|資料呈現|姓名、身分證、地址沿用遮罩；列表未新增 nationalId/address 欄位。revision/createdAtUtc 保留 metadata，不據此開放編輯；聯絡人等非契約欄位不捏造|
+|錯誤|404 CASE_NOT_FOUND 不區分不存在或無權存取；401/403/503、網路錯誤、無效 JSON 均清空舊資料，不回退 Demo|
+|搜尋／排序|仍只作用於目前載入頁面；HTTP 只傳 page/pageSize，不假設後端有搜尋／篩選／排序參數|
+|Case Scope|producer 以目前 DB 使用者／角色／ACTIVE 使用者與院所核對，再依 OrganizationId 限制 Case。ADMIN、CASE_MANAGER、MEDICAL_STAFF 可讀同院所；跨院所詳細查詢為 404，不由前端提供院所或角色來放行|
+
+### 認證差異與整合阻塞
+
+- 07 的預設 Scheme 是 JwtBearer；`OnMessageReceived` 在沒有 Authorization Header 時，從固定 HttpOnly staff Cookie 取出 JWT，仍驗證簽章、Issuer、Audience、Claims 與有效期限。明確 Header 優先，無效 Header 不退回 Cookie。
+- 11 固定 Controller 是一般 `[Authorize]`，沒有自行強制讀取 Header；但該固定版本的 Program **只有標準 JWT Bearer Header 驗證，沒有 07 的 Cookie reader／CSRF 整合**。因此直接把前端指向這個獨立 Host，Cookie 請求不能視為已認證。
+- 目前 07 checkout 沒有 Case 列表／詳細 Controller。消費端不可能單靠此次前端修改，就完成真實 Case API 整合驗收。
+- 最小安全整合方向：由團隊核准在同一 HTTPS Host 中保留 07 的 Authentication／Cookie／CSRF pipeline，再整合 11 的 Case producer、服務與核定模型；共用相符的 JWT 設定及可信身分。需確認共享模型、DI、院所 Scope，並實測 Cookie 與明確 Bearer Header 兩條路徑。這次沒有改動或合併這些部分。
+- 不將 JWT 交給 JavaScript，不產生 Authorization Header，不降低 Cookie／CSRF／CORS 防護。Case GET 經既有 StaffAuth.cookieFetch，使用 credentials=same-origin；寫入仍由 StaffAuth 的 CSRF 流程保護。
+- 11 Case producer 允許 ADMIN 讀取，不代表 07 瀏覽器登入已開放 ADMIN。StaffSessionAuthorization／staff-auth 目前僅接受 CASE_MANAGER、MEDICAL_STAFF，這次保持原狀。ADMIN 醫療工作區規則仍須共同核定。
+
+### 本次變更與驗證
+
+只修改 `wwwroot/js/medical-api.js`、`wwwroot/js/medical-case-model.js`、`tests/MedicalCaseGetContract.test.cjs` 與本文件。既有未提交／未追蹤 Workflow、SQL、manifest 及其他成果保持原狀。
+
+- Case／Client／Contract：59 項通過，0 失敗；其中固定 Case Contract 20 項。新增頁碼上下界、滿頁→空頁→返回、最末頁、確切 CASE_NOT_FOUND 清舊資料、網路及非 JSON 回應測試；也確認 Client 不自行加入 Authorization／Cookie Header。
+- 前端回歸：15 個測試檔共 244 項通過，0 失敗、0 跳過，包含上述 59 項；均為 Fake／Contract／前端邏輯測試。
+- StaffSessionHarness：29 項離線檢查通過；採 Fake Authentication／Antiforgery，不能證明 11 producer 已接受 Cookie。
+- JavaScript 語法：medical-api、medical-case-model、medical-case-source、medical-case-detail、cases、staff-auth、staff-login、medical-config 共 8 檔通過。
+- API Release Build：0 警告、0 錯誤；沒有啟動正式 API 或存取資料庫。
+- 隔離瀏覽器：執行既有 `MedicalCasePreviewServer.cjs`，以虛構 HTTP API／合成身分在 1440×900 檢查列表 12 筆、GUID 詳細頁、空列表及 503 畫面。列表與詳細文件寬度均 1440，無文件橫向溢出；列表由 main 垂直捲動，捲到底後分頁按鈕在可視範圍。詳細維持遮罩，503 無個案連結或 Demo 列。已還原 viewport、關閉測試頁與 Host。這不是正式 ASP.NET Core／Cookie／MySQL 端到端測試；第 100000 頁以離線 Contract Test 驗證。
+
+可重現核心指令（不連線資料庫）：
+
+```powershell
+node --test tests/MedicalCaseGetContract.test.cjs tests/MedicalApiClient.test.cjs tests/MedicalCaseFrontend.test.cjs
+dotnet run --project tests/StaffSessionHarness.csproj --no-restore -c Release -p:UseAppHost=false
+dotnet build EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj --no-restore -c Release -p:UseAppHost=false
+git diff --check
+```
+
+07-04 **Consumer 契約與離線測試已完成**；正式整合驗收仍待同源 HTTPS 整合 Host、11 唯一 Case producer 的核准整合、相容 Schema／DI、已授權虛構測試帳號與隔離 MySQL 資料。驗收須涵蓋同院所列表／詳細、跨院所不出現在列表及詳細 404、未登入／過期 401、無權限 403、503 不回退，以及登出後無法再讀取。使用 `/cases.html?source=api` 明確進入 API 模式；現有 medical-config 的 Demo 預設未改，也未把 Demo 流程宣稱為正式 API。
+
+以下保留 2026-10-24 的歷史交付紀錄；其舊固定 SHA、測試數與「不另限制頁碼」描述由上述本次核對結果取代。
+
 日期：2026-10-24。07 工作基準 `feature/medical-backend` / `0a0644ae0d6a41879158e6afe97a9cfb8f08dc68`。
 
 ## 來源與查證界線
