@@ -32,6 +32,13 @@ function createMedicalDemoPreviewServer(environment = 'Development', { requireLo
             return;
         }
         if (requireLogin && url.pathname === '/api/auth/csrf') return reply(active ? 200 : 401, active ? { requestToken: 'isolated-test-only' } : {});
+        if (requireLogin && url.pathname === '/api/auth/logout' && request.method === 'POST') {
+            if (!active) return reply(401, {});
+            if (request.headers['x-earlycare-csrf'] !== 'isolated-test-only') return reply(403, { code: 'ISOLATED_CSRF_REQUIRED' });
+            // Synthetic session only. Never uses the production cookie name or JWT.
+            response.setHeader('Set-Cookie', 'isolated-medical-demo=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict');
+            response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
+        }
         if (url.pathname === '/api/auth/me') return reply(!active || session === 'expired' ? 401 : 200, user);
         if (url.pathname.startsWith('/api/medical-demo')) {
             if (environment !== 'Development') return reply(404, {});

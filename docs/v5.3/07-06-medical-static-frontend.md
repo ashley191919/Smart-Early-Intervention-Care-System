@@ -1,5 +1,66 @@
 # V5.3 07-06：醫療端靜態發布與本機獨立執行
 
+## 2026-11-08：API 模式部署與登入導覽驗收
+
+本輪基準 `feature/medical-backend` / `fdeeb8c00f2834e94f27477f141047ae354f5969`。以下為最新結果；下方 2026-10-25 的檔案清單、測試數、Build／瀏覽器記錄保留歷史用途，不當成本輪結果。既有未提交 manifest、SQL、Workflow Service／Store／Harness 與其他成果未改動。
+
+### 原因與最小產品修正
+
+發布工具原本就預設生成 `caseSource=api`，各頁重載同一設定，因此 API 發布包可以跨頁保持模式。但來源 wwwroot 預設 `caseSource=demo`；原本 staff-login.js 成功時固定前往 `/staff-dashboard.html`，StaffAuth 的 401／登出固定返回 `/staff-login.html`，會丟失明確的 `?source=api`，下一頁便可能恢復來源預設 Demo。Case 列表／詳細／返回連結與 Header 已有 API 傳遞，不需重新開發 UI。
+
+只修改三個產品檔案：
+
+- `wwwroot/js/medical-api.js` 新增 `staffPagePath(page, config, search)`：只接受固定登入／Dashboard 目標，API 模式僅攜帶 `source=api`；不轉送 return URL、CaseId、Token 或其他 query，不新增儲存與登入狀態。API 發布設定不可被 `source=demo` 降級；既有未選 API 的 Demo 導覽保留。
+- `wwwroot/js/staff-login.js`：成功導向透過此共用方法決定 Dashboard URL。
+- `wwwroot/js/staff-auth.js`：401／成功登出的返回登入 URL 沿用同一方法。沒有修改 me／csrf／logout 請求、角色、Permission、憑證處理或 CSRF 錯誤行為。
+
+|目標流程|核對結果|
+|---|---|
+|登入成功 → Dashboard|`/staff-dashboard.html?source=api`，不因 Auth 邊界丟失模式|
+|Dashboard → Case 列表|Header 沿用 `cases.html?source=api`；Dashboard 無正式統計來源仍顯示未提供，不顯示 Demo 數字|
+|列表 → 詳細|沿用 `case-detail.html?source=api&caseId=<GUID>`|
+|詳細 → Task／Completion|沿用集中式 Client 的兩個 GET；不新增輪次參數、不查 Demo 或原始答案|
+|詳細 → 返回列表|保留 `cases.html?source=api`|
+|登出 → 登入；401 → 登入|保留 `/staff-login.html?source=api`；登出仍先取得 CSRF，失敗不假裝成功|
+
+本輪沒有修改 HTML／CSS／版面、medical-config 的來源預設、Case／Task UI、共用 Program、Controller、RBAC、CaseAccess、DbContext 或 Migration。
+
+### 發布與安全界線
+
+從 repo 根目錄使用新目錄發布（不覆蓋既有包）：
+
+```powershell
+$medicalOutput = Join-Path $env:TEMP ('medical-api-' + [guid]::NewGuid().ToString('N'))
+node tools/medical-frontend/package.cjs --out "$medicalOutput" --case-source api
+node tools/medical-frontend/server.cjs --root "$medicalOutput" --port 5200
+```
+
+`--case-source api` 已以真正 CLI 測試，預設值也為 api。它在發布包生成 MedicalApiConfig，不改 repo 的 Demo 設定。若有已核准的同源 API prefix，可加 `--api-base /gateway`；prefix 不會產生 Proxy，前端頁面仍部署於 origin 根目錄，並不自動支援整個網站掛在子路徑。
+
+`server.cjs` 是無 TLS／無 Proxy 的 loopback 靜態 Server，`/api/*` 及 `/gateway/api/*` 仍回 **503 API_NOT_CONNECTED**；不設定登入 Cookie、不放寬 CORS，也不將失敗轉成 Demo 成功。正式部署仍需同源 HTTPS Host，或經核准的同源反向代理、相符的 API prefix、可信 Origin、原 Secure／HttpOnly／SameSite Cookie 及 CSRF pipeline。只啟動靜態包不代表可以正式登入。
+
+### 測試與證據
+
+- 新增五項自動測試：固定 Auth 導覽目標與 query 最小化；明確 API query 的登入／401／登出；API 發布模式不可被 query 降級；CLI `--case-source api`；發布包的虛構 HTTP 登入／Case／Task／CSRF 登出。
+- `MedicalApiClient`＋`StaffAuthenticationFrontend`：**54 PASS**；`MedicalFrontendPackage`＋`MedicalTaskFrontend`：**37 PASS**。完整前端回歸 15 檔共 **257 PASS，0 FAIL／跳過**，包含上述測試；既有 401／403／404／503、空資料、Case／Task 不回退 Demo 均通過。
+- 九個變更 JS／CJS 語法及 `git diff --check` 通過。本輪沒有執行 dotnet build／正式 API／資料庫操作。
+- 實際發布包在 repo 外：`C:/Users/Sy/.codex/visualizations/2026/10/11/01a12c0a-e6a8-7820-8ca5-20f95cb619ff/medical-07-06-afbcd0053df24403b0de64ae2984feb9`。54 個資源，SHA-256 manifest 全部吻合；不是只固定 HEAD 的產物，包含本輪未提交的三個前端修改。
+- 使用該包及 tests-only HTTP Host，在瀏覽器 **1440×900** 走完上述六段導覽。實際看見 API Dashboard 的統計未提供、12 筆虛構 Case、GUID 詳細、四種 Task 狀態與必要已提交 1／3、返回列表及成功登出；登出後再開列表導回帶 source=api 的登入頁。Dashboard／詳細／登入文件寬度均 1440、無文件橫向溢出；長列表／表單沿用既有垂直捲動。已還原 viewport、關閉測試頁與 Host；未修改視覺設計。
+- `tests/MedicalDemoPreviewServer.cjs`、`MedicalCasePreviewServer.cjs`、`MedicalFrontendPackagePreview.cjs` 只擴充可選 `requireLogin` 的合成 Session 與 CSRF 登出／Case 拒絕情境；預設既有測試行為保留。它們不進發布包，不使用正式 Cookie 名稱、JWT 或帳號，不執行 AuthenticationService／RBAC／MySQL。測試中的 HTTP Cookie **不是正式 Secure Cookie**；沒有為測試降低正式安全設定。
+
+可重現核心測試與合成瀏覽器 Host：
+
+```powershell
+node --test tests/StaffAuthenticationFrontend.test.cjs tests/MedicalApiClient.test.cjs
+node --test tests/MedicalFrontendPackage.test.cjs tests/MedicalTaskFrontend.test.cjs
+node tests/MedicalFrontendPackagePreview.cjs --root "$medicalOutput" --require-login
+git diff --check
+```
+
+合成登入值定義於 `tests/MedicalDemoPreviewServer.cjs`，只用於 loopback fixture，不可套用真實帳號。正式認證、Case／Task Permission／Scope、HTTPS Cookie、MySQL Schema／資料驗收仍待三人整合，**本輪不宣稱已完成**。
+
+本輪共十個檔案：上述三個產品 JS、三個自動測試（MedicalApiClient／StaffAuthenticationFrontend／MedicalFrontendPackage）、三個 tests-only Host 與本文件。建議訊息：`fix(medical): preserve API mode across staff session navigation`。未暫存、Commit／Push，未進行任何 Git 合併或資料庫變更。
+
 日期：2026-10-25。分支 `feature/medical-backend`，HEAD `44ec4e4713ae26a2d367d4e64335c949bddfe3ce`。發布內容取自目前工作目錄，包含尚未提交的 07-05 前端成果；不是只有此 HEAD 的乾淨版本。每個檔案以 manifest SHA-256 固定實際內容。
 
 ## 1. 隔離工具差異與保護範圍

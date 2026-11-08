@@ -88,6 +88,16 @@
         if (response.status !== 204 && data === null) invalid();
         return data;
     }
+    function staffPagePath(page, config = {}, search = "") {
+        // Carry only the source marker across authentication boundaries, never arbitrary
+        // return URLs, Case identifiers or credential-bearing query parameters.
+        if (!["/staff-login.html", "/staff-dashboard.html"].includes(page))
+            throw new MedicalApiError(400, "INVALID_NAVIGATION");
+        const params = new URL(search || "", "https://navigation.invalid/").searchParams;
+        const apiMode = config.caseSource === "api" || params.has("source") ||
+            params.has("caseId") && !params.get("caseId")?.startsWith("DEMO-");
+        return page + (apiMode ? "?source=api" : "");
+    }
     function createTransport({ apiBaseUrl = "", timeoutMs = 15000,
         origin = globalThis.location?.origin || globalThis.window?.location?.origin,
         fetchImpl = (...args) => globalThis.fetch(...args) } = {}) {
@@ -170,5 +180,5 @@
             }
         });
     }
-    return { createTransport, createClient, readJson, MedicalApiError, uuid, casePageLimit, caseDto, taskDto, completionDto };
+    return { createTransport, createClient, readJson, staffPagePath, MedicalApiError, uuid, casePageLimit, caseDto, taskDto, completionDto };
 });

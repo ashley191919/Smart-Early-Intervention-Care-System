@@ -51,7 +51,8 @@
     }
 
     function redirectToLogin() {
-        window.location.replace("/staff-login.html");
+        window.location.replace(window.MedicalApi.staffPagePath("/staff-login.html",
+            window.MedicalApiConfig, window.location.search));
     }
 
     async function parseJson(response) {

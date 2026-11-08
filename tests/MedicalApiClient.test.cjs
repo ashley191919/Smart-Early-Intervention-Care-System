@@ -6,6 +6,18 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const api = require('../EarlyInterventionCare.Api/wwwroot/js/medical-api.js');
+
+test('auth navigation preserves API mode with a fixed target and never forwards unrelated query data', () => {
+  assert.equal(api.staffPagePath('/staff-login.html'), '/staff-login.html');
+  assert.equal(api.staffPagePath('/staff-dashboard.html', { caseSource: 'demo' }), '/staff-dashboard.html');
+  for (const search of ['?source=api&next=https://other.invalid&token=synthetic', '?source=demo', '?source=api&source=demo',
+    '?caseId=20000000-0000-4000-8000-000000000001', '?caseId=invalid'])
+    assert.equal(api.staffPagePath('/staff-login.html', { caseSource: 'demo' }, search), '/staff-login.html?source=api');
+  assert.equal(api.staffPagePath('/staff-login.html', { caseSource: 'api' }), '/staff-login.html?source=api');
+  assert.equal(api.staffPagePath('/staff-login.html', { caseSource: 'demo' }, '?caseId=DEMO-001'), '/staff-login.html');
+  for (const page of ['https://other.invalid', '//other.invalid', '/api/auth/login', '/staff-login.html?next=x'])
+    assert.throws(() => api.staffPagePath(page), error => error.status === 400);
+});
 const root = path.join(__dirname, '../EarlyInterventionCare.Api/wwwroot');
 const source = file => fs.readFileSync(path.join(root, file), 'utf8');
 const ids = { case: '20000000-0000-4000-8000-000000000001', other: '20000000-0000-4000-8000-000000000002',

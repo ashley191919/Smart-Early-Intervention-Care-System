@@ -4,8 +4,8 @@ const http = require('node:http');
 const { createMedicalDemoPreviewServer } = require('./MedicalDemoPreviewServer.cjs');
 const { records } = require('./MedicalCaseFixtures.cjs');
 const taskFixture = require('./MedicalTaskFixtures.cjs');
-function createMedicalCasePreviewServer() {
-  const existing = createMedicalDemoPreviewServer('Development');
+function createMedicalCasePreviewServer({ requireLogin = false } = {}) {
+  const existing = createMedicalDemoPreviewServer('Development', { requireLogin });
   const handler = existing.listeners('request')[0];
   return http.createServer((req, res) => {
     const url = new URL(req.url, 'http://isolated.invalid');
@@ -13,6 +13,8 @@ function createMedicalCasePreviewServer() {
     const scenario = referer.searchParams.get('scenario');
     const reply = (status, body) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); };
     if (url.pathname === '/api/cases' || url.pathname.startsWith('/api/cases/')) {
+      if (requireLogin && !(req.headers.cookie || '').split(';').some(value => value.trim() === 'isolated-medical-demo=active'))
+        return reply(401, { code: 'ISOLATED_SESSION_REQUIRED' });
       if (req.method !== 'GET') return reply(405, {});
       const taskPath = url.pathname.match(/^\/api\/cases\/([^/]+)\/tasks(\/completion)?$/);
       if (taskPath) {

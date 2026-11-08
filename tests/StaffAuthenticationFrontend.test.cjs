@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const root = path.join(__dirname, '..', 'EarlyInterventionCare.Api', 'wwwroot');
 const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 
-async function loadStaffAuth(responses) {
+async function loadStaffAuth(responses, { apiConfig, search = '' } = {}) {
     const protectedArea = { hidden: false, cleared: false, replaceChildren() { this.cleared = true; } };
     const errorArea = { hidden: true, textContent: '' };
     const redirects = [];
@@ -18,8 +18,9 @@ async function loadStaffAuth(responses) {
         dispatchEvent() {}
     };
     const window = {
+        MedicalApiConfig: apiConfig,
         addEventListener() {},
-        location: { origin: 'https://localhost:7127', replace: (url) => redirects.push(url) }
+        location: { origin: 'https://localhost:7127', search, replace: (url) => redirects.push(url) }
     };
     const context = {
         window,
@@ -70,7 +71,7 @@ async function submitStaffLogin(responses, input = {}) {
     const calls = [];
     const redirects = [];
     const context = {
-        window: { MedicalApiConfig: input.apiConfig, location: { origin: 'https://localhost:7127', assign: (url) => redirects.push(url) } },
+        window: { MedicalApiConfig: input.apiConfig, location: { origin: 'https://localhost:7127', search: input.search || '', assign: (url) => redirects.push(url) } },
         document: { querySelector: (selector) => selectors.get(selector) || null },
         Headers, URL, AbortController, DOMException, setTimeout, clearTimeout,
         fetch: async (url, options = {}) => {
@@ -94,7 +95,7 @@ test('staff login uses the cookie session endpoint without exposing a JWT', () =
     assert.doesNotMatch(source, /fetch\("\/api\/auth\/login"/);
     assert.doesNotMatch(source, /accessTokenInMemory|body\.accessToken|localStorage|sessionStorage|console\s*\./);
     assert.match(source, /credentials:\s*"same-origin"/);
-    assert.match(source, /location\.assign\("\/staff-dashboard\.html"\)/);
+    assert.match(source, /staffPagePath\("\/staff-dashboard\.html"/);
 });
 
 test('單位代碼與帳號保留既有欄位並具有必填與最大長度', () => {
@@ -153,7 +154,7 @@ test('common staff authentication uses me, csrf and logout without script-readab
     assert.match(source, /X-EarlyCare-CSRF/);
     assert.match(source, /cookieFetch\("\/api\/auth\/logout", \{ method: "POST" \}\)/);
     assert.match(source, /credentials:\s*"same-origin"/);
-    assert.match(source, /window\.location\.replace\("\/staff-login\.html"\)/);
+    assert.match(source, /staffPagePath\("\/staff-login\.html"/);
     assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|Authorization\s*:/);
 });
 
@@ -258,6 +259,23 @@ test('header delegates logout to the common session owner', () => {
     const source = read('js', 'staff-header.js');
     assert.match(source, /window\.StaffAuth\.logout\(\)/);
     assert.doesNotMatch(source, /window\.location\.assign\("staff-login\.html"\)/);
+});
+
+for (const [label, options] of [
+    ['explicit API query on source pages', { apiConfig: { caseSource: 'demo' }, search: '?source=api' }],
+    ['API publication cannot be downgraded by a query', { apiConfig: { caseSource: 'api' }, search: '?source=demo' }]
+]) test(`${label}: login, expiry and logout preserve API navigation`, async () => {
+    const login = await submitStaffLogin([{ status: 401 },
+        { status: 200, body: { ...activeUser, expiresAt: '2026-11-09T00:30:00Z' } }], options);
+    assert.deepEqual(login.redirects, ['/staff-dashboard.html?source=api']);
+    assert.deepEqual(login.calls.map(call => call.url), ['/api/auth/csrf', '/api/auth/staff-session']);
+    const expired = await loadStaffAuth([{ status: 401 }], options);
+    assert.deepEqual(expired.redirects, ['/staff-login.html?source=api']);
+    const active = await loadStaffAuth([{ status: 200, body: activeUser },
+        { status: 200, body: { requestToken: 'synthetic-csrf' } }, { status: 204 }], options);
+    await active.auth.logout();
+    assert.deepEqual(active.redirects, ['/staff-login.html?source=api']);
+    assert.equal(active.calls[2].options.headers.get('X-EarlyCare-CSRF'), 'synthetic-csrf');
 });
 
 test('登出錯誤提示不再使用會被產品 CSS 隱藏的 demo class', () => {

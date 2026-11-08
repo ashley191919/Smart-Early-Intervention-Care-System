@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
+const { execFileSync } = require('node:child_process');
 const { assets, root } = require('../tools/medical-frontend/assets.cjs');
 const { config, buildPackage } = require('../tools/medical-frontend/package.cjs');
 const { createStaticServer } = require('../tools/medical-frontend/server.cjs');
@@ -36,6 +37,15 @@ test('package contains only current medical allowlist and deterministic hashes, 
 test('publisher refuses existing output before changing any files', () => {
   const before = read('manifest.json'); assert.throws(() => buildPackage(output), /OUTPUT_ALREADY_EXISTS/);
   assert.equal(read('manifest.json'), before);
+});
+
+test('CLI --case-source api publishes API configuration without altering source defaults', () => {
+  const target = path.join(parent, 'explicit-api-cli');
+  execFileSync(process.execPath, [path.join(__dirname, '../tools/medical-frontend/package.cjs'),
+    '--out', target, '--case-source', 'api', '--api-base', '/gateway'], { stdio: 'pipe' });
+  const window = {}; vm.runInNewContext(fs.readFileSync(path.join(target, 'js/medical-config.js'), 'utf8'), { window });
+  assert.equal(window.MedicalApiConfig.caseSource, 'api'); assert.equal(window.MedicalApiConfig.apiBaseUrl, '/gateway');
+  assert.match(fs.readFileSync(path.join(root, 'js/medical-config.js'), 'utf8'), /caseSource: "demo"/);
 });
 test('configuration permits only same-origin prefixes and explicit source modes; source config stays unchanged', () => {
   const original = fs.readFileSync(path.join(root, 'js/medical-config.js'), 'utf8');
@@ -98,5 +108,29 @@ test('explicit test-only host reads Case/Task fixture from published pages; Demo
     const response = await fetch(origin + '/api/cases/20000000-0000-4000-8000-000000000001/tasks');
     assert.equal(response.status, 503); assert.equal((await response.json()).code, 'ISOLATED_TASK_FAILURE');
     assert.equal((await fetch(origin + '/api/cases/20000000-0000-4000-8000-000000000001')).status, 200);
+  });
+});
+
+test('published API pages use a synthetic login, same Case/Task routes and CSRF logout; no real authentication is claimed', async () => {
+  await serve(createPackageFixtureServer(output, { requireLogin: true }), async origin => {
+    assert.equal((await fetch(origin + '/api/auth/me')).status, 401);
+    const id = '20000000-0000-4000-8000-000000000001';
+    assert.equal((await fetch(origin + `/api/cases/${id}/tasks`)).status, 401);
+    const login = await fetch(origin + '/api/auth/staff-session', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ organizationCode: 'OFFLINE_DEMO',
+        username: 'demo.staff', password: 'only-synthetic-browser-fixture' }) });
+    assert.equal(login.status, 200); assert.equal('accessToken' in await login.json(), false);
+    // This Node test models a browser jar for the fixture cookie, never the production staff cookie.
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    assert.ok(cookie.startsWith('isolated-medical-demo='));
+    for (const route of ['/api/auth/me', '/api/cases?page=1&pageSize=20', `/api/cases/${id}`,
+      `/api/cases/${id}/tasks`, `/api/cases/${id}/tasks/completion`])
+      assert.equal((await fetch(origin + route, { headers: { Cookie: cookie } })).status, 200);
+    assert.equal((await fetch(origin + '/api/auth/logout', { method: 'POST', headers: { Cookie: cookie } })).status, 403);
+    const csrf = await (await fetch(origin + '/api/auth/csrf', { headers: { Cookie: cookie } })).json();
+    const logout = await fetch(origin + '/api/auth/logout', { method: 'POST',
+      headers: { Cookie: cookie, 'X-EarlyCare-CSRF': csrf.requestToken } });
+    assert.equal(logout.status, 204); assert.match(logout.headers.get('set-cookie'), /Max-Age=0/);
+    assert.equal((await fetch(origin + '/api/auth/me')).status, 401);
   });
 });

@@ -150,7 +150,8 @@ async function submitLogin() {
         }
 
         // The server stores the JWT in its HttpOnly Secure Cookie. No credential is exposed to JavaScript.
-        window.location.assign("/staff-dashboard.html");
+        window.location.assign(window.MedicalApi.staffPagePath("/staff-dashboard.html",
+            window.MedicalApiConfig, window.location.search));
     } catch {
         showLoginErrorState("無法連線至登入服務，請確認網路後再試。");
     } finally {
