@@ -1,6 +1,6 @@
 'use strict';
-// Consumer checks against unchanged legacy GET sources read at candidate
-// 159c27f7790a77eca1ab2d746aac9fd7202b6688. No producer/RBAC/MySQL acceptance is implied.
+// Consumer checks against fixed GET sources at 3d5b01cb221bda9b54e9c04a4b8ca6332233a164.
+// Read remotely; no local producer execution, RBAC/HTTP pipeline or MySQL acceptance is implied.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -126,6 +126,41 @@ test('server allRequiredSubmitted is displayed with pending optional tasks witho
   assert.deepEqual(state.completion, stats);
   assert.equal('caseStatus' in state, false); assert.equal('decision' in state, false);
   assert.ok(f.calls.every(call => call.options.method === 'GET'));
+});
+
+test('optional CANCELLED remains visible and does not override the server required-submission summary', async () => {
+  const stats = { caseId, totalTaskCount: 2, requiredTaskCount: 1, requiredSubmittedCount: 1,
+    requiredPendingCount: 0, requiredInProgressCount: 0, allRequiredSubmitted: true };
+  const f = fixture({ rows: [tasks[2], tasks[3]], stats }); await f.store.load(caseId);
+  const state = f.store.snapshot();
+  assert.equal(state.rows[1].statusLabel, '已取消'); assert.equal(state.rows[1].required, '非必要');
+  assert.deepEqual(state.completion, stats); assert.equal('effectiveRound' in state.completion, false);
+});
+
+test('all historical rounds submitted keeps the legacy true value without declaring an effective-round decision', async () => {
+  const submitted = { ...tasks[0], taskStatus: 'SUBMITTED', submittedAtUtc: tasks[2].submittedAtUtc };
+  const stats = { caseId, totalTaskCount: 2, requiredTaskCount: 2, requiredSubmittedCount: 2,
+    requiredPendingCount: 0, requiredInProgressCount: 0, allRequiredSubmitted: true };
+  const f = fixture({ rows: [submitted, tasks[2]], stats }); await f.store.load(caseId);
+  const state = f.store.snapshot();
+  assert.deepEqual(state.rows.map(row => row.round), [1, 3]); assert.deepEqual(state.completion, stats);
+  assert.equal('decision' in state.completion, false); assert.equal('effectiveRound' in state.completion, false);
+  assert.ok(f.calls.every(call => !call.url.includes('?') && call.options.method === 'GET'));
+});
+
+test('CASE_ACCESS_NOT_INTEGRATED stays a safe 403 with no alternate endpoint or successful empty-data fallback', async () => {
+  const calls = [];
+  const client = api.createClient({ cookieFetch: async url => {
+    calls.push(url);
+    return new Response(JSON.stringify({ code: 'CASE_ACCESS_NOT_INTEGRATED', message: 'PRIVATE_SCOPE_DETAIL' }), { status: 403 });
+  } });
+  const store = model.createStore(model.createApiAdapter(client)); await store.load(caseId);
+  const state = store.snapshot();
+  assert.equal(state.phase, 'error'); assert.equal(state.error.status, 403);
+  assert.equal(state.completionPhase, 'error'); assert.equal(state.completionError.status, 403);
+  assert.deepEqual(state.rows, []); assert.equal(state.completion, null);
+  assert.equal(JSON.stringify(state).includes('PRIVATE_SCOPE_DETAIL'), false);
+  assert.deepEqual(calls.sort(), [`/api/cases/${caseId}/tasks`, `/api/cases/${caseId}/tasks/completion`]);
 });
 
 test('the internal candidate round DTO cannot silently replace the legacy HTTP completion contract', async () => {

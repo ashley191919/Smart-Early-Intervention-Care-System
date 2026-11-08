@@ -1,5 +1,86 @@
 # V5.3 07-05：醫療端 Task／完成度唯讀消費端
 
+## 2026-11-08：3d5b01c 固定來源對齊與醫療只讀接線提案
+
+本輪 HEAD=`aa7ffbf4965bb7c6a7e45b9154be750d09a16c63`，分支 `feature/medical-backend`。Case Consumer 基準 `56eb9f21f8928e4310cb5c5eb7255778b35923bb`、登入／Permission 基準 `156285fd1de8e28856a00e6c04216c6be6a14b00` 均保留；認證及 Permission 程式自 156285f 至本輪 HEAD 無變更。以下是新的核對結果與未實作提案，下方舊版分析保留歷史用途。
+
+### 固定來源與執行界線
+
+16 提供 `codex/v53-parent-core` / `3d5b01c`，GitHub Commit API 解析為 **`3d5b01cb221bda9b54e9c04a4b8ca6332233a164`**。本機沒有其 Git object；只透過 HTTPS 讀取固定原始碼，未 Fetch／合併／執行該版本：
+
+- [QuestionnairesController](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/3d5b01cb221bda9b54e9c04a4b8ca6332233a164/EarlyInterventionCare.Api/Controllers/QuestionnairesController.cs)、[QuestionnaireContracts](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/3d5b01cb221bda9b54e9c04a4b8ca6332233a164/EarlyInterventionCare.Api/DTOs/Questionnaires/QuestionnaireContracts.cs)、[QuestionnaireService](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/3d5b01cb221bda9b54e9c04a4b8ca6332233a164/EarlyInterventionCare.Api/Services/Questionnaires/QuestionnaireService.cs)、[EfQuestionnaireStore](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/3d5b01cb221bda9b54e9c04a4b8ca6332233a164/EarlyInterventionCare.Api/Services/Questionnaires/EfQuestionnaireStore.cs) 四檔與 07 本機正規化換行／首尾空白後完全相同。
+- [ScopedReadAuthorization](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/3d5b01cb221bda9b54e9c04a4b8ca6332233a164/EarlyInterventionCare.Api/Services/Authorization/ScopedReadAuthorization.cs) 與 [MedicalReadContract README](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/3d5b01cb221bda9b54e9c04a4b8ca6332233a164/tests/MedicalReadContract/README.md)、Program.cs 已唯讀核對。
+- 該 Commit 的四個新增檔案全在 `tests/MedicalReadContract/`，不是啟用正式醫療 GET。README 記錄 46 PASS／0 FAIL／5 BLOCKED、退出碼 **2**；這是 16 的報告，本輪未重跑。其 Controller 直接呼叫、EF SQL 翻譯／合成 ADO 物化，均不是完整 HTTP／JWT／Cookie／MySQL 驗收，不能將 BLOCKED 改報成功。
+- 11 [CaseAccessService](https://github.com/ashley191919/Smart-Early-Intervention-Care-System/blob/d268b7d70be33e04d44bdfa044b13339448815f6/EarlyInterventionCare.Api/Services/Cases/CaseAccessService.cs) 固定 `d268b7d70be33e04d44bdfa044b13339448815f6` 已重新讀取。驗證 ACTIVE 使用者／院所、目前 DB Role，醫療角色同院所可讀，是目前版本契約，**不是院方最終政策**。
+
+### A. 契約相容性
+
+|項目|3d5b01c 實際行為|07 Consumer／整合狀態|
+|---|---|---|
+|Task GET|`GET /api/cases/{caseId:guid}/tasks`，直接陣列；無任務為 `[]`|相容，不加分頁、搜尋、排序或輪次參數|
+|Task DTO：識別|taskId、caseId、questionnaireId、questionnaireVersionId：Guid，均非 nullable|以 UUID 驗證，回應 caseId 必須與請求一致，拒絕重複 TaskId|
+|Task DTO：描述|questionnaireTitle、versionNumber、respondentRole、taskStatus：非 nullable string|沿用安全文字呈現；不接收答案、分數或憑證欄位|
+|Task DTO：任務|assignmentRound：uint；isRequired：bool|顯示原始輪次及必要性，不推定有效輪次|
+|Task DTO：時間|createdAtUtc、updatedAtUtc：非 nullable DateTime；submittedAtUtc：DateTime?|EF Store 標記 UTC，Consumer 驗 UTC 格式；SUBMITTED 有時間／其他狀態 null 是目前 Consumer 較嚴的檢查，DTO 本身沒有跨欄保證，已提交再取消是否可能仍待 16 ACK|
+|Task 狀態|PENDING／IN_PROGRESS／SUBMITTED／CANCELLED|相容，未知值安全拒絕；CANCELLED 不顯示成完成|
+|Completion DTO|caseId：Guid；totalTaskCount、requiredTaskCount、requiredSubmittedCount、requiredPendingCount、requiredInProgressCount：int；allRequiredSubmitted：bool；均非 nullable|七欄相容，不接受內部 CandidateRoundCompletionDto 替換 HTTP DTO|
+|計數|total=全部輪次任務；required=全部 IsRequired；只對必要任務按 SUBMITTED／PENDING／IN_PROGRESS 計數|原值呈現；不推 optionalCount、取消計數、百分比或有效輪次|
+|取消必要任務|仍在 required，非 SUBMITTED，不計入三個已提交／待填／進行中數；故三數之和可小於 required|相容，不排除分母；非必要 CANCELLED 不改必要統計；此現況不是正式取消政策|
+|零必要／空清單|required=0 時 allRequiredSubmitted=false|相容，不使用 0=0 宣稱完成|
+|跨輪次|舊輪待填可使 bool=false；所有輪次必要皆提交可為 true|相容，但 true 仍不代表有效輪次可信完成、評估完成或結案|
+|401|Authorize 驗證與 CheckUser；缺少／無效／重複 userId、停用帳號直接拒絕|Consumer 可處理；完整 HTTP 由後續 Host 驗收|
+|403|非 ADMIN／CASE_MANAGER；非 Development 或非固定 CaseId 回 CASE_ACCESS_NOT_INTEGRATED|Consumer 清資料、不切換環境或改用替代 API，不以登入成功放行|
+|404／503|通過 gate 後不存在 Case 為 CASE_NOT_FOUND／404；已知 DB／EF／Timeout 由 QuestionnaireErrors 映射 SERVICE_UNAVAILABLE／503|Consumer 可處理；Guid 路由匹配及全域未知例外處理尚需 HTTP 驗收|
+|環境／角色|Development 固定 CaseId=`10000000-0000-4000-8000-000000000001`；MEDICAL_STAFF 不可呼叫，IsolatedTest／Production 明確拒絕|正式整合阻塞，不能將 IsolatedTest 改名 Development 或跳過 gate 過測|
+
+### B–E. 最小只讀接線提案與責任（尚未實作／須共同核准）
+
+建議共用兩個 GET 的入口順序：**Bearer Scheme 驗證 Cookie JWT 或明確 Header → 唯一可信 userId Guid → 目前 ACTIVE 帳號及核定醫療讀取角色 → questionnaire.task.read → 11 CaseAccess 可讀 Case → Case 限定的 Task／Completion 查詢 → DTO。**
+
+- 延續 07 Program 的 `Bearer`、`MapInboundClaims=false`、固定 Cookie reader、Header 優先、HTTPS／Origin／CSRF；不另建 Cookie Scheme，不信任前端 userId／院所／權限，不修改現有設定。
+- Permission 由現有 PermissionAuthorizationHandler／PermissionService 以 DB 目前指派核對；JWT role 或 `/me` 前端 permissions 不能替代。沒有 Permission 即拒絕；MEDICAL_STAFF 只有在主責核准角色 Gate 及實際權限指派後才可能成功，不在本次授權或 Seed。
+- Case Scope 沿用 11 `ActorAsync`／`ReadableCases` 或 `CanReadAsync`；保留醫療角色入口，因為 CanReadAsync 也有家長分支，不能不經角色限制便把家長可讀關係當醫療讀取資格。Task 清單仍由 `where task.CaseId == caseId` 限定；逐筆保證屬於該 Case；若未來單 Task 讀取，需 `TaskId + CaseId` 聯合核對再投影，不重用家長專用 CanReadParentTaskAsync。
+- 16 的 `ScopedReadAuthorization.CanReadCaseAsync` 實際檢查 **case.read**，不能直接冒充 Task GET 的 questionnaire.task.read。建議 Task 清單／Completion 在入口明確驗 `Permission:questionnaire.task.read`，再用 raw Case Scope；是否額外要求 case.read 須共同決定，不能偷偷替換或疊加。現有 CanReadTaskAsync 需要 taskId，不能用空 Guid 代替清單授權。
+- Permission 不足建議 403；不存在／Scope 不可讀建議一致 404 CASE_NOT_FOUND，對齊 11 Case GET，但此為待 11／16 ACK 的接線結果。**現況仍是 Development gate 的 403**。DB 故障應安全失敗，不回傳成功空資料、不將未處理的例外假稱已安全映射。
+- CaseAccessException 目前由 11 Case Controller 的錯誤 Filter 處理；16 QuestionnaireErrors 沒有該分支。新增呼叫前須讓 16 明確處理已知 CaseAccessException／PermissionLookupException 與 401／403／404／503 邊界，不能假設別的 Controller Attribute 會自動生效。
+- 只讀接線不能放寬共用 CheckUser／CaseAllowed 以致 **POST Assign** 同時取得新角色或一般 Case 寫入權。先由 16 設計 GET 專用 guard；Development／IsolatedTest 發布條件另經核定，正式 Scope 未接妥前維持拒絕。CaseStatus／History 的兩個 DenyAll 保持獨立原狀。
+
+|主責|具體檔案／接點|後續最小工作與停止點|
+|---|---|---|
+|07（本輪）|tests/MedicalTaskFrontend.test.cjs、docs/v5.3/07-05-medical-task-read.md|更新固定 pin、補取消／跨輪次及 gate 錯誤測試；無產品 Consumer 缺口，不重開發 UI|
+|07（後續另案）|16 所有的 ICaseTaskReadScope 介面之醫療 Adapter；建議新 Services/Authorization/CaseTaskReadScope.cs，名稱待確認|只委派已核定 11 CaseAccess／Task 所屬檢查；目前未建立檔案，因本分支尚無正式 CaseAccess；不建立第二套院所規則|
+|07 整合落筆者＋11／16 review（後續另案）|Program.cs 的 scoped DI 接點|保留既有 Cookie／Permission／CSRF pipeline 與兩個 DenyAll；Adapter 與三方固定版核准後才評估註冊；本輪禁止修改|
+|16|Controllers/QuestionnairesController.cs（含 QuestionnaireErrorsAttribute）|兩個 GET 加 Task Permission＋可信 Scope；角色、環境 Gate 及錯誤契約核定後分開處理，只讀不連帶放行 POST|
+|16＋07 契約 review|Services/Authorization/ScopedReadAuthorization.cs|核定清單／Completion 如何搭配 Task Permission 與 raw Case Scope；保留未整合預設 Deny，不用 case.read 代替 task.read|
+|16|Services/Questionnaires/QuestionnaireService.cs、EfQuestionnaireStore.cs、DTOs/Questionnaires/QuestionnaireContracts.cs|現有基本統計及 DTO 可沿用，原則不需改演算法；確認查詢有 Case 條件、取消時間組合與安全投影；新增受保護 HTTP 測試|
+|11|Services/Cases/CaseAccessService.cs、Controllers/CasesController.cs 的 CaseAccessException／CaseErrors 契約、CaseGuardianService.cs 的不可見結果|確認 d268b7d 可重用方法與目前角色／院所規則、404 不洩漏存在性、停用院所拒絕；有差異由 11 提供新固定 SHA，不由 07 修改|
+|16 共用權限主責＋院方核定|既有 RolePermissions／Permission 交接與部署程序|回覆各角色是否已有 questionnaire.task.read；本次不授權、Seed 或變更共用資料；同院所仍是當前版本規則而非最終政策|
+
+### F. 11/09 阻塞與後續 HTTP 驗收
+
+P0：缺三方核准的 GET 專用 Permission／CaseScope／角色／錯誤接線及新 producer pin；沒有已驗收的整合 HTTPS Host／DI／相容 Schema／全虛構測試環境。P1：MEDICAL_STAFF 與 ADMIN 醫療登入／GET 的角色差異、取消時間規則、IsolatedTest 與正式 Scope 的合法啟用條件未 ACK。P2：非必要獨立總數與進階 Dashboard 不在本期，不為此新增 API 或計算器。
+
+以下均為**未執行**的完整 HTTP／隔離 MySQL 驗收，需固定整合 SHA 與核准資料；3d5b01c 的原始 gate 仍拒絕 IsolatedTest，不能為通過而改測 Development：
+
+|後續案例|核定接線後預期|
+|---|---|
+|CASE_MANAGER 有 questionnaire.task.read、同院所 Case|兩個 GET 200，Task 回應只屬該 Case；Cookie JWT 經真正 Bearer handler|
+|MEDICAL_STAFF|依核定 Gate／Permission，有權限且同 Scope 才 200；未核定／未指派仍拒絕|
+|缺 Permission|兩個 GET 403；不可讀取 Task 或 Completion；不得回退 Demo|
+|跨院所／不可讀 Case；不存在 Case|建議共同 ACK 後均 404 CASE_NOT_FOUND；驗證無個資／任務統計洩漏，不用回應區分是否存在|
+|未登入／JWT 無效或過期|401，不使用前端 UserId 補救；停用帳號／院所也須拒絕|
+|讀取故障|已知 DB／Timeout 安全 503；Client 清舊資料、不補成功空值、不回退 Demo|
+|基本跨輪次 Completion|舊輪待填、新輪提交仍 false；必要 CANCELLED 留在 required；可選 CANCELLED 不改必要統計；零必要 false；全部輪次必要提交可 true，但不宣稱有效輪次完成或建立 History|
+|環境與寫入隔離|未核准 IsolatedTest gate 仍拒絕；POST Assign、CaseStatus／History DenyAll 不因 GET 接線而放寬|
+
+### 本輪結果與 G. 建議 Commit 分組
+
+- 07 Task 前端／Contract：**29 項通過**；新增可選取消、所有歷史輪次全提交及 CASE_ACCESS_NOT_INTEGRATED 安全拒絕三項。完整前端回歸 15 檔共 **252 項通過、0 失敗／跳過**，包含上述 29 項；JavaScript 語法六檔通過。
+- Loopback Node Host 是合成 HTTP fixture，沒有 ASP.NET Core 認證／授權／MySQL。正式 HTTP 與 MySQL 驗收未執行，16 Harness 亦未於本輪執行；沒有 dotnet build／UI 變更或瀏覽器重驗。
+- 本輪只修改兩個 07 測試／文件，建議一組：`test(medical): align Task read contracts with 3d5b01c`。
+- 後續分組建議（須另行核准，**不是本輪已做**）：11 固定 Scope 交接；16 GET 專用 Permission／Scope 及安全錯誤測試；07 scoped Adapter／整合 DI 與真 HTTP 驗收。可用訊息 `feat(authz): guard questionnaire reads with permission and case scope`、`feat(medical): integrate approved case task read scope`，不得把 POST／Workflow／Schema 變更混入。
+- 既有未提交 manifest、SQL 與未追蹤 Workflow 成果未動；未暫存、Commit／Push 或執行任何禁止的 Git／資料庫操作。
+
 ## 2026-11-08：11/09 最小查詢整合準備
 
 07 檢查基準：`feature/medical-backend` / `56eb9f21f8928e4310cb5c5eb7255778b35923bb`。本次只增補本文件及 `tests/MedicalTaskFrontend.test.cjs`，不修改產品 JS／HTML／CSS、後端或既有未追蹤 Workflow Service／Store／Harness；既有 manifest 修改及其他未追蹤成果保持原狀。下方 2026-10-25 的基準、檔案清單與驗收數字保留為歷史紀錄，不代表本次重新執行。
