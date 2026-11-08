@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems><UseAppHost>false</UseAppHost>
+    <RestoreSources>$(MSBuildThisFileDirectory)</RestoreSources><NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs;OfflineReadFixture.cs" />
+    <Compile Include="../EfParentStore/OfflineAdo.cs" Link="OfflineAdo.cs" />
+    <ProjectReference Include="../../EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj" />
+  </ItemGroup>
+</Project>
