@@ -97,9 +97,10 @@ function proxyHealth(res, { request, schedule, cancel }) {
   } catch { fail(502, 'UPSTREAM_UNAVAILABLE'); }
 }
 
-// Injection is only an in-process test seam; it cannot change target or routes.
+// Dependencies/static assets are supplied only in-process by trusted startup code.
+// Health route/upstream, origin and credential guards remain fixed.
 // Importing this module never creates a server, listener, or HTTP request.
-export function createRequestHandler({ request = http.request, schedule = setTimeout, cancel = clearTimeout } = {}) {
+export function createRequestHandler({ request = http.request, schedule = setTimeout, cancel = clearTimeout, staticAssets = assets } = {}) {
   return (req, res) => {
   if (req.socket.remoteAddress !== host || req.headers.host !== '127.0.0.1:5187' ||
       (req.headers.origin !== undefined && req.headers.origin !== origin) ||
@@ -117,19 +118,19 @@ export function createRequestHandler({ request = http.request, schedule = setTim
   // Compare raw request-target exactly: query strings, absolute URLs and encoded
   // alternate paths are not normalized into accepted routes.
   if (req.url === '/health/local') { proxyHealth(res, { request, schedule, cancel }); return; }
-  const asset = assets.get(req.url);
+  const asset = staticAssets.get(req.url);
   if (!asset) { error(res, 404, 'ROUTE_REJECTED'); return; }
   send(res, 200, asset[1], asset[0]);
   };
 }
 
-function start() {
+export function startFrontend(staticAssets = assets) {
 if (process.argv.length !== 2) {
   console.error('PROBE_ARGUMENTS_REJECTED');
   process.exitCode = 1;
   return;
 }
-const server = http.createServer({ maxHeaderSize: 8192 }, createRequestHandler());
+const server = http.createServer({ maxHeaderSize: 8192 }, createRequestHandler({ staticAssets }));
 server.requestTimeout = 10000;
 server.headersTimeout = 5000;
 server.keepAliveTimeout = 1000;
@@ -159,6 +160,7 @@ process.on('SIGTERM', stop);
 server.listen({ host, port, exclusive: true }, () => {
   console.log(`PROBE_READY pid=${process.pid} url=${origin}`);
 });
+return { stop };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) start();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) startFrontend();

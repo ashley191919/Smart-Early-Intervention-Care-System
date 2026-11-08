@@ -19,6 +19,13 @@ if (EF.IsDesignTime)
 {
     return;
 }
+// Explicit no-database communication mode; never load normal settings or services.
+if (args.Contains("--local-communication"))
+{
+    if (args.Length != 1) throw new InvalidOperationException("COMMUNICATION_ARGUMENTS_REJECTED");
+    await LocalCommunicationHost.RunAsync();
+    return;
+}
 if (args.Contains("--verify-db-read") && args.Contains("--create-dev-user"))
 {
     Console.WriteLine("Only one database utility mode may be selected.");
