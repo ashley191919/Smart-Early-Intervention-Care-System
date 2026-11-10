@@ -1,14 +1,26 @@
 using System.Data;
 using System.Data.Common;
+using System.Net;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using EarlyInterventionCare.Api.Controllers;
 using EarlyInterventionCare.Api.Data;
 using EarlyInterventionCare.Api.Models.Authentication;
+using EarlyInterventionCare.Api.Options;
+using EarlyInterventionCare.Api.Services.Authentication;
 using EarlyInterventionCare.Api.Services.Authorization;
 using EarlyInterventionCare.Api.Services.Cases;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 
 var checks = 0;
 void Check(bool condition, string label)
@@ -92,6 +104,93 @@ Check(db.Database.GetDbConnection().State == ConnectionState.Closed,
     "cancelled calls propagate and the connection remains closed");
 Console.WriteLine($"PASS: {checks} medical task case scope checks with offline ADO.");
 
+var adapterChecks = checks;
+var httpRows = new ScopeRows();
+var jwt = new JwtOptions { Issuer = "fixture", Audience = "fixture", ExpirationMinutes = 10 };
+var signingKey = new SymmetricSecurityKey(RandomNumberGenerator.GetBytes(32));
+var builder = WebApplication.CreateBuilder();
+builder.WebHost.UseTestServer();
+builder.Logging.ClearProviders();
+builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+builder.Services.AddControllers().AddApplicationPart(typeof(MedicalCaseReadController).Assembly);
+builder.Services.AddDbContext<ApplicationDbContext>(options => options
+    .UseMySql("Server=invalid.invalid;Database=offline_case_read;User=offline;Pooling=False;",
+        new MySqlServerVersion(new Version(8, 0, 46)))
+    .AddInterceptors(new NoNetwork(), httpRows));
+builder.Services.AddScoped<CaseAccessService>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.MapInboundClaims = false;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidIssuer = jwt.Issuer, ValidAudience = jwt.Audience, IssuerSigningKey = signingKey,
+        ValidateIssuerSigningKey = true, ValidateLifetime = true
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = StaffCookieTokenReader.Read(context.Request, cookieAuthenticationEnabled: true);
+            return Task.CompletedTask;
+        }
+    };
+});
+await using var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+await app.StartAsync();
+using var client = app.GetTestClient();
+client.BaseAddress = new Uri("https://localhost");
+Check((await client.GetAsync("/api/cases")).StatusCode == HttpStatusCode.Unauthorized,
+    "Case list requires authentication");
+var tokens = new JwtTokenService(jwt, signingKey);
+
+foreach (var role in new[] { "CASE_MANAGER", "MEDICAL_STAFF" })
+{
+    httpRows.Role = role;
+    var cookieJwt = tokens.CreateToken(httpRows.UserId, "fixture", role).AccessToken;
+    client.DefaultRequestHeaders.Remove("Cookie");
+    client.DefaultRequestHeaders.Add("Cookie", $"{StaffSessionCookieDefaults.Name}={cookieJwt}");
+    using var list = await client.GetAsync("/api/cases?page=1&pageSize=20");
+    using var listBody = JsonDocument.Parse(await list.Content.ReadAsStringAsync());
+    Check(list.StatusCode == HttpStatusCode.OK && listBody.RootElement.GetArrayLength() == 1 &&
+          listBody.RootElement[0].GetProperty("caseId").GetGuid() == httpRows.CaseId,
+        $"{role} reads a scoped Case array with a signed staff Cookie");
+    using var detail = await client.GetAsync($"/api/cases/{httpRows.CaseId}");
+    using var detailBody = JsonDocument.Parse(await detail.Content.ReadAsStringAsync());
+    Check(detail.StatusCode == HttpStatusCode.OK &&
+          detailBody.RootElement.GetProperty("caseId").GetGuid() == httpRows.CaseId &&
+          detailBody.RootElement.GetProperty("createdAtUtc").GetString()!.EndsWith('Z'),
+        $"{role} reads the matching Case DTO with UTC timestamps");
+}
+
+using var missing = await client.GetAsync($"/api/cases/{Guid.NewGuid()}");
+using var outOfScope = await client.GetAsync($"/api/cases/{httpRows.ForeignCaseId}");
+var missingBody = await missing.Content.ReadAsStringAsync();
+Check(missing.StatusCode == HttpStatusCode.NotFound && outOfScope.StatusCode == HttpStatusCode.NotFound &&
+      missingBody.Contains("CASE_NOT_FOUND") && missingBody == await outOfScope.Content.ReadAsStringAsync(),
+    "missing and cross-organization Case details return identical 404 responses");
+httpRows.CaseVisible = false;
+using var empty = await client.GetAsync("/api/cases");
+Check(empty.StatusCode == HttpStatusCode.OK && await empty.Content.ReadAsStringAsync() == "[]",
+    "empty Case list returns a bare array");
+Check((await client.GetAsync("/api/cases?pageSize=101")).StatusCode == HttpStatusCode.BadRequest,
+    "invalid pagination is rejected");
+httpRows.Role = "PARENT";
+Check((await client.GetAsync("/api/cases")).StatusCode == HttpStatusCode.Forbidden,
+    "persisted non-medical role is denied despite the medical JWT role claim");
+httpRows.AccountActive = false;
+using var inactive = await client.GetAsync("/api/cases");
+Check(inactive.StatusCode == HttpStatusCode.Unauthorized &&
+      (await inactive.Content.ReadAsStringAsync()).Contains("UNAUTHENTICATED"),
+    "a previously signed Cookie cannot read cases after the account becomes inactive");
+Check((await client.PostAsync("/api/cases", null)).StatusCode == HttpStatusCode.MethodNotAllowed,
+    "Case create is not exposed by the read-only controller");
+Check((await client.GetAsync($"/api/cases/{httpRows.CaseId}/guardians")).StatusCode == HttpStatusCode.NotFound,
+    "Guardian read is not exposed by the read-only controller");
+Console.WriteLine($"PASS: {checks - adapterChecks} additional medical Case GET checks with TestServer and offline ADO.");
+
 sealed class NoNetwork : DbConnectionInterceptor
 {
     public override InterceptionResult ConnectionOpening(DbConnection connection, ConnectionEventData eventData,
@@ -111,8 +210,12 @@ sealed class ScopeRows : DbCommandInterceptor
 {
     public Guid UserId { get; } = Guid.NewGuid();
     public Guid CaseId { get; } = Guid.NewGuid();
+    public Guid ForeignCaseId { get; } = Guid.NewGuid();
     private Guid OrganizationId { get; } = Guid.NewGuid();
+    private Guid ForeignOrganizationId { get; } = Guid.NewGuid();
     public bool CaseVisible { get; set; } = true;
+    public bool AccountActive { get; set; } = true;
+    public string Role { get; set; } = "CASE_MANAGER";
     public ScopeQueryException? CaseFailure { get; set; }
     public List<(DbContext? Context, CancellationToken Token)> Requests { get; } = [];
 
@@ -136,7 +239,7 @@ sealed class ScopeRows : DbCommandInterceptor
                 ["created_at_utc"] = DateTime.UnixEpoch, ["updated_at_utc"] = DateTime.UnixEpoch,
                 ["last_login_at_utc"] = null, ["phone"] = null, ["phone_verified_at_utc"] = null,
                 ["email"] = null, ["normalized_email"] = null, ["email_verified_at_utc"] = null,
-                ["name"] = "CASE_MANAGER"
+                ["name"] = Role
             };
             var selectEnd = sql.IndexOf("FROM", StringComparison.Ordinal);
             var columns = Regex.Matches(sql[..selectEnd], @"`[^`]+`\.`(?<column>[^`]+)`")
@@ -144,14 +247,44 @@ sealed class ScopeRows : DbCommandInterceptor
             foreach (var column in columns)
                 table.Columns.Add(column, column.EndsWith("_id", StringComparison.Ordinal) ? typeof(Guid) :
                     column.EndsWith("_utc", StringComparison.Ordinal) ? typeof(DateTime) : typeof(string));
-            table.Rows.Add(columns.Select(column => row[column] ?? DBNull.Value).ToArray());
+            if (AccountActive)
+                table.Rows.Add(columns.Select(column => row[column] ?? DBNull.Value).ToArray());
         }
-        else if (sql.Contains("FROM `cases`") && sql.Contains("`organization_id`") &&
+        else if (sql.Contains("EXISTS", StringComparison.OrdinalIgnoreCase) &&
+                 sql.Contains("FROM `cases`") && sql.Contains("`organization_id`") &&
             sql.Contains("`case_id`") && parameters.Contains(OrganizationId) && parameters.Contains(CaseId))
         {
             if (CaseFailure is not null) throw CaseFailure;
             table.Columns.Add("exists", typeof(bool));
             table.Rows.Add(CaseVisible);
+        }
+        else if (sql.Contains("FROM `cases`") && sql.Contains("WHERE") &&
+                 sql[(sql.IndexOf("WHERE", StringComparison.Ordinal))..].Contains("`organization_id`") &&
+                 parameters.Contains(OrganizationId))
+        {
+            var row = new Dictionary<string, object>
+            {
+                ["case_id"] = CaseId, ["case_code"] = "SYNTHETIC-CASE", ["child_name"] = "虛構孩子",
+                ["birth_date"] = new DateOnly(2022, 1, 1), ["sex"] = "UNKNOWN",
+                ["national_id"] = "fixture", ["address"] = "虛構地址", ["case_status"] = "NEW",
+                ["revision"] = 0u, ["created_at_utc"] = DateTime.UnixEpoch,
+                ["updated_at_utc"] = DateTime.UnixEpoch, ["organization_id"] = OrganizationId
+            };
+            var selectEnd = sql.IndexOf("FROM", StringComparison.Ordinal);
+            var columns = Regex.Matches(sql[..selectEnd], @"`[^`]+`\.`(?<column>[^`]+)`")
+                .Select(match => match.Groups["column"].Value).ToArray();
+            foreach (var column in columns)
+                table.Columns.Add(column, row[column].GetType());
+            var foreign = new Dictionary<string, object>(row)
+            {
+                ["case_id"] = ForeignCaseId, ["organization_id"] = ForeignOrganizationId
+            };
+            foreach (var candidate in new[] { row, foreign })
+            {
+                if (CaseVisible && parameters.OfType<Guid>().All(id =>
+                    id.Equals(candidate["organization_id"]) || id.Equals(candidate["case_id"])))
+                    table.Rows.Add(columns.Select(column => candidate[column]).ToArray());
+            }
         }
         else throw new InvalidOperationException("Unexpected offline query.");
         return ValueTask.FromResult(InterceptionResult<DbDataReader>.SuppressWithResult(table.CreateDataReader()));

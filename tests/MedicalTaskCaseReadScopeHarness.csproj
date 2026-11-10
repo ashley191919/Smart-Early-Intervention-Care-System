@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MedicalTaskCaseReadScopeHarness.cs" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.31" />
     <ProjectReference Include="../EarlyInterventionCare.Api/EarlyInterventionCare.Api.csproj" />
   </ItemGroup>
 </Project>
