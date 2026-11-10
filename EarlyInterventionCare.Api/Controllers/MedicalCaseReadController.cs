@@ -1,6 +1,7 @@
 using System.Data.Common;
 using EarlyInterventionCare.Api.Data.Entities;
 using EarlyInterventionCare.Api.DTOs.Cases;
+using EarlyInterventionCare.Api.Services.Authentication;
 using EarlyInterventionCare.Api.Services.Cases;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,27 +14,34 @@ namespace EarlyInterventionCare.Api.Controllers;
 public sealed class MedicalCaseReadController(CaseAccessService access) : ControllerBase
 {
     [HttpGet("api/cases")]
-    public async Task<IActionResult> List(int page = 1, int pageSize = 20, CancellationToken ct = default)
+    public async Task<ActionResult<CaseDto[]>> List(int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        var actor = await access.ActorAsync(User, ct);
-        CaseAccessService.Medical(actor);
+        var cases = await ReadableCasesAsync(ct);
         if (page is < 1 or > 100000 || pageSize is < 1 or > 100)
             throw new CaseAccessException("INVALID_PAGE", 400, "請確認頁碼。");
 
-        var rows = await access.ReadableCases(actor)
+        var rows = await cases
             .OrderByDescending(c => c.CreatedAtUtc).ThenBy(c => c.CaseId)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
         return Ok(rows.Select(Dto).ToArray());
     }
 
     [HttpGet("api/cases/{caseId:guid}")]
-    public async Task<IActionResult> Detail(Guid caseId, CancellationToken ct)
+    public async Task<ActionResult<CaseDto>> Detail(Guid caseId, CancellationToken ct = default)
     {
-        var actor = await access.ActorAsync(User, ct);
-        CaseAccessService.Medical(actor);
-        var row = await access.ReadableCases(actor).SingleOrDefaultAsync(c => c.CaseId == caseId, ct)
+        var cases = await ReadableCasesAsync(ct);
+        var row = await cases.SingleOrDefaultAsync(c => c.CaseId == caseId, ct)
             ?? throw new CaseAccessException("CASE_NOT_FOUND", 404, "找不到可存取的個案。");
         return Ok(Dto(row));
+    }
+
+    private async Task<IQueryable<CaseRecord>> ReadableCasesAsync(CancellationToken ct)
+    {
+        var actor = await access.ActorAsync(User, ct);
+        if (!StaffSessionAuthorization.CanCreateStaffSession(actor.Role))
+            throw new CaseAccessException("FORBIDDEN", StatusCodes.Status403Forbidden, "無法執行此操作。");
+
+        return access.ReadableCases(actor);
     }
 
     private static CaseDto Dto(CaseRecord row) => new(row.CaseId, row.CaseCode, row.ChildName,

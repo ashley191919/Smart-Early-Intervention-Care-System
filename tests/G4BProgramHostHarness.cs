@@ -187,10 +187,20 @@ foreach (var path in new[] { caseListPath, casePath })
         Check(response.StatusCode == HttpStatusCode.Unauthorized, $"anonymous Case GET returns 401 for {path}");
     using (var response = await GetWithBearer(manager, "invalid", path))
         Check(response.StatusCode == HttpStatusCode.Unauthorized, $"invalid explicit JWT overrides valid Cookie for {path}");
-    using (var response = await GetWithBearer(anonymous, BearerFor(rows.Admin.Id), path))
-        Check(response.StatusCode == HttpStatusCode.OK, $"ADMIN Case GET accepts valid Bearer without Cookie for {path}");
-    using (var response = await GetWithBearer(anonymous, BearerFor(rows.Parent.Id), path))
-        await CheckError(response, HttpStatusCode.Forbidden, "FORBIDDEN", $"parent identity cannot read medical Case data for {path}");
+    foreach (var denied in new[] { rows.Admin, rows.Parent, rows.Teacher })
+    {
+        var caseReads = rows.CaseReadCommands;
+        using var response = await GetWithBearer(anonymous, BearerFor(denied.Id), path);
+        await CheckError(response, HttpStatusCode.Forbidden, "FORBIDDEN", $"{denied.Role} Case GET returns 403 for {path}");
+        Check(rows.CaseReadCommands == caseReads, $"{denied.Role} rejection skips Case data queries for {path}");
+    }
+    using (var response = await GetWithBearer(anonymous, BearerFor(rows.Manager.Id), path))
+        Check(response.StatusCode == HttpStatusCode.OK, $"CASE_MANAGER Case GET accepts valid Bearer without Cookie for {path}");
+    foreach (var (user, client) in new[] { (rows.Manager, manager), (rows.Staff, staff) })
+    {
+        using var response = await client.GetAsync(path);
+        Check(response.StatusCode == HttpStatusCode.OK, $"{user.Role} Cookie reads same-organization Case data for {path}");
+    }
     rows.ScopeActorOrganizationActive = false;
     using (var response = await manager.GetAsync(path))
         await CheckError(response, HttpStatusCode.Unauthorized, "UNAUTHENTICATED",
@@ -457,11 +467,13 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
     public FixtureUser Staff { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-staff", "MEDICAL_STAFF");
     public FixtureUser Admin { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-admin", "ADMIN");
     public FixtureUser Parent { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-parent", "PARENT");
+    public FixtureUser Teacher { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-teacher", "TEACHER");
     public Guid OlderCaseId { get; } = Guid.NewGuid();
     public Guid OtherOrganizationCaseId { get; } = Guid.NewGuid();
     private readonly Guid otherOrganizationId = Guid.NewGuid();
     public bool HideCaseResults { get; set; }
     public (int Offset, int Size)? LastCasePage { get; set; }
+    public int CaseReadCommands { get; private set; }
     public bool FailPermissionLookup { get; set; }
     public bool AllowTaskRead { get; set; } = true;
     public bool ScopeActorOrganizationActive { get; set; } = true;
@@ -479,6 +491,7 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
             throw new InvalidOperationException("The offline connection must remain closed.");
         var sql = command.CommandText;
         var table = Regex.Match(sql, @"\bFROM\s+`(?<name>[^`]+)`").Groups["name"].Value;
+        if (table == "cases") CaseReadCommands++;
         var parameters = command.Parameters.Cast<DbParameter>().Select(p => p.Value).ToArray();
         var parameter = parameters.FirstOrDefault();
         if (table == "cases" && sql.StartsWith("SELECT EXISTS", StringComparison.Ordinal))
@@ -507,7 +520,7 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
             foreach (var _ in columns) tasks.Columns.Add();
             return Read(tasks);
         }
-        var user = new[] { Manager, Staff, Admin, Parent }.SingleOrDefault(user =>
+        var user = new[] { Manager, Staff, Admin, Parent, Teacher }.SingleOrDefault(user =>
             Equals(parameter, user.Id) || Equals(parameter, user.RoleId) || Equals(parameter, user.Username));
         Dictionary<string, object?> row;
         var permissionLookup = table == "users" && sql.Contains("JOIN `permissions`");
