@@ -2,27 +2,48 @@ using System.Data;
 using System.Data.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using EarlyInterventionCare.Api.Controllers;
 using EarlyInterventionCare.Api.Data;
+using EarlyInterventionCare.Api.DTOs.Authentication;
+using EarlyInterventionCare.Api.Options;
+using EarlyInterventionCare.Api.Security;
+using EarlyInterventionCare.Api.Services.Authentication;
 using EarlyInterventionCare.Api.Services.Authorization;
+using EarlyInterventionCare.Api.Services.Questionnaires;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-// Real loopback HTTP/JWT/authorization pipeline. No application Program startup,
+// Real loopback HTTPS/JWT/authorization pipeline. No application Program startup,
 // secrets or database connection. SQL command results are an explicitly offline double.
 var allowedId = Guid.NewGuid();
 var faultId = Guid.NewGuid();
 var rows = new HttpRows(allowedId, faultId);
 var key = new SymmetricSecurityKey(RandomNumberGenerator.GetBytes(32));
+const string trustedOrigin = "https://127.0.0.1";
+var staffOptions = new StaffSessionOptions([trustedOrigin]);
+using var tlsKey = RSA.Create(2048);
+var certificateRequest = new CertificateRequest("CN=127.0.0.1", tlsKey,
+    HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+var subjectNames = new SubjectAlternativeNameBuilder();
+subjectNames.AddIpAddress(IPAddress.Loopback);
+certificateRequest.CertificateExtensions.Add(subjectNames.Build());
+using var generatedCertificate = certificateRequest.CreateSelfSigned(
+    DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddHours(1));
+// Schannel needs a key handle it can open for TLS on Windows. Import the
+// temporary certificate without installing it in a certificate store.
+var pfx = generatedCertificate.Export(X509ContentType.Pfx);
+using var certificate = new X509Certificate2(pfx);
+CryptographicOperations.ZeroMemory(pfx);
 var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
 {
     EnvironmentName = "Production", Args = Array.Empty<string>()
@@ -30,7 +51,24 @@ var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions
 builder.Configuration.Sources.Clear();
 builder.Configuration.AddInMemoryCollection();
 builder.Logging.ClearProviders(); // Do not log JWTs or synthetic database diagnostics.
-builder.WebHost.UseUrls("http://127.0.0.1:0");
+builder.WebHost.ConfigureKestrel(options =>
+    options.Listen(IPAddress.Loopback, 0, endpoint => endpoint.UseHttps(certificate)));
+builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+builder.Services.AddSingleton(staffOptions);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<StaffSessionCookieService>();
+builder.Services.AddSingleton<IAuthenticationService, UnusedStaffLogin>();
+builder.Services.AddScoped<IQuestionnaireStore, EfQuestionnaireStore>();
+builder.Services.AddScoped<QuestionnaireService>();
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-EarlyCare-CSRF";
+    options.Cookie.Name = "__Host-earlycare-csrf";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.Path = "/";
+});
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.MapInboundClaims = false;
@@ -45,6 +83,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidateLifetime = true, RequireExpirationTime = true, RequireSignedTokens = true,
         ClockSkew = TimeSpan.Zero, NameClaimType = "username", RoleClaimType = "role"
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = StaffCookieTokenReader.Read(context.Request, staffOptions.IsEnabled);
+            if (!string.IsNullOrWhiteSpace(context.Token))
+                StaffAuthenticationSource.Set(context.HttpContext, StaffAuthenticationSource.StaffCookie);
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            if (context.HttpContext.Request.Headers.ContainsKey("Authorization"))
+                StaffAuthenticationSource.Set(context.HttpContext, StaffAuthenticationSource.BearerHeader);
+            return Task.CompletedTask;
+        }
+    };
 });
 builder.Services.AddDbContext<ApplicationDbContext>(options => options
     .UseMySql("Server=invalid.invalid;Database=offline_rbac;User=offline;Pooling=False;",
@@ -58,6 +112,7 @@ builder.Services.AddControllers().AddApplicationPart(typeof(WeatherForecastContr
 await using var app = builder.Build();
 app.UseMiddleware<PermissionLookupExceptionMiddleware>();
 app.UseAuthentication();
+app.UseMiddleware<StaffCookieCsrfMiddleware>();
 app.UseAuthorization();
 app.MapGet("/test/protected", () => Results.Ok(new { value = "allowed" })).RequireAuthorization("TestOnly:read");
 app.MapGet("/test/auth-only", () => Results.Ok()).RequireAuthorization();
@@ -67,7 +122,15 @@ for (var index = 0; index < firstBatchCodes.Length; index++)
     app.MapGet($"/test/policies/{index}", () => Results.Ok()).RequireAuthorization("Permission:" + firstBatchCodes[index]);
 app.MapControllers();
 await app.StartAsync();
-using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()), Timeout = TimeSpan.FromSeconds(10) };
+using var handler = new HttpClientHandler
+{
+    UseProxy = false,
+    UseCookies = false,
+    AllowAutoRedirect = false,
+    ServerCertificateCustomValidationCallback = (_, presented, _, _) =>
+        presented?.Thumbprint == certificate.Thumbprint
+};
+using var client = new HttpClient(handler) { BaseAddress = new Uri(app.Urls.Single()), Timeout = TimeSpan.FromSeconds(10) };
 int passed = 0, failed = 0;
 async Task Test(string label, Func<Task<bool>> check)
 {
@@ -83,20 +146,139 @@ async Task Test(string label, Func<Task<bool>> check)
         Console.WriteLine($"FAIL {label}: {error.GetType().Name}");
     }
 }
-string Token(Guid id, bool expired = false)
+string Token(Guid id, bool expired = false, string issuer = "offline-test",
+    string audience = "offline-test", SecurityKey? signingKey = null)
 {
     var now = DateTime.UtcNow;
-    return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken("offline-test", "offline-test",
+    return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(issuer, audience,
         new[] { new Claim("userId", id.ToString()), new Claim("role", "ADMIN"), new Claim("permission", "case.read") },
         notBefore: now.AddMinutes(-10), expires: expired ? now.AddMinutes(-1) : now.AddMinutes(5),
-        signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)));
+        signingCredentials: new SigningCredentials(signingKey ?? key, SecurityAlgorithms.HmacSha256)));
 }
-async Task<HttpResponseMessage> Get(string path, string? token = null)
+Task<HttpResponseMessage> Get(string path, string? token = null) =>
+    Send(HttpMethod.Get, path, token is null ? null : $"Bearer {token}");
+
+async Task<HttpResponseMessage> Send(HttpMethod method, string path, string? authorization = null,
+    string? cookie = null, string? origin = null, string? csrf = null)
 {
-    using var request = new HttpRequestMessage(HttpMethod.Get, path);
-    if (token is not null) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    using var request = new HttpRequestMessage(method, path);
+    if (authorization is not null) request.Headers.TryAddWithoutValidation("Authorization", authorization);
+    if (cookie is not null) request.Headers.Add("Cookie", cookie);
+    if (origin is not null) request.Headers.Add("Origin", origin);
+    if (csrf is not null) request.Headers.Add("X-EarlyCare-CSRF", csrf);
     return await client.SendAsync(request);
 }
+
+string StaffCookie(string token) => $"{StaffSessionCookieDefaults.Name}={token}";
+
+await Test("valid staff cookie authenticates through the Bearer handler", async () =>
+{
+    using var response = await Send(HttpMethod.Get, "/test/protected", cookie: StaffCookie(Token(allowedId)));
+    return response.StatusCode == HttpStatusCode.OK;
+});
+foreach (var header in new[] { "Bearer malformed", "Basic unsupported" })
+{
+    await Test($"explicit {header.Split(' ')[0]} header cannot fall back to valid staff cookie", async () =>
+    {
+        var before = rows.Reads;
+        using var response = await Send(HttpMethod.Get, "/test/protected", header, StaffCookie(Token(allowedId)));
+        return response.StatusCode == HttpStatusCode.Unauthorized && rows.Reads == before;
+    });
+}
+await Test("valid explicit Bearer identity takes precedence over cookie permission", async () =>
+{
+    using var response = await Send(HttpMethod.Get, "/test/protected",
+        $"Bearer {Token(Guid.NewGuid())}", StaffCookie(Token(allowedId)));
+    return response.StatusCode == HttpStatusCode.Forbidden;
+});
+foreach (var (label, token) in new[]
+{
+    ("expired", Token(allowedId, expired: true)),
+    ("wrong issuer", Token(allowedId, issuer: "different-issuer")),
+    ("wrong audience", Token(allowedId, audience: "different-audience")),
+    ("wrong signature", Token(allowedId, signingKey: new SymmetricSecurityKey(RandomNumberGenerator.GetBytes(32))))
+})
+{
+    await Test($"{label} staff cookie JWT returns 401 without querying permissions", async () =>
+    {
+        var before = rows.Reads;
+        using var response = await Send(HttpMethod.Get, "/test/protected", cookie: StaffCookie(token));
+        return response.StatusCode == HttpStatusCode.Unauthorized && rows.Reads == before;
+    });
+}
+await Test("anonymous CSRF token and logout endpoints require authentication", async () =>
+{
+    using var csrf = await Get("/api/auth/csrf");
+    using var logout = await Send(HttpMethod.Post, "/api/auth/logout");
+    return csrf.StatusCode == HttpStatusCode.Unauthorized && logout.StatusCode == HttpStatusCode.Unauthorized;
+});
+await Test("real antiforgery rejects missing/wrong token and accepts matching logout token", async () =>
+{
+    var staffCookie = StaffCookie(Token(allowedId));
+    using var csrfResponse = await Send(HttpMethod.Get, "/api/auth/csrf", cookie: staffCookie);
+    if (csrfResponse.StatusCode != HttpStatusCode.OK) return false;
+    using var json = JsonDocument.Parse(await csrfResponse.Content.ReadAsStringAsync());
+    var requestToken = json.RootElement.GetProperty("requestToken").GetString();
+    if (string.IsNullOrWhiteSpace(requestToken)) return false;
+    var csrfCookie = ReadCookie(csrfResponse, "__Host-earlycare-csrf");
+    if (csrfCookie is null) return false;
+    var cookies = $"{staffCookie}; {csrfCookie.Name}={csrfCookie.Value}";
+    foreach (var candidate in new[] { null, "invalid-token" })
+    {
+        using var denied = await Send(HttpMethod.Post, "/api/auth/logout",
+            cookie: cookies, origin: trustedOrigin, csrf: candidate);
+        if (denied.StatusCode != HttpStatusCode.Forbidden || denied.Headers.Contains("Set-Cookie"))
+            return false;
+        using var error = JsonDocument.Parse(await denied.Content.ReadAsStringAsync());
+        if (error.RootElement.GetProperty("code").GetString() != "CSRF_VALIDATION_FAILED")
+            return false;
+    }
+    using var logout = await Send(HttpMethod.Post, "/api/auth/logout",
+        cookie: cookies, origin: trustedOrigin, csrf: requestToken);
+    var deleted = ReadCookie(logout, StaffSessionCookieDefaults.Name);
+    return logout.StatusCode == HttpStatusCode.NoContent && deleted is not null &&
+        deleted.Value.Length == 0 && deleted.Expires <= DateTimeOffset.UtcNow &&
+        deleted.Secure && deleted.HttpOnly && deleted.SameSite == Microsoft.Net.Http.Headers.SameSiteMode.Strict &&
+        deleted.Path == "/" && !deleted.Domain.HasValue;
+});
+await Test("invalid explicit header with staff cookie cannot bypass logout CSRF", async () =>
+{
+    using var response = await Send(HttpMethod.Post, "/api/auth/logout",
+        "Bearer malformed", StaffCookie(Token(allowedId)), trustedOrigin);
+    using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    return response.StatusCode == HttpStatusCode.Forbidden && !response.Headers.Contains("Set-Cookie") &&
+        json.RootElement.GetProperty("code").GetString() == "CSRF_VALIDATION_FAILED";
+});
+await Test("validated explicit Bearer remains compatible with logout without a CSRF token", async () =>
+{
+    using var response = await Send(HttpMethod.Post, "/api/auth/logout",
+        $"Bearer {Token(allowedId)}", StaffCookie(Token(Guid.NewGuid())));
+    return response.StatusCode == HttpStatusCode.NoContent;
+});
+await Test("fixture has the current Task read permission", async () =>
+{
+    var policyIndex = Array.IndexOf(firstBatchCodes, "questionnaire.task.read");
+    using var response = await Get($"/test/policies/{policyIndex}", Token(allowedId));
+    return response.StatusCode == HttpStatusCode.OK;
+});
+foreach (var suffix in new[] { "tasks", "tasks/completion" })
+{
+    await Test($"{suffix} denies outside the Development gate before task query", async () =>
+    {
+        var before = rows.Reads;
+        var caseId = EarlyInterventionCare.Api.Development.CoreDevelopmentSeed.CaseId;
+        using var response = await Send(HttpMethod.Get, $"/api/cases/{caseId:D}/{suffix}",
+            cookie: StaffCookie(Token(allowedId)));
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return response.StatusCode == HttpStatusCode.Forbidden && rows.Reads == before + 1 &&
+            json.RootElement.GetProperty("code").GetString() == "CASE_ACCESS_NOT_INTEGRATED";
+    });
+}
+
+static Microsoft.Net.Http.Headers.SetCookieHeaderValue? ReadCookie(HttpResponseMessage response, string name) =>
+    response.Headers.TryGetValues("Set-Cookie", out var values)
+        ? Microsoft.Net.Http.Headers.SetCookieHeaderValue.ParseList(values.ToList()).SingleOrDefault(cookie => cookie.Name == name)
+        : null;
 await Test("unauthenticated returns 401 with Bearer challenge and no query", async () =>
 {
     var before = rows.Reads;
@@ -202,11 +384,12 @@ await Test("actual Program registers RBAC and preserves middleware order without
     var program = await File.ReadAllTextAsync(Path.Combine(directory.FullName, "EarlyInterventionCare.Api", "Program.cs"));
     var boundary = program.IndexOf("app.UseMiddleware<PermissionLookupExceptionMiddleware>();", StringComparison.Ordinal);
     var authentication = program.IndexOf("app.UseAuthentication();", StringComparison.Ordinal);
+    var csrf = program.IndexOf("app.UseMiddleware<StaffCookieCsrfMiddleware>();", StringComparison.Ordinal);
     var authorization = program.IndexOf("app.UseAuthorization();", StringComparison.Ordinal);
     var limiter = program.IndexOf("app.UseRateLimiter();", StringComparison.Ordinal);
     return program.Contains("builder.Services.AddPermissionAuthorization();") &&
         !program.Contains("TestOnly:") && program.Contains("builder.Services.AddAuthorization(options => options.AddFirstBatchPermissionPolicies());") &&
-        boundary >= 0 && boundary < authentication && authentication < authorization && authorization < limiter;
+        boundary >= 0 && boundary < authentication && authentication < csrf && csrf < authorization && authorization < limiter;
 });
 for (var index = 0; index < firstBatchCodes.Length; index++)
 {
@@ -230,6 +413,15 @@ sealed class StartedResponse : HttpResponseFeature
     public StartedResponse() { StatusCode = 202; }
     public override bool HasStarted => true;
 }
+sealed class UnusedStaffLogin : IAuthenticationService
+{
+    public Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException("Unexpected login in HTTP authorization harness.");
+    public Task<LoginResponse?> LoginStaffAsync(StaffLoginRequest request, CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException("Unexpected staff login in HTTP authorization harness.");
+    public Task<CurrentUserResponse?> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException("Unexpected user lookup in HTTP authorization harness.");
+}
 sealed class HttpNoNetwork : DbConnectionInterceptor
 {
     public override InterceptionResult ConnectionOpening(DbConnection connection, ConnectionEventData eventData,
@@ -250,12 +442,26 @@ sealed class HttpRows(Guid allowed, Guid fault) : DbCommandInterceptor
         Reads++;
         var id = Guid.Parse(command.Parameters.Cast<DbParameter>().Single().Value!.ToString()!);
         if (id == fault) throw new HttpDatabaseFault();
-        if (!command.CommandText.Contains("FROM `users`") || !command.CommandText.Contains("INNER JOIN `permissions`"))
+        if (!command.CommandText.Contains("FROM `users`"))
             throw new InvalidOperationException("Unexpected offline command");
         var table = new DataTable();
         table.Columns.Add("status", typeof(string));
         table.Columns.Add("name", typeof(string));
-        if (id == allowed) table.Rows.Add("ACTIVE", "case.read");
+        if (command.CommandText.Contains("INNER JOIN `permissions`"))
+        {
+            if (id == allowed)
+            {
+                table.Rows.Add("ACTIVE", "case.read");
+                table.Rows.Add("ACTIVE", "questionnaire.task.read");
+            }
+        }
+        else if (command.CommandText.Contains("INNER JOIN `roles`"))
+        {
+            // Current account/role check in the questionnaire controller, before
+            // the Development gate. Task or Case queries remain unexpected here.
+            if (id == allowed) table.Rows.Add("ACTIVE", "CASE_MANAGER");
+        }
+        else throw new InvalidOperationException("Unexpected offline user query");
         return ValueTask.FromResult(InterceptionResult<DbDataReader>.SuppressWithResult(table.CreateDataReader()));
     }
 }

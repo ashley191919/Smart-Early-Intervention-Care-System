@@ -113,6 +113,10 @@ foreach (var role in new[] { "CASE_MANAGER", "MEDICAL_STAFF", "ADMIN", "PARENT",
         Check(cookie.Value.Length > 0 && cookie.HttpOnly && cookie.Secure && cookie.SameSite == Microsoft.Net.Http.Headers.SameSiteMode.Strict &&
             cookie.Path == "/" && !cookie.Domain.HasValue, "staff cookie retains secure host-only attributes");
         var cookiePrincipal = ValidateToken(cookie.Value.ToString());
+        var jwtExpiry = new JwtSecurityTokenHandler().ReadJwtToken(cookie.Value.ToString()).ValidTo;
+        Check(cookie.Expires is { } cookieExpiry && cookieExpiry.UtcDateTime == jwtExpiry &&
+            cookieExpiry.ToUnixTimeSeconds() == session!.ExpiresAt.ToUnixTimeSeconds(),
+            "staff cookie and response expiration match the signed JWT at HTTP date precision");
         auth.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = cookiePrincipal } };
         Check(((await auth.Me(default) as OkObjectResult)?.Value as CurrentUserResponse)?.UserId == fixture.Id,
             "JWT carried by a staff cookie resolves through the real me service");
