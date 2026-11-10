@@ -70,9 +70,9 @@ void Check(bool condition, string label)
     Console.WriteLine("PASS " + label);
 }
 
-HttpClient CreateClient()
+HttpClient CreateClient(ProductFactory host)
 {
-    var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+    var client = host.CreateClient(new WebApplicationFactoryClientOptions
     {
         BaseAddress = new Uri(origin),
         AllowAutoRedirect = false
@@ -81,7 +81,7 @@ HttpClient CreateClient()
     return client;
 }
 
-using var anonymous = CreateClient();
+using var anonymous = CreateClient(factory);
 var hostEnvironment = factory.Services.GetRequiredService<IHostEnvironment>();
 Check(hostEnvironment.EnvironmentName == environment && hostEnvironment.ContentRootPath == isolatedRoot,
     "actual Program starts in a dedicated environment under TestServer");
@@ -132,8 +132,8 @@ async Task Login(HttpClient client, FixtureUser user)
         profile.RootElement.GetProperty("role").GetString() == user.Role, $"{user.Role} cookie resolves current identity via me");
 }
 
-using var manager = CreateClient();
-using var staff = CreateClient();
+using var manager = CreateClient(factory);
+using var staff = CreateClient(factory);
 await Login(manager, rows.Manager);
 await Login(staff, rows.Staff);
 
@@ -194,6 +194,14 @@ using var csrfJson = await ReadJson(csrf);
 var requestToken = csrfJson.RootElement.GetProperty("requestToken").GetString();
 Check(csrf.StatusCode == HttpStatusCode.OK && !string.IsNullOrWhiteSpace(requestToken),
     "authenticated csrf GET issues a request token");
+using (var request = new HttpRequestMessage(HttpMethod.Patch, casePath + "/status"))
+{
+    request.Headers.Add("X-EarlyCare-CSRF", requestToken);
+    request.Content = JsonContent.Create(new { newStatus = "TO_CONTACT" });
+    using var response = await manager.SendAsync(request);
+    await CheckError(response, HttpStatusCode.Forbidden, "CASE_ACCESS_NOT_INTEGRATED",
+        "CaseStatus PATCH still denies a permitted Cookie user with valid CSRF");
+}
 foreach (var candidate in new[] { null, "invalid" })
 {
     using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
@@ -215,7 +223,91 @@ using (var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout")
 }
 using (var response = await manager.GetAsync("/api/auth/me"))
     Check(response.StatusCode == HttpStatusCode.Unauthorized, "same client is unauthorized after logout");
+
+// Exercise the existing Development fixture gate through Program without reading local User Secrets.
+var emptyProfile = Path.Combine(isolatedRoot, "..", "g4b-empty-profile");
+Directory.CreateDirectory(emptyProfile);
+if (Directory.EnumerateFileSystemEntries(emptyProfile).Any())
+    throw new InvalidOperationException("The harness User Secrets profile must be empty.");
+Environment.SetEnvironmentVariable("APPDATA", emptyProfile);
+Environment.SetEnvironmentVariable("DOTNET_USER_SECRETS_FALLBACK_DIR", emptyProfile);
+Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", Environments.Development);
+Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", Environments.Development);
+const string developmentConnection = "Server=127.0.0.1;Port=1;Database=earlycare_dev;User=offline;Pooling=False;";
+Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", developmentConnection);
+await using var development = new ProductFactory(Environments.Development, isolatedRoot, developmentConnection, rows);
+using var developmentManager = CreateClient(development);
+using var developmentStaff = CreateClient(development);
+Check(development.Services.GetRequiredService<IHostEnvironment>().IsDevelopment(),
+    "actual Program starts in isolated Development under TestServer");
+await Login(developmentManager, rows.Manager);
+await Login(developmentStaff, rows.Staff);
+
+foreach (var suffix in new[] { "tasks", "tasks/completion" })
+{
+    var path = $"{casePath}/{suffix}";
+    using (var request = new HttpRequestMessage(HttpMethod.Get, path))
+    {
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "invalid");
+        using var response = await developmentManager.SendAsync(request);
+        Check(response.StatusCode == HttpStatusCode.Unauthorized, $"{suffix} invalid JWT rejects even with a valid Cookie");
+    }
+    using (var response = await developmentStaff.GetAsync(path))
+        Check(response.StatusCode == HttpStatusCode.Forbidden, $"{suffix} keeps MEDICAL_STAFF role gate");
+
+    rows.AllowTaskRead = false;
+    var counts = rows.ReadCounts;
+    using (var response = await developmentManager.GetAsync(path))
+        await CheckError(response, HttpStatusCode.Forbidden, "FORBIDDEN", $"{suffix} missing Task Permission");
+    Check(counts == rows.ReadCounts, $"{suffix} missing permission skips Scope and Task Store");
+    rows.AllowTaskRead = true;
+
+    rows.CaseInActorOrganization = false;
+    counts = rows.ReadCounts;
+    using (var response = await developmentManager.GetAsync(path))
+        await CheckError(response, HttpStatusCode.NotFound, "CASE_NOT_FOUND", $"{suffix} Scope false");
+    Check(rows.ReadCounts == (counts.Actors + 1, counts.Scopes + 1, counts.Store),
+        $"{suffix} Scope false skips Task Store");
+    rows.CaseInActorOrganization = true;
+
+    rows.ScopeActorOrganizationActive = false;
+    using (var response = await developmentManager.GetAsync(path))
+        await CheckError(response, HttpStatusCode.Unauthorized, "UNAUTHENTICATED",
+            $"{suffix} CaseAccessException for inactive organization");
+    rows.ScopeActorOrganizationActive = true;
+
+    using (var response = await developmentManager.GetAsync(path))
+    using (var json = await ReadJson(response))
+        Check(response.StatusCode == HttpStatusCode.OK && (suffix == "tasks"
+                ? json.RootElement.ValueKind == JsonValueKind.Array && json.RootElement.GetArrayLength() == 0
+                : json.RootElement.GetProperty("totalTaskCount").GetInt32() == 0 &&
+                    !json.RootElement.GetProperty("allRequiredSubmitted").GetBoolean()),
+            $"{suffix} scoped Development Cookie request preserves the empty contract");
+}
+
+using (var csrfResponse = await developmentStaff.GetAsync("/api/auth/csrf"))
+using (var json = await ReadJson(csrfResponse))
+using (var request = new HttpRequestMessage(HttpMethod.Post, casePath + "/tasks"))
+{
+    request.Headers.Add("X-EarlyCare-CSRF", json.RootElement.GetProperty("requestToken").GetString());
+    request.Content = JsonContent.Create(new
+    {
+        questionnaireVersionId = Guid.NewGuid(),
+        respondentRole = "TEACHER",
+        assignmentRound = 1,
+        isRequired = true
+    });
+    using var response = await developmentStaff.SendAsync(request);
+    Check(response.StatusCode == HttpStatusCode.Forbidden && string.IsNullOrEmpty(await response.Content.ReadAsStringAsync()),
+        $"POST Assign retains its MEDICAL_STAFF role rejection with valid input and CSRF (HTTP {(int)response.StatusCode})");
+}
 Console.WriteLine($"PASS: {checks} G4-B checks using actual Program and TestServer with offline ADO.");
+
+async Task CheckError(HttpResponseMessage response, HttpStatusCode status, string code, string label)
+{
+    using var json = await ReadJson(response);
+    Check(response.StatusCode == status && json.RootElement.GetProperty("code").GetString() == code, label);
+}
 
 static async Task<JsonDocument> ReadJson(HttpResponseMessage response) =>
     JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -272,6 +364,13 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
     public FixtureUser Manager { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-manager", "CASE_MANAGER");
     public FixtureUser Staff { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-staff", "MEDICAL_STAFF");
     public bool FailPermissionLookup { get; set; }
+    public bool AllowTaskRead { get; set; } = true;
+    public bool ScopeActorOrganizationActive { get; set; } = true;
+    public bool CaseInActorOrganization { get; set; } = true;
+    private int actorReads;
+    private int scopeReads;
+    private int storeReads;
+    public (int Actors, int Scopes, int Store) ReadCounts => (actorReads, scopeReads, storeReads);
 
     public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command,
         CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
@@ -281,11 +380,39 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
             throw new InvalidOperationException("The offline connection must remain closed.");
         var sql = command.CommandText;
         var table = Regex.Match(sql, @"\bFROM\s+`(?<name>[^`]+)`").Groups["name"].Value;
-        var parameter = command.Parameters.Cast<DbParameter>().Single().Value;
+        var parameters = command.Parameters.Cast<DbParameter>().Select(p => p.Value).ToArray();
+        var parameter = parameters.FirstOrDefault();
+        if (table == "cases")
+        {
+            var scoped = sql.Contains("`organization_id`");
+            if (!parameters.Contains(CoreDevelopmentSeed.CaseId) || (scoped && !parameters.Contains(organizationId)))
+                throw new InvalidOperationException("Expected the fixture Case and, for Scope, the actor organization.");
+            if (scoped) scopeReads++;
+            else storeReads++;
+            var cases = new DataTable();
+            cases.Columns.Add("exists", typeof(bool));
+            cases.Rows.Add(!scoped || CaseInActorOrganization);
+            return Read(cases);
+        }
+        var columns = Regex.Matches(sql[..sql.IndexOf("FROM", StringComparison.Ordinal)], @"`[^`]+`\.`(?<column>[^`]+)`")
+            .Select(match => match.Groups["column"].Value).ToArray();
+        if (table == "case_questionnaires")
+        {
+            if (!parameters.Contains(CoreDevelopmentSeed.CaseId) || !sql.Contains("WHERE"))
+                throw new InvalidOperationException("Expected a Case-scoped task query.");
+            storeReads++;
+            var tasks = new DataTable();
+            // No rows are materialized. Retain the result's ordinal layout.
+            foreach (var _ in columns) tasks.Columns.Add();
+            return Read(tasks);
+        }
         var user = new[] { Manager, Staff }.SingleOrDefault(user =>
             Equals(parameter, user.Id) || Equals(parameter, user.RoleId) || Equals(parameter, user.Username));
         Dictionary<string, object?> row;
-        if (table == "users" && sql.Contains("JOIN `permissions`"))
+        var permissionLookup = table == "users" && sql.Contains("JOIN `permissions`");
+        var scopeActorLookup = table == "users" && sql.Contains("JOIN `organizations`");
+        if (scopeActorLookup) actorReads++;
+        if (permissionLookup)
         {
             if (FailPermissionLookup) throw new SyntheticPermissionFailure();
             row = new() { ["status"] = "ACTIVE", ["name"] = "case.status_history.read" };
@@ -307,15 +434,22 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
             row = new() { ["name"] = "case.status_history.read" };
         else throw new InvalidOperationException("Unexpected command in the G4-B offline fixture.");
 
-        var columns = Regex.Matches(sql[..sql.IndexOf("FROM", StringComparison.Ordinal)], @"`[^`]+`\.`(?<column>[^`]+)`")
-            .Select(match => match.Groups["column"].Value).ToArray();
         var data = new DataTable();
         foreach (var column in columns)
             data.Columns.Add(column, column.EndsWith("_id", StringComparison.Ordinal) ? typeof(Guid) :
                 column.EndsWith("_utc", StringComparison.Ordinal) ? typeof(DateTime) : typeof(string));
-        data.Rows.Add(columns.Select(column => row[column] ?? DBNull.Value).ToArray());
-        return ValueTask.FromResult(InterceptionResult<DbDataReader>.SuppressWithResult(data.CreateDataReader()));
+        if (!scopeActorLookup || ScopeActorOrganizationActive)
+            data.Rows.Add(columns.Select(column => row[column] ?? DBNull.Value).ToArray());
+        if (permissionLookup)
+        {
+            data.Rows.Add("ACTIVE", "case.status.update");
+            if (AllowTaskRead) data.Rows.Add("ACTIVE", "questionnaire.task.read");
+        }
+        return Read(data);
     }
+
+    private static ValueTask<InterceptionResult<DbDataReader>> Read(DataTable data)
+        => ValueTask.FromResult(InterceptionResult<DbDataReader>.SuppressWithResult(data.CreateDataReader()));
 
     public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command,
         CommandEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
