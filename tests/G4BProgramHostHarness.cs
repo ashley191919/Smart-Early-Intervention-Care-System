@@ -103,7 +103,8 @@ using (var scope = factory.Services.CreateScope())
         services.GetRequiredService<ICaseStatusHistoryAccessAuthorizer>() is DenyAllCaseStatusHistoryAccessAuthorizer,
         "actual Scoped registrations resolve alongside both DenyAll authorizers");
     foreach (var type in new[] { typeof(AuthController), typeof(StaffSessionController),
-        typeof(QuestionnairesController), typeof(CaseStatusController), typeof(CaseStatusHistoryController) })
+        typeof(QuestionnairesController), typeof(MedicalCaseReadController),
+        typeof(CaseStatusController), typeof(CaseStatusHistoryController) })
         _ = ActivatorUtilities.CreateInstance(services, type);
     Check(db.Database.GetDbConnection().State == ConnectionState.Closed,
         "medical controllers activate with the offline DbContext still closed");
@@ -137,32 +138,122 @@ using var staff = CreateClient(factory);
 await Login(manager, rows.Manager);
 await Login(staff, rows.Staff);
 
-async Task<HttpResponseMessage> MeWithBearer(HttpClient client, string token)
+async Task<HttpResponseMessage> GetWithBearer(HttpClient client, string token, string path = "/api/auth/me")
 {
-    using var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+    using var request = new HttpRequestMessage(HttpMethod.Get, path);
     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
     return await client.SendAsync(request);
 }
 
-using (var response = await MeWithBearer(manager, "invalid"))
+using (var response = await GetWithBearer(manager, "invalid"))
     Check(response.StatusCode == HttpStatusCode.Unauthorized, "invalid explicit Bearer never falls back to a valid cookie");
 var expired = new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(issuer, audience,
     [new Claim("userId", rows.Manager.Id.ToString("D"))],
     DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow.AddMinutes(-2),
     new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)));
-using (var response = await MeWithBearer(anonymous, expired))
+using (var response = await GetWithBearer(anonymous, expired))
     Check(response.StatusCode == HttpStatusCode.Unauthorized, "correctly signed expired JWT returns 401");
 
 var casePath = $"/api/cases/{CoreDevelopmentSeed.CaseId:D}";
 var endpoints = factory.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>().ToArray();
-Check(!endpoints.Any(endpoint => endpoint.RoutePattern.RawText?.Trim('/') is
-        "api/cases" or "api/cases/{caseId}" or "api/cases/{caseId:guid}"),
-    "Case collection and detail routes are absent from the product endpoint inventory");
-foreach (var path in new[] { "/api/cases?page=1&pageSize=20", casePath })
+var caseEndpoints = endpoints.Where(endpoint => endpoint.RoutePattern.RawText?.Trim('/') is
+    "api/cases" or "api/cases/{caseId}" or "api/cases/{caseId:guid}").ToArray();
+Check(caseEndpoints.Length == 2 &&
+    caseEndpoints.Any(endpoint => endpoint.RoutePattern.RawText?.Trim('/') == "api/cases") &&
+    caseEndpoints.Any(endpoint => endpoint.RoutePattern.RawText?.Trim('/') == "api/cases/{caseId:guid}") &&
+    caseEndpoints.All(endpoint => endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods
+        .SequenceEqual(new[] { "GET" }) == true),
+    "Case collection and detail exist as GET-only endpoints");
+Check(!endpoints.Any(endpoint =>
 {
-    using var response = await manager.GetAsync(path);
-    Check(response.StatusCode == HttpStatusCode.NotFound, $"unintegrated Case route returns 404 for {path.Split('?')[0].Replace(casePath, "case detail")}");
+    var route = endpoint.RoutePattern.RawText?.Trim('/') ?? "";
+    return route.Contains("guardian", StringComparison.OrdinalIgnoreCase) ||
+        route.StartsWith("api/parent", StringComparison.OrdinalIgnoreCase) ||
+        route.Contains("consent", StringComparison.OrdinalIgnoreCase);
+}), "Guardian, parent and consent routes are absent from the integrated host");
+
+string BearerFor(Guid userId)
+{
+    var now = DateTime.UtcNow;
+    return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(issuer, audience,
+        [new Claim("userId", userId.ToString("D"))], now.AddMinutes(-1), now.AddMinutes(5),
+        new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)));
 }
+
+const string caseListPath = "/api/cases";
+foreach (var path in new[] { caseListPath, casePath })
+{
+    using (var response = await anonymous.GetAsync(path))
+        Check(response.StatusCode == HttpStatusCode.Unauthorized, $"anonymous Case GET returns 401 for {path}");
+    using (var response = await GetWithBearer(manager, "invalid", path))
+        Check(response.StatusCode == HttpStatusCode.Unauthorized, $"invalid explicit JWT overrides valid Cookie for {path}");
+    using (var response = await GetWithBearer(anonymous, BearerFor(rows.Admin.Id), path))
+        Check(response.StatusCode == HttpStatusCode.OK, $"ADMIN Case GET accepts valid Bearer without Cookie for {path}");
+    using (var response = await GetWithBearer(anonymous, BearerFor(rows.Parent.Id), path))
+        await CheckError(response, HttpStatusCode.Forbidden, "FORBIDDEN", $"parent identity cannot read medical Case data for {path}");
+    rows.ScopeActorOrganizationActive = false;
+    using (var response = await manager.GetAsync(path))
+        await CheckError(response, HttpStatusCode.Unauthorized, "UNAUTHENTICATED",
+            $"CaseAccessException from inactive organization maps to 401 for {path}");
+    rows.ScopeActorOrganizationActive = true;
+}
+using (var response = await manager.GetAsync(caseListPath))
+using (var json = await ReadJson(response))
+{
+    Check(response.StatusCode == HttpStatusCode.OK && response.Headers.CacheControl?.NoStore == true &&
+        json.RootElement.ValueKind == JsonValueKind.Array &&
+        json.RootElement.EnumerateArray().Select(item => item.GetProperty("caseId").GetGuid())
+            .SequenceEqual(new[] { CoreDevelopmentSeed.CaseId, rows.OlderCaseId }) &&
+        rows.LastCasePage == (0, 20), "default Case list returns only same-organization Cases, as an uncached array");
+}
+using (var response = await staff.GetAsync(casePath))
+using (var json = await ReadJson(response))
+{
+    var item = json.RootElement;
+    var dtoFields = new[] { "caseId", "caseCode", "childName", "birthDate", "sex", "nationalId",
+        "address", "caseStatus", "revision", "createdAtUtc", "updatedAtUtc" };
+    Check(response.StatusCode == HttpStatusCode.OK && response.Headers.CacheControl?.NoStore == true &&
+        item.EnumerateObject().Select(property => property.Name).ToHashSet().SetEquals(dtoFields) &&
+        item.GetProperty("caseId").GetGuid() == CoreDevelopmentSeed.CaseId &&
+        item.GetProperty("birthDate").GetString() == "2020-01-01" &&
+        item.GetProperty("revision").GetUInt32() == 2 &&
+        item.GetProperty("createdAtUtc").GetDateTime().Kind == DateTimeKind.Utc,
+        "MEDICAL_STAFF Cookie reads the same-organization Case with the exact CaseDto fields and UTC timestamps");
+}
+foreach (var id in new[] { rows.OtherOrganizationCaseId, Guid.NewGuid() })
+{
+    using var response = await manager.GetAsync($"{caseListPath}/{id:D}");
+    await CheckError(response, HttpStatusCode.NotFound, "CASE_NOT_FOUND",
+        "Case detail masks cross-organization and missing Cases as CASE_NOT_FOUND");
+}
+rows.HideCaseResults = true;
+using (var response = await manager.GetAsync(caseListPath))
+using (var json = await ReadJson(response))
+    Check(response.StatusCode == HttpStatusCode.OK && json.RootElement.ValueKind == JsonValueKind.Array &&
+        json.RootElement.GetArrayLength() == 0, "Case list returns 200 [] when no Cases are visible");
+rows.HideCaseResults = false;
+using (var response = await manager.GetAsync(caseListPath + "?page=2&pageSize=1"))
+using (var json = await ReadJson(response))
+    Check(response.StatusCode == HttpStatusCode.OK && rows.LastCasePage == (1, 1) &&
+        json.RootElement.GetArrayLength() == 1 && json.RootElement[0].GetProperty("caseId").GetGuid() == rows.OlderCaseId,
+        "Case list applies one-based offset and page size");
+using (var response = await manager.GetAsync(caseListPath + "?page=100000&pageSize=100"))
+using (var json = await ReadJson(response))
+    Check(response.StatusCode == HttpStatusCode.OK && rows.LastCasePage == (9999900, 100) &&
+        json.RootElement.GetArrayLength() == 0, "Case list accepts the upper pagination bounds");
+foreach (var query in new[] { "page=0", "page=100001", "pageSize=0", "pageSize=101" })
+{
+    rows.LastCasePage = null;
+    using var response = await manager.GetAsync(caseListPath + "?" + query);
+    await CheckError(response, HttpStatusCode.BadRequest, "INVALID_PAGE", $"Case list rejects {query}");
+    Check(rows.LastCasePage is null, "invalid pagination skips the Case query");
+}
+using (var response = await manager.GetAsync(caseListPath + "?page=invalid"))
+    Check(response.StatusCode == HttpStatusCode.BadRequest, "Case list rejects a non-integer page through MVC binding");
+using (var response = await manager.GetAsync(caseListPath + "/invalid-guid"))
+    Check(response.StatusCode == HttpStatusCode.NotFound && string.IsNullOrEmpty(await response.Content.ReadAsStringAsync()),
+        "malformed Case ID is a route 404 distinct from CASE_NOT_FOUND");
+
 foreach (var suffix in new[] { "tasks", "tasks/completion" })
 {
     using var response = await manager.GetAsync($"{casePath}/{suffix}");
@@ -354,6 +445,7 @@ sealed class ProductFactory(string environment, string contentRoot, string conne
 }
 
 sealed record FixtureUser(Guid Id, Guid RoleId, string Username, string Role);
+sealed record FixtureCase(Guid Id, Guid OrganizationId, string Code, DateTime CreatedAt);
 
 sealed class IdentityRows(string password) : DbCommandInterceptor
 {
@@ -363,6 +455,13 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
     public string Password { get; } = password;
     public FixtureUser Manager { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-manager", "CASE_MANAGER");
     public FixtureUser Staff { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-staff", "MEDICAL_STAFF");
+    public FixtureUser Admin { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-admin", "ADMIN");
+    public FixtureUser Parent { get; } = new(Guid.NewGuid(), Guid.NewGuid(), "g4b-parent", "PARENT");
+    public Guid OlderCaseId { get; } = Guid.NewGuid();
+    public Guid OtherOrganizationCaseId { get; } = Guid.NewGuid();
+    private readonly Guid otherOrganizationId = Guid.NewGuid();
+    public bool HideCaseResults { get; set; }
+    public (int Offset, int Size)? LastCasePage { get; set; }
     public bool FailPermissionLookup { get; set; }
     public bool AllowTaskRead { get; set; } = true;
     public bool ScopeActorOrganizationActive { get; set; } = true;
@@ -382,7 +481,7 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
         var table = Regex.Match(sql, @"\bFROM\s+`(?<name>[^`]+)`").Groups["name"].Value;
         var parameters = command.Parameters.Cast<DbParameter>().Select(p => p.Value).ToArray();
         var parameter = parameters.FirstOrDefault();
-        if (table == "cases")
+        if (table == "cases" && sql.StartsWith("SELECT EXISTS", StringComparison.Ordinal))
         {
             var scoped = sql.Contains("`organization_id`");
             if (!parameters.Contains(CoreDevelopmentSeed.CaseId) || (scoped && !parameters.Contains(organizationId)))
@@ -396,6 +495,8 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
         }
         var columns = Regex.Matches(sql[..sql.IndexOf("FROM", StringComparison.Ordinal)], @"`[^`]+`\.`(?<column>[^`]+)`")
             .Select(match => match.Groups["column"].Value).ToArray();
+        if (table == "cases")
+            return Read(CaseRows(command, columns));
         if (table == "case_questionnaires")
         {
             if (!parameters.Contains(CoreDevelopmentSeed.CaseId) || !sql.Contains("WHERE"))
@@ -406,7 +507,7 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
             foreach (var _ in columns) tasks.Columns.Add();
             return Read(tasks);
         }
-        var user = new[] { Manager, Staff }.SingleOrDefault(user =>
+        var user = new[] { Manager, Staff, Admin, Parent }.SingleOrDefault(user =>
             Equals(parameter, user.Id) || Equals(parameter, user.RoleId) || Equals(parameter, user.Username));
         Dictionary<string, object?> row;
         var permissionLookup = table == "users" && sql.Contains("JOIN `permissions`");
@@ -446,6 +547,79 @@ sealed class IdentityRows(string password) : DbCommandInterceptor
             if (AllowTaskRead) data.Rows.Add("ACTIVE", "questionnaire.task.read");
         }
         return Read(data);
+    }
+
+    private DataTable CaseRows(DbCommand command, string[] columns)
+    {
+        var sql = command.CommandText;
+        var where = sql.IndexOf("WHERE", StringComparison.Ordinal);
+        if (where < 0)
+            throw new InvalidOperationException("Case GET must scope the query.");
+        var whereClause = sql[where..];
+
+        object Parameter(string name) => command.Parameters.Cast<DbParameter>()
+            .Single(parameter => parameter.ParameterName.TrimStart('@') == name.TrimStart('@')).Value!;
+
+        var organization = Regex.Match(whereClause, @"`organization_id`\s*=\s*(@\w+)");
+        if (!organization.Success || !Equals(Parameter(organization.Groups[1].Value), organizationId))
+            throw new InvalidOperationException("Case GET must filter by the actor organization.");
+
+        FixtureCase[] fixtures =
+        [
+            new(CoreDevelopmentSeed.CaseId, organizationId, "FIXTURE-NEW", DateTime.UnixEpoch.AddDays(2)),
+            new(OlderCaseId, organizationId, "FIXTURE-OLDER", DateTime.UnixEpoch),
+            new(OtherOrganizationCaseId, otherOrganizationId, "FIXTURE-OTHER", DateTime.UnixEpoch.AddDays(3))
+        ];
+        var visible = fixtures.Where(row => !HideCaseResults && row.OrganizationId == organizationId);
+        var caseFilter = Regex.Match(whereClause, @"`case_id`\s*=\s*(@\w+)");
+        if (caseFilter.Success)
+        {
+            var requestedId = (Guid)Parameter(caseFilter.Groups[1].Value);
+            visible = visible.Where(row => row.Id == requestedId);
+        }
+        else
+        {
+            if (!Regex.IsMatch(sql, @"ORDER BY .*\x60created_at_utc\x60 DESC, .*\x60case_id\x60"))
+                throw new InvalidOperationException("Case list must use the agreed ordering.");
+            var pagination = Regex.Match(sql, @"LIMIT\s+(@\w+|\d+)(?:\s+OFFSET\s+(@\w+|\d+))?");
+            if (!pagination.Success)
+                throw new InvalidOperationException("Case list must paginate in SQL.");
+            int ReadBound(string bound) => bound.StartsWith('@') ? Convert.ToInt32(Parameter(bound)) : int.Parse(bound);
+            var size = ReadBound(pagination.Groups[1].Value);
+            var offset = pagination.Groups[2].Success ? ReadBound(pagination.Groups[2].Value) : 0;
+            LastCasePage = (offset, size);
+            visible = visible.OrderByDescending(row => row.CreatedAt).ThenBy(row => row.Id).Skip(offset).Take(size);
+        }
+
+        var data = new DataTable();
+        foreach (var column in columns)
+            data.Columns.Add(column, column switch
+            {
+                "case_id" or "organization_id" => typeof(Guid),
+                "birth_date" => typeof(DateOnly),
+                "revision" => typeof(uint),
+                "created_at_utc" or "updated_at_utc" => typeof(DateTime),
+                _ => typeof(string)
+            });
+        foreach (var row in visible)
+        {
+            data.Rows.Add(columns.Select(column => column switch
+            {
+                "case_id" => (object)row.Id,
+                "organization_id" => row.OrganizationId,
+                "case_code" => row.Code,
+                "child_name" => "Fixture Case",
+                "birth_date" => new DateOnly(2020, 1, 1),
+                "sex" => "UNKNOWN",
+                "national_id" => "FIXTURE-ID",
+                "address" => "Fixture address",
+                "case_status" => "NEW",
+                "revision" => 2u,
+                "created_at_utc" or "updated_at_utc" => DateTime.SpecifyKind(row.CreatedAt, DateTimeKind.Unspecified),
+                _ => throw new InvalidOperationException("Unexpected Case projection column.")
+            }).ToArray());
+        }
+        return data;
     }
 
     private static ValueTask<InterceptionResult<DbDataReader>> Read(DataTable data)
