@@ -318,6 +318,8 @@ sealed class SyntheticIdentityReader : DbCommandInterceptor
                 {
                     ["user_id"] = u.Id, ["username"] = u.Username, ["password_hash"] = u.Hash,
                     ["organization_id"] = u.OrganizationId, ["role_id"] = u.RoleId, ["phone"] = null,
+                    ["phone_verified_at_utc"] = null, ["email"] = null,
+                    ["normalized_email"] = null, ["email_verified_at_utc"] = null,
                     ["status"] = u.Status, ["last_login_at_utc"] = null,
                     ["created_at_utc"] = DateTime.UnixEpoch, ["updated_at_utc"] = DateTime.UnixEpoch
                 }),

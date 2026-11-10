@@ -11,7 +11,11 @@ public class User
     public Organization Organization { get; set; } = null!;
     public Guid RoleId { get; set; }
     public Role Role { get; set; } = null!;
+    public DateTime? PhoneVerifiedAtUtc { get; set; }
     public string? Phone { get; set; }
+    public string? Email { get; set; }
+    public string? NormalizedEmail { get; set; }
+    public DateTime? EmailVerifiedAtUtc { get; set; }
     public string Status { get; set; } = "ACTIVE";
     public DateTime? LastLoginAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; }

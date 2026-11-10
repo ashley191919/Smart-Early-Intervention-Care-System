@@ -156,6 +156,8 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<IAuthenticationService>(serviceProvider =>
     serviceProvider.GetRequiredService<AuthenticationService>());
+builder.Services.AddScoped<CaseAccessService>();
+builder.Services.AddScoped<IMedicalTaskCaseReadScope, CaseAccessMedicalTaskCaseReadScope>();
 builder.Services.AddScoped<ICaseStatusActorContext, HttpContextCaseStatusActorContext>();
 builder.Services.AddScoped<ICaseStatusStore, EfCaseStatusStore>();
 builder.Services.AddSingleton<ICaseStatusAccessAuthorizer, DenyAllCaseStatusAccessAuthorizer>();

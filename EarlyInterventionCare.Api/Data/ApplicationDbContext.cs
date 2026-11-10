@@ -7,6 +7,9 @@ namespace EarlyInterventionCare.Api.Data;
 
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
+    public DbSet<GuardianContact> Guardians => Set<GuardianContact>();
+    public DbSet<CaseGuardian> CaseGuardians => Set<CaseGuardian>();
+    public DbSet<ParentBindingInvitation> ParentBindingInvitations => Set<ParentBindingInvitation>();
     public DbSet<CaseRecord> Cases => Set<CaseRecord>();
     public DbSet<Questionnaire> Questionnaires => Set<Questionnaire>();
     public DbSet<QuestionnaireVersion> QuestionnaireVersions => Set<QuestionnaireVersion>();
