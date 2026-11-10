@@ -1,5 +1,35 @@
 # 11/11 前後端通訊最小展示
 
+## 2026/11/11 會議操作入口
+
+本批成果已固定於 `b4afb6e16b752e5f974b96e42c785673a3920240`；下方 7091266 是開發起點，不是成果 Commit。完整工作編號、證據與阻擋見 [16-09～16-14 驗收現況](../../docs/v5.3/16-local-environment-acceptance-20261111.md)。
+
+**服務已運作時不要重啟或重新建置。** 先核對兩個原啟動視窗的 Ready 訊息與 PID，再在 PowerShell 唯讀查看 `Get-Process -Id <實際API的PID>,<實際前端的PID>`；PID 每次啟動可能不同，不可只憑程序名稱判斷用途。若能查詢監聽，使用 `Get-NetTCPConnection -State Listen` 對照 PID 與 127.0.0.1:5186／5187；無權查詢就記錄「未確認」，不可推定沒有監聽或改防火牆。
+
+最小演練不需停止任何服務：
+
+1. 確認兩個程序及模式；後端須為 `--local-communication`，不是正式業務模式。
+2. 一般 Edge 開啟 `http://127.0.0.1:5187/`；可開 F12 → Network。
+3. 點擊「發送 GET /health/local」，確認新的 GET 請求取得 HTTP 200。
+4. 核對頁面與 Response 皆為 `{"status":"alive","databaseChecked":false}`，不是只看到首頁 200。
+5. 說明前端 5187、後端 5186 是獨立程序；瀏覽器經固定 Proxy 通訊，未驗證直接跨來源 CORS，也未檢查 MySQL。
+
+可選唯讀 HTTP 複核（不登入、不帶認證標頭）：
+
+```powershell
+Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:5186/health/local' -TimeoutSec 5
+Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:5187/health/local' -TimeoutSec 5
+```
+
+| 現象 | 安全處理 |
+|---|---|
+| 頁面不能載入／連線失敗 | 核對前端原視窗、URL 與 PID；不重複啟動、不終止不明程序 |
+| 頁面 200，但 health 502／UPSTREAM_UNAVAILABLE | 前端仍存活；檢查後端原視窗，不把代理失敗描述為成功 |
+| 403／400／404 | 使用精確 URL，不帶 query、Cookie 或 Authorization；不要關閉 Origin／Host／憑證限制 |
+| health 非預期 JSON／逾時／Port 已占用 | 停止本次展示操作並保留安全錯誤資訊；不改埠、轉接其他 API 或資料庫補救 |
+
+下方停止／獨立性測試是另行操作指引，**不屬本次最小會議清單**；目前運作中的兩程序應保留。若日後服務已停止，再依啟動節操作，不與 IsolatedTest 或 Development 模式混用。
+
 基準：`codex/v53-parent-core`／`70912664a263fcdf98d2e4090380e763570bc306`。這是可運行的前後端**分程序通訊**，不是Case／Task或資料庫展示。原wwwroot與醫療端UI不變。
 
 ## 啟動：兩個獨立PowerShell視窗
